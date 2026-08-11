@@ -1,0 +1,27 @@
+name: Check deploy status
+on:
+  push:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for deploy to settle
+        run: sleep 90
+      - name: Check site is live
+        id: check
+        run: |
+          status=$(curl -o /dev/null -s -w "%{http_code}" https://weareverveco.com)
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+      - name: Open issue if site is down
+        if: steps.check.outputs.status != '200'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: 'Site check failed after deploy (' + context.sha.substring(0,7) + ')',
+              body: 'weareverveco.com did not return a 200 status after the latest push. Check the Netlify deploy log.'
+            })

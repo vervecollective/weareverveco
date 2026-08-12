@@ -258,6 +258,7 @@
       <a href="#process">Process</a>
       <a href="#pricing">Pricing</a>
       <a href="#about">About</a>
+      <a href="#blog">Blog</a>
     </div>
     <a class="btn" href="https://calendar.app.google/rGSiZA6tFBPPVoN67" target="_blank" rel="noopener">Book a free review</a>
   </nav>
@@ -489,6 +490,43 @@
   </div>
 </section>
 
+<section id="blog">
+  <div class="wrap">
+    <div class="section-label"><span class="bar"></span><span data-cms="blog_label">From the blog</span></div>
+    <h2 data-cms="blog_heading">Real breakdowns, not sales copy.</h2>
+    <p class="section-sub" data-cms="blog_sub">The same weekly newsletter content, in full — ad teardowns, positioning lessons, and straight answers, all in one place.</p>
+
+    <div class="price-grid" style="margin-top:56px;">
+
+      <div class="price-card">
+        <div class="tier-name" data-cms="blog1_date">This week</div>
+        <h3 style="font-size:19px; font-weight:800; margin-bottom:10px; line-height:1.3;" data-cms="blog1_title">The 3 numbers your ad account should be tracking</h3>
+        <p style="color:var(--gray); font-size:14.5px; line-height:1.6; margin-bottom:24px;" data-cms="blog1_excerpt">CPC, CAC, and ROAS aren't the same thing — and mixing them up is where most small-business ad spend quietly leaks.</p>
+        <a class="btn btn-outline" style="padding:10px 20px; font-size:13px;" data-cms-href="blog1_link" href="https://blog.weareverveco.com">Read the full post →</a>
+      </div>
+
+      <div class="price-card">
+        <div class="tier-name" data-cms="blog2_date">Last week</div>
+        <h3 style="font-size:19px; font-weight:800; margin-bottom:10px; line-height:1.3;" data-cms="blog2_title">I pulled ads running in Missouri right now</h3>
+        <p style="color:var(--gray); font-size:14.5px; line-height:1.6; margin-bottom:24px;" data-cms="blog2_excerpt">A real teardown from Google and Meta's own ad transparency libraries — what's working, and what I'd change.</p>
+        <a class="btn btn-outline" style="padding:10px 20px; font-size:13px;" data-cms-href="blog2_link" href="https://blog.weareverveco.com">Read the full post →</a>
+      </div>
+
+      <div class="price-card">
+        <div class="tier-name" data-cms="blog3_date">Two weeks ago</div>
+        <h3 style="font-size:19px; font-weight:800; margin-bottom:10px; line-height:1.3;" data-cms="blog3_title">Why "just run ads" is the wrong first move</h3>
+        <p style="color:var(--gray); font-size:14.5px; line-height:1.6; margin-bottom:24px;" data-cms="blog3_excerpt">A well-targeted ad pointed at a message nobody wants still fails. Positioning comes first — here's why.</p>
+        <a class="btn btn-outline" style="padding:10px 20px; font-size:13px;" data-cms-href="blog3_link" href="https://blog.weareverveco.com">Read the full post →</a>
+      </div>
+
+    </div>
+
+    <div class="cta-row">
+      <a class="btn" href="https://blog.weareverveco.com" target="_blank" rel="noopener">See all posts →</a>
+    </div>
+  </div>
+</section>
+
 <footer>
   <div class="wrap">
     <div class="foot-row">
@@ -642,6 +680,10 @@
       document.querySelectorAll('[data-cms-src]').forEach(function(el){
         var key = el.getAttribute('data-cms-src');
         if (data[key]) el.src = data[key];
+      });
+      document.querySelectorAll('[data-cms-href]').forEach(function(el){
+        var key = el.getAttribute('data-cms-href');
+        if (data[key]) el.href = data[key];
       });
     }
 

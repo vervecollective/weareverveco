@@ -181,7 +181,23 @@
 
     { group: 'Get started', key: 'book_label', label: 'Eyebrow label', type: 'input' },
     { group: 'Get started', key: 'book_heading', label: 'Heading', type: 'input' },
-    { group: 'Get started', key: 'book_sub', label: 'Subheading', type: 'textarea' }
+    { group: 'Get started', key: 'book_sub', label: 'Subheading', type: 'textarea' },
+
+    { group: 'From the blog', key: 'blog_label', label: 'Eyebrow label', type: 'input' },
+    { group: 'From the blog', key: 'blog_heading', label: 'Heading', type: 'input' },
+    { group: 'From the blog', key: 'blog_sub', label: 'Subheading', type: 'textarea' },
+    { group: 'From the blog', key: 'blog1_date', label: 'Post 1 — date label (e.g. "This week")', type: 'input' },
+    { group: 'From the blog', key: 'blog1_title', label: 'Post 1 — title', type: 'input' },
+    { group: 'From the blog', key: 'blog1_excerpt', label: 'Post 1 — excerpt', type: 'textarea' },
+    { group: 'From the blog', key: 'blog1_link', label: 'Post 1 — full URL (e.g. https://blog.weareverveco.com/post-slug)', type: 'input' },
+    { group: 'From the blog', key: 'blog2_date', label: 'Post 2 — date label', type: 'input' },
+    { group: 'From the blog', key: 'blog2_title', label: 'Post 2 — title', type: 'input' },
+    { group: 'From the blog', key: 'blog2_excerpt', label: 'Post 2 — excerpt', type: 'textarea' },
+    { group: 'From the blog', key: 'blog2_link', label: 'Post 2 — full URL', type: 'input' },
+    { group: 'From the blog', key: 'blog3_date', label: 'Post 3 — date label', type: 'input' },
+    { group: 'From the blog', key: 'blog3_title', label: 'Post 3 — title', type: 'input' },
+    { group: 'From the blog', key: 'blog3_excerpt', label: 'Post 3 — excerpt', type: 'textarea' },
+    { group: 'From the blog', key: 'blog3_link', label: 'Post 3 — full URL', type: 'input' }
   ];
 
   var gate = document.getElementById('gate');
@@ -238,7 +254,22 @@
     about_p2: "<strong>Nothing here runs on instinct.</strong> Every account starts certified and tested before any real budget moves \u2014 Google and Meta Ads managed the right way from day one, with the positioning work most agencies skip entirely.",
     book_label: "Get started",
     book_heading: "Free account review. No pitch, no pressure.",
-    book_sub: "Just a straight look at what your current ad spend is actually doing."
+    book_sub: "Just a straight look at what your current ad spend is actually doing.",
+    blog_label: "From the blog",
+    blog_heading: "Real breakdowns, not sales copy.",
+    blog_sub: "The same weekly newsletter content, in full \u2014 ad teardowns, positioning lessons, and straight answers, all in one place.",
+    blog1_date: "This week",
+    blog1_title: "The 3 numbers your ad account should be tracking",
+    blog1_excerpt: "CPC, CAC, and ROAS aren't the same thing \u2014 and mixing them up is where most small-business ad spend quietly leaks.",
+    blog1_link: "https://blog.weareverveco.com",
+    blog2_date: "Last week",
+    blog2_title: "I pulled ads running in Missouri right now",
+    blog2_excerpt: "A real teardown from Google and Meta's own ad transparency libraries \u2014 what's working, and what I'd change.",
+    blog2_link: "https://blog.weareverveco.com",
+    blog3_date: "Two weeks ago",
+    blog3_title: "Why \"just run ads\" is the wrong first move",
+    blog3_excerpt: "A well-targeted ad pointed at a message nobody wants still fails. Positioning comes first \u2014 here's why.",
+    blog3_link: "https://blog.weareverveco.com"
   };
 
   function buildForm(values){

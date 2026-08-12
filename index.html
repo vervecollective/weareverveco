@@ -18,7 +18,8 @@
     --cream:#F2EFE9;
     --gray:#918d84;      /* legacy — used only inside #pricing, left untouched on request */
     --muted:#ABABAB;      /* AAA-safe (7:1+) muted text on dark backgrounds */
-    --charcoal:#2A2A2A;   /* AAA-safe (12.5:1) muted text on light backgrounds */
+    --slate:#555555;      /* per brand guide: body copy, secondary text on light backgrounds */
+    --charcoal:#2A2A2A;   /* per brand guide: supporting depth/shadow accent — NOT for body text */
     --line: rgba(242,239,233,0.10);
     --line-dark: rgba(17,17,17,0.08);
   }
@@ -104,7 +105,7 @@
   /* ---- section shell ---- */
   section{padding:100px 0; position:relative;}
   .light{background:var(--cream); color:var(--black);}
-  .light .section-sub{color:var(--charcoal);}
+  .light .section-sub{color:var(--slate);}
   .section-label{
     display:flex; align-items:center; gap:10px;
     font-size:12px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase;
@@ -130,7 +131,7 @@
   }
   .pillar .num{font-size:13px; font-weight:700; color:var(--charcoal); letter-spacing:0.08em; margin-bottom:10px; display:block; text-transform:uppercase;}
   .pillar h3{font-size:22px; font-weight:800; margin-bottom:14px; letter-spacing:-0.01em; color:var(--black);}
-  .pillar p{color:var(--charcoal); font-size:15.5px; line-height:1.65;}
+  .pillar p{color:var(--slate); font-size:15.5px; line-height:1.65;}
 
   /* ---- why verve (editorial rows, dark section) ---- */
   .why-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:48px; margin-top:56px;}
@@ -165,7 +166,7 @@
   .tl-content{transition:transform 0.2s;}
   .tl-step:hover .tl-content{transform:translateX(4px);}
   .tl-content h4{font-size:18px; font-weight:700; margin-bottom:8px; color:var(--black);}
-  .tl-content p{font-size:15px; line-height:1.6; color:var(--charcoal); max-width:540px;}
+  .tl-content p{font-size:15px; line-height:1.6; color:var(--slate); max-width:540px;}
 
   /* ---- pricing — untouched ---- */
   .price-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:20px; margin-top:56px;}
@@ -184,7 +185,7 @@
 
   /* ---- about ---- */
   .about-body{margin-top:40px; max-width:680px; font-size:17.5px; line-height:1.75;}
-  .about-body p{margin-bottom:22px; color:var(--charcoal);}
+  .about-body p{margin-bottom:22px; color:var(--slate);}
   .about-body strong{color:var(--black);}
 
   /* ---- contact ---- */
@@ -250,7 +251,7 @@
 <header>
   <nav>
     <a class="logo" href="#">
-      <img src="data:image/png;base64,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" data-cms-src="logo_data_uri" id="siteLogo" alt="Verve Collective">
+      <img src="/logo.png" data-cms-src="logo_data_uri" id="siteLogo" alt="Verve Collective">
       <span class="wordmark">Verve Collective</span>
     </a>
     <div class="navlinks">

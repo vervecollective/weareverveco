@@ -1,3 +1,9 @@
 [build]
   publish = "."
   functions = "netlify/functions"
+
+[[redirects]]
+  from = "https://blog.weareverveco.com/*"
+  to = "https://www.blog.weareverveco.com/:splat"
+  status = 301
+  force = true

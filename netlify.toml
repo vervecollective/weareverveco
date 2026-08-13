@@ -1,6 +1,13 @@
 [build]
   publish = "."
-  functions = "netlify/functions"
+
+[[edge_functions]]
+  function = "content"
+  path = "/api/content"
+
+[[edge_functions]]
+  function = "blog-posts"
+  path = "/api/blog-posts"
 
 [[redirects]]
   from = "https://blog.weareverveco.com/*"

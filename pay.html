@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Pay — Verve Collective</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/shell.css">
+<script type="module" src="/assets/shell.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',system-ui,sans-serif;color:#111827;line-height:1.55;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1160px;margin:0;padding:32px 36px 90px;}
+  h1{font-size:22px;font-weight:700;letter-spacing:-.02em;}
+  .lede{color:#6b7280;font-size:14px;margin-bottom:22px;}
+  .card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:20px;margin-bottom:18px;}
+  .card h2{font-size:15px;font-weight:600;margin-bottom:3px;}
+  .card .hint{font-size:13px;color:#6b7280;margin-bottom:16px;}
+
+  .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:22px;}
+  @media(max-width:760px){.tiles{grid-template-columns:1fr;}}
+  .tile{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:16px;}
+  .tile .n{font-size:24px;font-weight:800;letter-spacing:-.02em;line-height:1;}
+  .tile .l{font-size:12px;color:#6b7280;margin-top:5px;font-weight:500;}
+  .tile.due .n{color:#b45309;} .tile.paid .n{color:#047857;}
+
+  label{display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:5px;}
+  input,select,textarea{width:100%;padding:9px 11px;font-size:13.5px;font-family:inherit;}
+  .field{margin-bottom:14px;}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+  @media(max-width:700px){.row,.row3{grid-template-columns:1fr;}}
+
+  .inv{display:flex;align-items:flex-start;gap:14px;background:#fff;border:1px solid #e5e7eb;
+    border-radius:9px;padding:14px;margin-bottom:9px;border-left:3px solid transparent;}
+  .inv.submitted{border-left-color:#b45309;}
+  .inv.approved{border-left-color:#1d4ed8;}
+  .inv.paid{border-left-color:#047857;}
+  .inv.disputed{border-left-color:#b91c1c;}
+  .inv-b{flex:1;min-width:0;}
+  .inv-b b{font-size:14px;font-weight:600;display:block;}
+  .inv-b .s{font-size:12.5px;color:#6b7280;margin-top:2px;}
+  .inv-r{text-align:right;flex-shrink:0;}
+  .amt{font-size:17px;font-weight:700;}
+  .pill{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;margin-top:4px;}
+  .pill.submitted{background:#fffbeb;color:#b45309;}
+  .pill.approved{background:#eff6ff;color:#1d4ed8;}
+  .pill.paid{background:#ecfdf5;color:#047857;}
+  .pill.disputed{background:#fef2f2;color:#b91c1c;}
+  .acts{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+  .btn{border:none;border-radius:6px;padding:9px 15px;font-size:13px;font-weight:600;
+    cursor:pointer;font-family:inherit;background:#D9531E;color:#fff;}
+  .btn-2{background:#fff;color:#111827;border:1px solid #d1d5db;}
+  .btn-go{background:#047857;color:#fff;}
+  .btn-sm{padding:6px 11px;font-size:12px;}
+  .msg{font-size:13px;margin-top:10px;display:none;}
+  .msg.show{display:block;} .msg.ok{color:#047857;} .msg.err{color:#b91c1c;}
+  .empty{text-align:center;padding:30px 20px;color:#6b7280;font-size:13.5px;}
+  .empty b{display:block;color:#111827;font-size:15px;margin-bottom:5px;}
+  .note{background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:13px 15px;
+    font-size:12.5px;color:#4b5563;margin-top:14px;}
+  .note b{color:#111827;}
+  .warn{background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:13px 15px;
+    font-size:13px;color:#78350f;margin-bottom:16px;}
+  .warn b{color:#451a03;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1 id="hd">Pay</h1>
+  <p class="lede" id="ld">Loading…</p>
+
+  <div class="tiles" id="tiles"></div>
+  <div id="warnBox"></div>
+
+  <!-- CONTRACTOR: my details -->
+  <div class="card" id="detailsCard" style="display:none">
+    <h2>Your details</h2>
+    <p class="hint">We need these to pay you and to issue your 1099 at year end. Only the last four digits of your tax ID are stored.</p>
+    <div class="row">
+      <div class="field"><label for="dLegal">Legal name</label><input type="text" id="dLegal"></div>
+      <div class="field"><label for="dBiz">Business name (if any)</label><input type="text" id="dBiz"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label for="dTax">Tax ID — last 4 digits only</label><input type="text" id="dTax" maxlength="4" placeholder="1234"></div>
+      <div class="field"><label for="dPhone">Phone</label><input type="text" id="dPhone"></div>
+    </div>
+    <div class="field"><label for="dAddr1">Address</label><input type="text" id="dAddr1"></div>
+    <div class="row3">
+      <div class="field"><label for="dCity">City</label><input type="text" id="dCity"></div>
+      <div class="field"><label for="dState">State</label><input type="text" id="dState"></div>
+      <div class="field"><label for="dZip">ZIP</label><input type="text" id="dZip"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label for="dMethod">How you want to be paid</label>
+        <select id="dMethod">
+          <option value="">— choose —</option>
+          <option value="ach">Bank transfer / ACH</option>
+          <option value="zelle">Zelle</option>
+          <option value="check">Check</option>
+          <option value="venmo">Venmo</option>
+          <option value="paypal">PayPal</option>
+        </select></div>
+      <div class="field"><label for="dHandle">Where to send it</label>
+        <input type="text" id="dHandle" placeholder="Email, handle, or 'details to follow'"></div>
+    </div>
+    <button class="btn" id="saveDetails">Save details</button>
+    <p class="msg" id="dMsg"></p>
+    <div class="note"><b>Never send full bank details here.</b> Once we have your method we will confirm the account with you directly.</div>
+  </div>
+
+  <!-- CONTRACTOR: submit an invoice -->
+  <div class="card" id="submitCard" style="display:none">
+    <h2>Invoice us</h2>
+    <p class="hint">Pick a completed job and tell us what you are billing. We pay within 15 days of approval, whether or not the client has paid us.</p>
+    <div class="field"><label for="iJob">Job</label><select id="iJob"></select></div>
+    <div class="row">
+      <div class="field"><label for="iStage">What this covers</label>
+        <select id="iStage">
+          <option value="full">The whole job</option>
+          <option value="deposit">Deposit</option>
+          <option value="balance">Balance</option>
+        </select></div>
+      <div class="field"><label for="iAmount">Amount ($)</label><input type="number" id="iAmount" step="0.01"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label for="iExp">Expenses ($)</label><input type="number" id="iExp" step="0.01" placeholder="0"></div>
+      <div class="field"><label for="iRef">Your invoice number</label><input type="text" id="iRef" placeholder="Optional"></div>
+    </div>
+    <div class="field"><label for="iNote">Note</label><input type="text" id="iNote" placeholder="Anything we should know"></div>
+    <button class="btn" id="submitInv">Submit invoice</button>
+    <p class="msg" id="iMsg"></p>
+  </div>
+
+  <div class="card">
+    <h2 id="listTitle">Invoices</h2>
+    <div id="list"><div class="empty">Loading…</div></div>
+  </div>
+</div>
+
+<script>
+function $(i){return document.getElementById(i);}
+function esc(s){var d=document.createElement('div');d.textContent=s==null?'':s;return d.innerHTML;}
+function money(n){return '$'+(Number(n)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function say(id,t,ok){var m=$(id);m.textContent=t;m.className='msg show '+(ok?'ok':'err');}
+var sb, me, role, people=[], invoices=[], jobs=[];
+
+function when(d){ return new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
+
+async function loadInvoices(){
+  var q = sb.from('contractor_invoices')
+    .select('*, assignments(role_on_job, work_date, pay_amount, engagements(clients(business_name)))')
+    .order('submitted_at',{ascending:false});
+  if (role === 'contractor') q = q.eq('contractor_id', me.id);
+  var r = await q;
+  invoices = r.data || [];
+
+  var open = invoices.filter(function(i){ return i.status==='submitted'; });
+  var appr = invoices.filter(function(i){ return i.status==='approved'; });
+  var paid = invoices.filter(function(i){ return i.status==='paid'; });
+  var sum = function(a){ return a.reduce(function(s,i){ return s + Number(i.amount||0) + Number(i.expenses||0); },0); };
+
+  $('tiles').innerHTML =
+    '<div class="tile due"><div class="n">'+money(sum(open))+'</div><div class="l">'+
+      (role==='contractor'?'Submitted, awaiting approval':'Awaiting your approval')+'</div></div>'+
+    '<div class="tile due"><div class="n">'+money(sum(appr))+'</div><div class="l">Approved, not yet paid</div></div>'+
+    '<div class="tile paid"><div class="n">'+money(sum(paid))+'</div><div class="l">Paid</div></div>';
+
+  if (role !== 'contractor' && open.length) {
+    $('warnBox').innerHTML = '<div class="warn"><b>'+open.length+
+      (open.length===1?' invoice is':' invoices are')+' waiting on you.</b> '+
+      'You pay contractors on your terms, not the client\u2019s \u2014 late approval is a relationship cost.</div>';
+  } else { $('warnBox').innerHTML = ''; }
+
+  var el = $('list');
+  if (!invoices.length) {
+    el.innerHTML = role==='contractor'
+      ? '<div class="empty"><b>Nothing submitted yet</b>Once you finish a job, invoice us above.</div>'
+      : '<div class="empty"><b>No contractor invoices yet</b>They appear here when a contractor bills you.</div>';
+    return;
+  }
+
+  el.innerHTML = invoices.map(function(i){
+    var a = i.assignments || {};
+    var biz = (a.engagements && a.engagements.clients && a.engagements.clients.business_name) || 'Job';
+    var who = people.filter(function(p){return p.id===i.contractor_id;})[0];
+    var total = Number(i.amount||0) + Number(i.expenses||0);
+    var STAGE = { deposit:'Deposit', balance:'Balance', full:'Full amount' };
+
+    var acts = '';
+    if (role !== 'contractor') {
+      if (i.status === 'submitted') {
+        acts = '<div class="acts"><button class="btn btn-go btn-sm ap" data-id="'+i.id+'">Approve</button>'+
+               '<button class="btn btn-2 btn-sm dp" data-id="'+i.id+'">Query it</button></div>';
+      } else if (i.status === 'approved') {
+        acts = '<div class="acts"><button class="btn btn-go btn-sm pd" data-id="'+i.id+'">Mark paid</button></div>';
+      }
+    }
+
+    return '<div class="inv '+i.status+'"><div class="inv-b">'+
+      '<b>'+esc(biz)+' \u2014 '+esc(a.role_on_job||'Work')+'</b>'+
+      '<div class="s">'+esc(STAGE[i.stage]||i.stage)+
+        (role!=='contractor' && who ? ' \u00b7 '+esc(who.full_name||who.email) : '')+
+        ' \u00b7 submitted '+when(i.submitted_at)+
+        (i.invoice_ref ? ' \u00b7 ref '+esc(i.invoice_ref) : '')+'</div>'+
+      (i.note ? '<div class="s">'+esc(i.note)+'</div>' : '')+
+      (Number(i.expenses) ? '<div class="s">Includes '+money(i.expenses)+' expenses'+
+        (i.expense_note?' \u2014 '+esc(i.expense_note):'')+'</div>' : '')+
+      acts+
+      '</div><div class="inv-r"><div class="amt">'+money(total)+'</div>'+
+      '<span class="pill '+i.status+'">'+i.status+'</span></div></div>';
+  }).join('');
+
+  el.querySelectorAll('.ap').forEach(function(b){
+    b.addEventListener('click', function(){ setStatus(b.dataset.id, 'approved'); });
+  });
+  el.querySelectorAll('.dp').forEach(function(b){
+    b.addEventListener('click', function(){
+      if (window.confirm('Query this invoice? Tell them why directly \u2014 this only flags it.')) setStatus(b.dataset.id, 'disputed');
+    });
+  });
+  el.querySelectorAll('.pd').forEach(function(b){
+    b.addEventListener('click', async function(){
+      var how = window.prompt('How was it paid? (ACH, Zelle, check\u2026)', 'ACH');
+      if (how === null) return;
+      setStatus(b.dataset.id, 'paid', how);
+    });
+  });
+}
+
+async function setStatus(id, status, method){
+  var patch = { status: status };
+  if (status === 'approved') { patch.approved_at = new Date().toISOString(); patch.approved_by = me.id; }
+  if (status === 'paid') { patch.paid_at = new Date().toISOString(); patch.paid_method = method || null; }
+  var r = await sb.from('contractor_invoices').update(patch).eq('id', id);
+  if (r.error) return alert(r.error.message);
+
+  // Tell the contractor rather than leaving them to check.
+  try {
+    var inv = invoices.filter(function(x){return x.id===id;})[0];
+    var p = people.filter(function(x){return x.id===(inv&&inv.contractor_id);})[0];
+    if (p && p.email && (status==='approved' || status==='paid')) {
+      var { data:{ session } } = await sb.auth.getSession();
+      await fetch('https://otqrkxjtojqlpzzvqavp.supabase.co/functions/v1/notify',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},
+        body: JSON.stringify({
+          to: p.email,
+          subject: status==='paid' ? 'Payment sent' : 'Invoice approved',
+          heading: status==='paid' ? 'We have sent your payment' : 'Your invoice is approved',
+          body: status==='paid'
+            ? 'Payment has been sent' + (method ? ' by ' + method : '') + '. Thank you for the work.'
+            : 'Your invoice is approved and scheduled for payment within 15 days.',
+          facts: [{ label:'Amount', value: money(Number(inv.amount||0)+Number(inv.expenses||0)) }],
+          cta_url: 'https://weareverveco.com/pay',
+          cta_label: 'View your invoices'
+        })
+      });
+    }
+  } catch(e){ /* status is saved either way */ }
+
+  loadInvoices();
+}
+
+window.vcInit = async function(){
+  sb = window.__sb; me = window.__user; role = window.__role;
+
+  if (role === 'client') {
+    document.querySelector('.wrap').innerHTML = '<h1>Pay</h1><p class="lede">This page is for the team.</p>';
+    return;
+  }
+
+  var pq = await sb.from('profiles').select('id, full_name, email').eq('is_active', true);
+  people = pq.data || [];
+
+  if (role === 'contractor') {
+    $('hd').textContent = 'Getting paid';
+    $('ld').textContent = 'Invoice us for completed work and keep your details current.';
+    $('listTitle').textContent = 'Your invoices';
+    $('detailsCard').style.display = 'block';
+    $('submitCard').style.display = 'block';
+
+    var cd = await sb.from('contractor_details').select('*').eq('profile_id', me.id).single();
+    var d = cd.data || {};
+    $('dLegal').value = d.legal_name || (window.__profile && window.__profile.full_name) || '';
+    $('dBiz').value = d.business_name || '';
+    $('dTax').value = d.tax_id_last4 || '';
+    $('dPhone').value = (window.__profile && window.__profile.phone) || '';
+    $('dAddr1').value = d.address_line1 || '';
+    $('dCity').value = d.city || ''; $('dState').value = d.state || ''; $('dZip').value = d.postal_code || '';
+    $('dMethod').value = d.payment_method || ''; $('dHandle').value = d.payment_handle || '';
+
+    var aq = await sb.from('assignments')
+      .select('id, role_on_job, work_date, pay_amount, engagements(clients(business_name))')
+      .eq('contractor_id', me.id).eq('status','accepted');
+    jobs = aq.data || [];
+    $('iJob').innerHTML = jobs.length
+      ? jobs.map(function(a){
+          var biz=(a.engagements&&a.engagements.clients&&a.engagements.clients.business_name)||'Job';
+          return '<option value="'+a.id+'" data-pay="'+(a.pay_amount||0)+'">'+esc(biz+' \u2014 '+a.role_on_job)+
+                 (a.work_date?' ('+a.work_date+')':'')+'</option>';
+        }).join('')
+      : '<option value="">No accepted jobs yet</option>';
+
+    function fillAmount(){
+      var o = $('iJob').selectedOptions[0];
+      if (!o) return;
+      var pay = Number(o.dataset.pay) || 0;
+      $('iAmount').value = $('iStage').value === 'deposit' ? (pay/2).toFixed(2) : pay.toFixed(2);
+    }
+    $('iJob').addEventListener('change', fillAmount);
+    $('iStage').addEventListener('change', fillAmount);
+    fillAmount();
+
+    $('saveDetails').addEventListener('click', async function(){
+      var r = await sb.from('contractor_details').upsert({
+        profile_id: me.id,
+        legal_name: $('dLegal').value.trim() || null,
+        business_name: $('dBiz').value.trim() || null,
+        tax_id_last4: $('dTax').value.trim().slice(0,4) || null,
+        address_line1: $('dAddr1').value.trim() || null,
+        city: $('dCity').value.trim() || null,
+        state: $('dState').value.trim() || null,
+        postal_code: $('dZip').value.trim() || null,
+        payment_method: $('dMethod').value || null,
+        payment_handle: $('dHandle').value.trim() || null,
+        details_submitted_at: new Date().toISOString()
+      }, { onConflict: 'profile_id' });
+      say('dMsg', r.error ? r.error.message : 'Saved. Thank you.', !r.error);
+    });
+
+    $('submitInv').addEventListener('click', async function(){
+      if (!$('iJob').value) return say('iMsg','Pick a job first.', false);
+      if (!Number($('iAmount').value)) return say('iMsg','Enter an amount.', false);
+      var btn=this; btn.disabled=true;
+      var r = await sb.from('contractor_invoices').insert({
+        assignment_id: $('iJob').value,
+        contractor_id: me.id,
+        stage: $('iStage').value,
+        amount: Number($('iAmount').value),
+        expenses: Number($('iExp').value)||0,
+        invoice_ref: $('iRef').value.trim() || null,
+        note: $('iNote').value.trim() || null
+      });
+      btn.disabled=false;
+      if (r.error) return say('iMsg', r.error.message, false);
+      say('iMsg','Submitted. We will confirm shortly.', true);
+      $('iRef').value=''; $('iNote').value=''; $('iExp').value='';
+
+      try {
+        var { data:{ session } } = await sb.auth.getSession();
+        var nm = (window.__profile && window.__profile.full_name) || me.email;
+        await fetch('https://otqrkxjtojqlpzzvqavp.supabase.co/functions/v1/notify',{
+          method:'POST',
+          headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},
+          body: JSON.stringify({
+            to:'hello@weareverveco.com',
+            subject: nm + ' submitted an invoice',
+            heading: nm + ' has invoiced you',
+            body:'Approve it when you are happy, then mark it paid once the transfer goes out.',
+            facts:[{label:'Amount',value:money(Number($('iAmount').value)+ (Number($('iExp').value)||0))}],
+            cta_url:'https://weareverveco.com/pay', cta_label:'Review invoices'
+          })
+        });
+      } catch(e){}
+      loadInvoices();
+    });
+  } else {
+    $('hd').textContent = 'Pay';
+    $('ld').textContent = 'Contractor invoices, approvals and payments.';
+    $('listTitle').textContent = 'Contractor invoices';
+  }
+
+  loadInvoices();
+};
+</script>
+</body>
+</html>

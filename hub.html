@@ -73,17 +73,19 @@
   .btn:hover{background:#000;}
   .err{color:#b42318;font-size:12.5px;margin-top:9px;display:none;}
   .err.show{display:block;}
-  #app{display:none;}
+  #app{display:block;}
   .note{background:var(--orange-soft);border:1px solid #f6d9cc;border-radius:9px;padding:14px 16px;font-size:13px;color:var(--ink-2);margin-top:26px;}
   .note b{color:var(--ink);}
 </style>
+<link rel="stylesheet" href="/assets/shell.css">
+<script type="module" src="/assets/shell.js"></script>
 </head>
 <body>
 
 
 
 <div id="app">
-  <div class="topbar"><div class="topbar-in">
+  <div class="topbar" style="display:none"><div class="topbar-in">
     <div class="brand"><span class="dot">V</span> Verve Collective</div>
     <nav class="navlinks">
       <a href="/hub" class="on">Hub</a>
@@ -133,48 +135,5 @@
   </div>
 </div>
 
-<script type="module">
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
-const sb = createClient(
-  'https://otqrkxjtojqlpzzvqavp.supabase.co',
-  'sb_publishable_OBViGLggbcOKacti5iUonA_QCzw3kBv'
-);
-
-const { data:{ session } } = await sb.auth.getSession();
-if (!session) { location.href = '/login.html'; }
-
-const { data: profile } = await sb
-  .from('profiles')
-  .select('full_name, role, title, avatar_url')
-  .eq('id', session.user.id)
-  .single();
-
-const name = (profile && profile.full_name) || session.user.email;
-const role = (profile && profile.role) || 'contractor';
-const ROLE_LABEL = { owner:'Owner', account_owner:'Account Owner', contractor:'Contractor', client:'Client' };
-const initials = name.split(' ').map(function(p){return p[0];}).join('').slice(0,2).toUpperCase();
-
-document.getElementById('whoName').textContent = name + ' \u00b7 ' + (ROLE_LABEL[role] || role);
-document.getElementById('whoAvatar').textContent = initials;
-if (profile && profile.avatar_url) {
-  const a = document.getElementById('whoAvatar');
-  a.style.backgroundImage = 'url(' + profile.avatar_url + ')';
-  a.style.backgroundSize = 'cover';
-  a.textContent = '';
-}
-
-if (role === 'contractor') {
-  document.querySelectorAll('[data-staff-only]').forEach(function(el){ el.remove(); });
-}
-
-document.getElementById('signout').addEventListener('click', async function(e){
-  e.preventDefault();
-  await sb.auth.signOut();
-  location.href = '/login.html';
-});
-
-document.getElementById('app').style.display = 'block';
-</script>
 </body>
 </html>

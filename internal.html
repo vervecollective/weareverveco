@@ -639,6 +639,36 @@ async function loadDeliverables(engId){
         client_visible: !on,
         status: !on ? 'ready_for_review' : 'draft'
       }).eq('id', b.dataset.id);
+
+      // Sharing something nobody is told about is not delivering it.
+      if (!on) {
+        try {
+          var item = (r.data || []).filter(function(x){ return x.id === b.dataset.id; })[0];
+          var eng = (await sb.from('engagements')
+            .select('clients(business_name, contact_email, contact_name)')
+            .eq('id', engId).single()).data;
+          var cl = (eng && eng.clients) || {};
+          if (cl.contact_email) {
+            var { data:{ session } } = await sb.auth.getSession();
+            await fetch('https://otqrkxjtojqlpzzvqavp.supabase.co/functions/v1/notify', {
+              method:'POST',
+              headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},
+              body: JSON.stringify({
+                to: cl.contact_email,
+                subject: 'Something new to look at \u2014 Verve Collective',
+                heading: 'We have something for you to review',
+                body: (cl.contact_name ? 'Hi ' + cl.contact_name + ',\n\n' : '') +
+                      'We have shared \u201C' + (item ? item.title : 'a new file') +
+                      '\u201D on your project page. Have a look and either approve it or tell us what needs changing.',
+                facts: [{ label:'Item', value: item ? item.title : '\u2014' }],
+                cta_url: 'https://weareverveco.com/project',
+                cta_label: 'Open your project',
+                footnote: 'Everything about your project lives there \u2014 progress, dates, and files.'
+              })
+            });
+          }
+        } catch (e) { /* the share still happened */ }
+      }
       loadDeliverables(engId);
     });
   });

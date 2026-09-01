@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Help — Verve Collective</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/shell.css">
+<script type="module" src="/assets/shell.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',system-ui,sans-serif;background:#fff;color:#111827;line-height:1.6;
+    -webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1160px; margin:0; padding:32px 36px 90px;}
+  h1{font-size:22px;font-weight:700;letter-spacing:-.02em;}
+  .lede{color:#6b7280;font-size:14px;margin-bottom:26px;}
+
+  .layout{display:grid;grid-template-columns:200px 1fr;gap:34px;align-items:start;}
+  @media(max-width:820px){.layout{grid-template-columns:1fr;gap:18px;}}
+  .toc{position:sticky;top:24px;}
+  .toc a{display:block;padding:6px 10px;border-radius:6px;font-size:13px;font-weight:500;
+    color:#4b5563;text-decoration:none;cursor:pointer;margin-bottom:1px;}
+  .toc a:hover{background:#f3f4f6;color:#111827;}
+  .toc a.on{background:#fdf0eb;color:#D9531E;font-weight:600;}
+
+  section{display:none;} section.on{display:block;}
+  .card{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:24px;margin-bottom:18px;}
+  .card h2{font-size:17px;font-weight:700;margin-bottom:6px;letter-spacing:-.01em;}
+  .card h3{font-size:14px;font-weight:600;margin:20px 0 7px;}
+  .card p{font-size:14px;color:#374151;margin-bottom:12px;}
+  .card p.sub{color:#6b7280;font-size:13.5px;}
+
+  ol.steps{list-style:none;counter-reset:s;margin:14px 0;}
+  ol.steps li{counter-increment:s;position:relative;padding-left:34px;margin-bottom:14px;font-size:14px;color:#374151;}
+  ol.steps li:before{content:counter(s);position:absolute;left:0;top:1px;width:22px;height:22px;
+    border-radius:50%;background:#fdf0eb;color:#D9531E;font-size:11.5px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;}
+  ol.steps li b{color:#111827;}
+
+  .kbd{background:#f3f4f6;border:1px solid #e5e7eb;border-radius:4px;padding:1px 6px;
+    font-size:12.5px;font-weight:600;color:#374151;}
+  .tip{background:#f9fafb;border-left:3px solid #D9531E;border-radius:0 6px 6px 0;
+    padding:12px 15px;margin:14px 0;font-size:13.5px;color:#374151;}
+  .tip b{color:#111827;}
+  .warn{background:#fef2f2;border-left:3px solid #b91c1c;border-radius:0 6px 6px 0;
+    padding:12px 15px;margin:14px 0;font-size:13.5px;color:#7f1d1d;}
+  .warn b{color:#991b1b;}
+
+  table{width:100%;border-collapse:collapse;margin:14px 0;}
+  th{text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;
+    color:#6b7280;padding:8px 10px;border-bottom:1px solid #e5e7eb;}
+  td{padding:10px;border-bottom:1px solid #f3f4f6;font-size:13.5px;vertical-align:top;}
+  td b{font-weight:600;}
+  a.lnk{color:#D9531E;font-weight:600;text-decoration:none;}
+  a.lnk:hover{text-decoration:underline;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Help</h1>
+  <p class="lede" id="lede">How this works, written for whoever is reading it.</p>
+
+  <div class="layout">
+    <div class="toc" id="toc">
+      <a data-t="start" class="on">Start here</a>
+      <a data-t="owner" data-role="owner">Running the business</a>
+      <a data-t="ao" data-role="owner,account_owner">Account owners</a>
+      <a data-t="con" data-role="owner,contractor">Contractors</a>
+      <a data-t="cli" data-role="owner,client">Clients</a>
+      <a data-t="flow" data-role="owner,account_owner">The full flow</a>
+      <a data-t="faq">Common questions</a>
+    </div>
+
+    <div>
+      <!-- START -->
+      <section id="s-start" class="on">
+        <div class="card">
+          <h2>Welcome</h2>
+          <p id="welcomeLine">This is the Verve Collective platform. Everything you need lives in the menu on the left.</p>
+          <h3>The first thing to do</h3>
+          <ol class="steps">
+            <li>Open <b>Settings → Profile</b> and add your name, photo, and phone. Your name is what everyone else sees next to your work.</li>
+            <li>Go to <b>Settings → Security</b> and set a password you will remember. If you arrived from an invite email, you may not have one yet.</li>
+            <li>Come back here and read the section for your role in the menu on the left.</li>
+          </ol>
+          <div class="tip"><b>You will never need to type a web address.</b> Everything is in the left menu. If you cannot find something, it is either not built yet or not available to your role — ask rather than hunting for it.</div>
+        </div>
+      </section>
+
+      <!-- OWNER -->
+      <section id="s-owner">
+        <div class="card">
+          <h2>Running the business</h2>
+          <p class="sub">This is the owner view. You see everything.</p>
+
+          <h3>Your daily loop</h3>
+          <ol class="steps">
+            <li><b>Home</b> — the seven-step client journey. Click any step to open the tool for it.</li>
+            <li><b>Call Console</b> — open this before any call. Pick the stage you are in and the script follows the conversation.</li>
+            <li><b>Engagements</b> — build the scope, price it, send the invoice.</li>
+            <li><b>People</b> — invite contractors and account owners, set their roles.</li>
+          </ol>
+
+          <h3>Adding a new client</h3>
+          <ol class="steps">
+            <li>Open <b>Engagements</b> and click <b>+ New engagement</b>.</li>
+            <li>Fill in the business, contact name, and email. The email matters — it is where the invoice goes.</li>
+            <li>Use <b>Quick add</b> to drop in services from the catalogue, or add blank lines and type your own.</li>
+            <li>Put the contractor cost in its own column. The margin panel shows what you actually keep.</li>
+            <li>Click <b>Save</b>, then <b>Create &amp; send invoice</b>.</li>
+          </ol>
+
+          <div class="warn"><b>Contract before invoice, always.</b> Your own process says the agreement is signed before money is requested and before any work starts. The system will let you skip it — do not.</div>
+
+          <h3>Who found the client matters</h3>
+          <p>The <b>Lead source</b> dropdown sets the split with an account owner. Verve-sourced is 40/60, owner-sourced is 20/80, own-brand is 10/90. Whatever it is when you save is locked to that engagement forever — changing your defaults later never rewrites old deals.</p>
+        </div>
+      </section>
+
+      <!-- ACCOUNT OWNER -->
+      <section id="s-ao">
+        <div class="card">
+          <h2>For account owners</h2>
+          <p class="sub">You run your own client accounts inside Verve's system.</p>
+
+          <h3>What you can see</h3>
+          <p>Only your own clients and engagements. Other account owners' accounts are invisible to you, and theirs to you. That is enforced by the database, not just hidden.</p>
+
+          <h3>How you get paid</h3>
+          <table>
+            <thead><tr><th>Who found the client</th><th>Verve keeps</th><th>You keep</th></tr></thead>
+            <tbody>
+              <tr><td><b>Verve found them</b><br><span class="sub">Handed to you signed</span></td><td>40%</td><td>60%</td></tr>
+              <tr><td><b>You found them</b><br><span class="sub">Using Verve's brand and system</span></td><td>20%</td><td>80%</td></tr>
+              <tr><td><b>You found them</b><br><span class="sub">Your own brand, our system</span></td><td>10%</td><td>90%</td></tr>
+            </tbody>
+          </table>
+          <p>The share is calculated on gross margin — what is left after contractor costs, not the full invoice. You see it live in the margin panel while you build the scope.</p>
+
+          <div class="tip"><b>Why the difference?</b> Finding a client is the most expensive thing an agency does. When Verve hands you a signed client, that cost is already paid. When you find your own, you carried it — so you keep more.</div>
+        </div>
+      </section>
+
+      <!-- CONTRACTOR -->
+      <section id="s-con">
+        <div class="card">
+          <h2>For contractors</h2>
+          <p class="sub">You shoot, edit, or create. Here is everything you need.</p>
+
+          <h3>What you will see</h3>
+          <p>Your menu is short on purpose — <b>Home</b>, <b>My Jobs</b>, and <b>Settings</b>. You will never see client pricing, other contractors' rates, or what Verve makes on a job. That is deliberate and it is enforced by the system, not by trust.</p>
+
+          <h3>Getting a job</h3>
+          <ol class="steps">
+            <li>You get an email when a job is offered to you.</li>
+            <li>Open <b>My Jobs</b>. You will see the date, location, what you are being asked to deliver, and <b>exactly what you are being paid</b>.</li>
+            <li>Accept or decline. Declining is fine and costs you nothing — say so early rather than late.</li>
+            <li>Once accepted, the date is yours and the details stay on that page.</li>
+          </ol>
+
+          <h3>Before your first job</h3>
+          <ol class="steps">
+            <li>Sign the contractor agreement and IP assignment we send you. <b>Without these we legally cannot use your footage for the client</b>, so nothing can start until they are done.</li>
+            <li>Send us a W-9. You are a 1099 contractor, so we report what we pay you at year end.</li>
+            <li>Fill in your craft, day rate, and gear in <b>Settings</b> so you get offered the right work.</li>
+          </ol>
+
+          <h3>Getting paid</h3>
+          <p>You invoice us per deliverable, not per hour. We pay you on our terms whether or not the client has paid us yet — that timing is our problem, not yours.</p>
+        </div>
+      </section>
+
+      <!-- CLIENT -->
+      <section id="s-cli">
+        <div class="card">
+          <h2>For clients</h2>
+          <p class="sub">Everything about your project, in one place.</p>
+
+          <h3>Your project page</h3>
+          <p>Click <b>My Project</b> in the menu. You will see:</p>
+          <ol class="steps">
+            <li><b>Where things stand</b> — a progress bar from first enquiry to complete, with a plain sentence explaining what the current stage means.</li>
+            <li><b>Timeline</b> — the dates we are working to. Anything marked <b>"Needs you"</b> in amber is waiting on you, and it is the fastest way to unblock your own project.</li>
+            <li><b>Billing</b> — what is owed and what is paid, with a Pay button if there is a balance.</li>
+            <li><b>Ask us something</b> — type a question and it goes straight to your account lead. Your history and our answers stay on the page.</li>
+          </ol>
+
+          <div class="tip"><b>About ad spend.</b> If we run ads for you, your card is on Google and Meta directly. You see every dollar in real time, in those platforms. Our invoice only ever shows what you pay us to manage it — never blended together.</div>
+        </div>
+      </section>
+
+      <!-- FLOW -->
+      <section id="s-flow">
+        <div class="card">
+          <h2>The full flow</h2>
+          <p class="sub">What happens automatically and what you do by hand.</p>
+          <table>
+            <thead><tr><th>Step</th><th>Where</th><th>Automatic?</th></tr></thead>
+            <tbody>
+              <tr><td><b>Lead arrives</b><br><span class="sub">Site form or booking link</span></td><td>Website</td><td>Yes — creates the HubSpot contact and deal</td></tr>
+              <tr><td><b>Discovery call</b></td><td>Call Console</td><td>No — you run it, script provided</td></tr>
+              <tr><td><b>Scope and price</b></td><td>Engagements</td><td>No — you build the line items</td></tr>
+              <tr><td><b>Contract</b></td><td>Coming</td><td>Not built yet — send manually for now</td></tr>
+              <tr><td><b>Invoice</b></td><td>Engagements</td><td>Yes — creates and emails a Stripe invoice</td></tr>
+              <tr><td><b>Payment</b></td><td>Stripe</td><td>Yes — updates the record and the client's portal</td></tr>
+              <tr><td><b>Delivery</b></td><td>Manual</td><td>No</td></tr>
+            </tbody>
+          </table>
+          <div class="warn"><b>Known gap:</b> contract signing is not wired up yet. Until it is, send the agreement yourself before invoicing. Do not let the order slip.</div>
+        </div>
+      </section>
+
+      <!-- FAQ -->
+      <section id="s-faq">
+        <div class="card">
+          <h2>Common questions</h2>
+
+          <h3>I signed in but the page looks empty.</h3>
+          <p>That usually means there is nothing there yet rather than something broken. Empty pages explain what to do next — read the message in the middle.</p>
+
+          <h3>Why can I not see something a colleague can?</h3>
+          <p>The menu changes by role. Contractors see jobs, clients see their project, account owners see their own accounts, and the owner sees everything. It is not hidden from you by accident.</p>
+
+          <h3>I forgot my password.</h3>
+          <p>Use <b>Forgot your password?</b> on the sign-in screen. It emails you a reset link. Nobody at Verve can see or set your password for you.</p>
+
+          <h3>Do I need to remember any web addresses?</h3>
+          <p>No. Everything is in the left menu. If a page is not there, you do not have access to it or it is not built yet.</p>
+
+          <h3>Something is broken. What do I do?</h3>
+          <p>Tell Trae exactly which page you were on and what you clicked. "It is broken" takes three messages to diagnose; "the Save button on Engagements did nothing" takes one.</p>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+document.getElementById('toc').addEventListener('click', function(e){
+  var a = e.target.closest('a'); if(!a) return;
+  document.querySelectorAll('#toc a').forEach(function(x){x.classList.remove('on');});
+  document.querySelectorAll('section').forEach(function(x){x.classList.remove('on');});
+  a.classList.add('on');
+  document.getElementById('s-'+a.dataset.t).classList.add('on');
+});
+
+window.vcInit = function(){
+  var role = window.__role, p = window.__profile || {};
+  var first = (p.full_name || '').split(' ')[0];
+
+  document.getElementById('welcomeLine').textContent =
+    (first ? 'Hi ' + first + '. ' : '') +
+    'This is the Verve Collective platform. Everything you need is in the menu on the left.';
+
+  var LEDE = {
+    owner:'You run this. Everything is visible to you.',
+    account_owner:'You run your own client accounts inside Verve\u2019s system.',
+    contractor:'You do the creative work. Here is what you need and nothing you don\u2019t.',
+    client:'Everything about your project, explained.'
+  };
+  document.getElementById('lede').textContent = LEDE[role] || 'How this works.';
+
+  // Only show guidance that applies to this person
+  document.querySelectorAll('#toc a[data-role]').forEach(function(a){
+    if (a.dataset.role.split(',').indexOf(role) === -1) a.remove();
+  });
+
+  // Non-owners land on their own section rather than the generic one
+  if (role !== 'owner') {
+    var target = { account_owner:'ao', contractor:'con', client:'cli' }[role];
+    if (target) {
+      var link = document.querySelector('#toc a[data-t="'+target+'"]');
+      if (link) link.click();
+    }
+  }
+};
+</script>
+</body>
+</html>

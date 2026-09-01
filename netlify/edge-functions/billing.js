@@ -65,13 +65,19 @@ export default async (req) => {
     //    platform directly to the client and never runs through Verve's books.
     for (const li of items) {
       const qty = Number(li.qty) || 1;
-      const cents = Math.round(Number(li.unitPrice) * 100);
+      const unit = Number(li.unitPrice) || 0;
+      // The invoiceitems endpoint takes a single line total in cents. Quantity
+      // pricing there would require creating Price objects, which the restricted
+      // key intentionally cannot do — so fold the quantity into the description.
+      const lineTotalCents = Math.round(unit * qty * 100);
+      const label = qty > 1
+        ? li.description + ' (' + qty + ' x $' + unit.toFixed(2) + ')'
+        : li.description;
       const r = await stripe('invoiceitems', key, {
         customer: customer.id,
         currency: 'usd',
-        unit_amount: String(cents),
-        quantity: String(qty),
-        description: li.description,
+        amount: String(lineTotalCents),
+        description: label,
       });
       if (r.error) throw new Error(r.error.message);
     }

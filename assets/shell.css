@@ -87,13 +87,6 @@ body.vc-shelled{
   height:100vh; overflow-y:auto; overscroll-behavior:contain;
 }
 
-.vc-toggle{
-  display:none; position:fixed; top:10px; left:10px; z-index:1001;
-  background:var(--vc-bg); color:var(--vc-text); border:1px solid var(--vc-line);
-  border-radius:6px; width:36px; height:36px; font-size:15px; cursor:pointer;
-}
-
-
 /* ---------- light theme override ----------
    The tool pages were built dark. Rather than rewrite each one, remap the
    variables they already use so every surface goes light and legible. */
@@ -313,79 +306,10 @@ body.vc-shelled tbody tr:hover td{ background:#fafbfc !important; }
 .vc-signout:hover .vc-signout-txt{display:inline;}
 
 /* ================= mobile: behave like an app ================= */
-@media(max-width:860px){
-  .vc-sidebar{
-    width:min(85vw,300px);
-    box-shadow:0 0 0 100vmax rgba(17,24,39,0);
-    transition:transform .22s cubic-bezier(.4,0,.2,1), box-shadow .22s;
-  }
-  .vc-sidebar.open{ box-shadow:0 0 0 100vmax rgba(17,24,39,.45); }
 
-  /* Full-width top bar instead of a floating button */
-  .vc-toggle{
-    display:flex !important; align-items:center; justify-content:center;
-    position:fixed; top:0; left:0; width:100%; height:52px;
-    border:none; border-bottom:1px solid #e5e7eb;
-    background:#fff; border-radius:0; font-size:0;
-    box-shadow:0 1px 3px rgba(16,24,40,.06); z-index:1001;
-  }
-  .vc-toggle:before{
-    content:''; width:19px; height:2px; background:#111827; border-radius:2px;
-    box-shadow:0 -6px 0 #111827, 0 6px 0 #111827;
-    position:absolute; left:18px;
-  }
-  .vc-toggle:after{
-    content:'Verve Collective'; font-size:14px; font-weight:700;
-    color:#111827; letter-spacing:-.01em;
-  }
-
-  body.vc-shelled{ padding-top:52px !important; }
-  .wrap, .page{ padding:20px 16px 80px !important; }
-
-  /* Touch targets: 44px minimum */
-  .vc-navitem{ padding:12px 12px !important; font-size:15px !important; }
-  .vc-navitem svg{ width:19px; height:19px; }
-  .vc-signout-txt{display:inline;}
-  .vc-user{ padding:14px 16px; }
-
-  body.vc-shelled .btn,
-  body.vc-shelled .btn-2,
-  body.vc-shelled .btn-sec{ padding:12px 18px !important; font-size:14.5px !important; }
-  body.vc-shelled input,
-  body.vc-shelled select,
-  body.vc-shelled textarea{
-    font-size:16px !important;   /* stops iOS zooming on focus */
-    padding:11px 13px !important;
-  }
-  body.vc-shelled .card,
-  body.vc-shelled .panel{ padding:16px !important; }
-  body.vc-shelled h1{ font-size:19px !important; }
-
-  /* Tables scroll rather than squash */
-  body.vc-shelled table{ display:block; overflow-x:auto; -webkit-overflow-scrolling:touch; white-space:nowrap; }
-
-  /* Anything two-up collapses */
-  body.vc-shelled .cols,
-  body.vc-shelled .grid2,
-  body.vc-shelled .layout,
-  body.vc-shelled .row,
-  body.vc-shelled .row3,
-  body.vc-shelled .row4{ grid-template-columns:1fr !important; }
-
-  /* Console: script above the tools, not beside */
-  body.vc-shelled .script{ position:static !important; }
-  body.vc-shelled .stages{ overflow-x:auto; flex-wrap:nowrap !important; padding-bottom:6px; }
-  body.vc-shelled .stage-btn{ flex:0 0 auto; }
-
-  /* Sticky sub-navs unstick — they eat the screen on a phone */
-  body.vc-shelled .subnav,
-  body.vc-shelled .toc{ position:static !important; display:flex; gap:6px; overflow-x:auto; padding-bottom:8px; }
-  body.vc-shelled .subnav a,
-  body.vc-shelled .toc a{ flex:0 0 auto; }
-}
 
 /* Close the drawer after tapping a link — otherwise it covers the page */
-@media(max-width:860px){ .vc-sidebar.open .vc-navitem:active{ background:#fdf0eb; } }
+
 
 /* ================= status colour ================= */
 body.vc-shelled .pill.owner,
@@ -401,8 +325,15 @@ body.vc-shelled .tag.soon{ background:#f1f5f9 !important; color:#475569 !importa
 .vc-topbar{display:none;}
 .vc-scrim{display:none;}
 
+
+
+
+/* ================= mobile app shell (single source of truth) ================= */
+.vc-topbar{display:none;}
+.vc-scrim{display:none;}
+.vc-toggle{display:none;}
+
 @media(max-width:860px){
-  /* Drawer */
   .vc-sidebar{
     width:min(84vw,300px); z-index:1200;
     transform:translateX(-100%);
@@ -411,92 +342,70 @@ body.vc-shelled .tag.soon{ background:#f1f5f9 !important; color:#475569 !importa
   }
   .vc-sidebar.open{transform:translateX(0);}
 
-  /* Fixed top bar — lives on body, unaffected by the drawer transform */
   .vc-topbar{
-    display:flex; align-items:center; gap:12px;
+    display:flex !important; align-items:center; gap:12px;
     position:fixed; top:0; left:0; right:0; height:56px; z-index:1100;
-    background:rgba(255,255,255,.92); backdrop-filter:saturate(180%) blur(12px);
+    background:rgba(255,255,255,.94); -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px);
     border-bottom:1px solid var(--vc-line); padding:0 14px;
   }
-  .vc-topbar-title{
-    font-size:15px; font-weight:700; color:var(--vc-text);
-    letter-spacing:-.01em; flex:1;
-  }
+  .vc-topbar-title{font-size:15px;font-weight:700;color:var(--vc-text);letter-spacing:-.01em;flex:1;}
   .vc-topbar-me{
-    width:30px; height:30px; border-radius:50%; background:var(--vc-text); color:#fff;
-    display:flex; align-items:center; justify-content:center;
-    font-size:11px; font-weight:700; text-decoration:none; flex-shrink:0;
+    width:30px;height:30px;border-radius:50%;background:var(--vc-text);color:#fff;
+    display:flex;align-items:center;justify-content:center;
+    font-size:11px;font-weight:700;text-decoration:none;flex-shrink:0;
   }
 
-  /* Hamburger with a proper 44px hit area */
   .vc-toggle{
     display:flex !important; flex-direction:column; justify-content:center; gap:4px;
-    width:40px; height:40px; padding:0 9px; margin-left:-8px;
-    background:none; border:none; border-radius:8px; cursor:pointer;
-    position:static !important;
+    width:40px;height:40px;padding:0 9px;margin-left:-8px;
+    background:none;border:none;border-radius:8px;cursor:pointer;
+    position:static !important; top:auto; left:auto;
   }
-  .vc-toggle span{
-    display:block; height:2px; width:20px; background:var(--vc-text);
-    border-radius:2px; transition:transform .2s, opacity .2s;
-  }
+  .vc-toggle span{display:block;height:2px;width:20px;background:var(--vc-text);border-radius:2px;}
   .vc-toggle:active{background:var(--vc-surface-2);}
 
-  /* Scrim behind the drawer */
   .vc-scrim{
-    display:block; position:fixed; inset:0; z-index:1150;
-    background:rgba(16,24,40,.42);
-    opacity:0; pointer-events:none; transition:opacity .24s;
+    display:block;position:fixed;inset:0;z-index:1150;
+    background:rgba(16,24,40,.42);opacity:0;pointer-events:none;transition:opacity .24s;
   }
-  body.vc-locked .vc-scrim{opacity:1; pointer-events:auto;}
+  body.vc-locked .vc-scrim{opacity:1;pointer-events:auto;}
   body.vc-locked{overflow:hidden;}
 
-  body.vc-shelled{margin-left:0 !important; padding-top:56px !important;}
+  body.vc-shelled{margin-left:0 !important;padding-top:56px !important;}
   .wrap,.page{padding:18px 16px 90px !important;}
 
-  /* Touch targets */
-  .vc-navitem{padding:13px 12px !important; font-size:15.5px !important;}
+  .vc-navitem{padding:13px 12px !important;font-size:15.5px !important;}
   .vc-navitem svg{width:20px;height:20px;}
   .vc-signout-txt{display:inline;}
   .vc-user{padding:14px 16px;}
 
   body.vc-shelled .btn,
   body.vc-shelled .btn-2,
-  body.vc-shelled .btn-sec{padding:13px 18px !important; font-size:15px !important; width:100%; justify-content:center;}
-  body.vc-shelled .acts .btn{width:auto; flex:1;}
+  body.vc-shelled .btn-sec{padding:13px 18px !important;font-size:15px !important;width:100%;justify-content:center;}
+  body.vc-shelled .acts .btn{width:auto;flex:1;}
   body.vc-shelled input,
   body.vc-shelled select,
-  body.vc-shelled textarea{font-size:16px !important; padding:12px 13px !important;}
-  body.vc-shelled .card,
-  body.vc-shelled .panel{padding:16px !important; border-radius:10px !important;}
+  body.vc-shelled textarea{font-size:16px !important;padding:12px 13px !important;}
+  body.vc-shelled .card,body.vc-shelled .panel{padding:16px !important;border-radius:10px !important;}
   body.vc-shelled h1{font-size:20px !important;}
 
-  body.vc-shelled table{display:block; overflow-x:auto; -webkit-overflow-scrolling:touch;}
-  body.vc-shelled .cols,
-  body.vc-shelled .grid2,
-  body.vc-shelled .grid,
-  body.vc-shelled .layout,
-  body.vc-shelled .row,
-  body.vc-shelled .row3,
-  body.vc-shelled .row4,
-  body.vc-shelled .dayrow,
-  body.vc-shelled .flow,
-  body.vc-shelled .contact-grid{grid-template-columns:1fr !important;}
+  body.vc-shelled table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  body.vc-shelled .cols,body.vc-shelled .grid2,body.vc-shelled .grid,
+  body.vc-shelled .layout,body.vc-shelled .row,body.vc-shelled .row3,
+  body.vc-shelled .row4,body.vc-shelled .dayrow,body.vc-shelled .flow,
+  body.vc-shelled .contact-grid,body.vc-shelled .price-grid,
+  body.vc-shelled .pillars,body.vc-shelled .why-grid{grid-template-columns:1fr !important;}
 
-  body.vc-shelled .script{position:static !important;}
-  body.vc-shelled .stages,
-  body.vc-shelled .tabs,
-  body.vc-shelled .subnav,
-  body.vc-shelled .toc{
-    position:static !important; display:flex; gap:7px;
-    overflow-x:auto; -webkit-overflow-scrolling:touch;
-    flex-wrap:nowrap !important; padding-bottom:8px;
-    scrollbar-width:none;
+  body.vc-shelled .script,body.vc-shelled .preview-panel{position:static !important;}
+  body.vc-shelled .stages,body.vc-shelled .tabs,
+  body.vc-shelled .subnav,body.vc-shelled .toc{
+    position:static !important;display:flex;gap:7px;
+    overflow-x:auto;-webkit-overflow-scrolling:touch;
+    flex-wrap:nowrap !important;padding-bottom:8px;scrollbar-width:none;
   }
   body.vc-shelled .stages::-webkit-scrollbar,
   body.vc-shelled .tabs::-webkit-scrollbar,
   body.vc-shelled .toc::-webkit-scrollbar{display:none;}
-  body.vc-shelled .stage-btn,
-  body.vc-shelled .tabs a,
-  body.vc-shelled .toc a,
-  body.vc-shelled .subnav a{flex:0 0 auto; white-space:nowrap;}
+  body.vc-shelled .stage-btn,body.vc-shelled .tabs a,
+  body.vc-shelled .toc a,body.vc-shelled .subnav a{flex:0 0 auto;white-space:nowrap;}
 }

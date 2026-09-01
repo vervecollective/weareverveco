@@ -1,87 +1,178 @@
-/* Verve Collective — app shell styles */
+/* Verve Collective — app shell
+   Neutral base, one accent, color used for state only.
+   Palette follows the 2026 SaaS convention: #F9FAFB surface -> #111827 text. */
 
 :root{
-  --vc-rail:#16181c;
-  --vc-rail-2:#1f2229;
-  --vc-rail-line:rgba(255,255,255,.08);
-  --vc-rail-text:#a8adb7;
-  --vc-rail-text-on:#ffffff;
-  --vc-accent:#D9531E;
-  --vc-w:236px;
+  --vc-bg:#ffffff;
+  --vc-surface:#f9fafb;
+  --vc-surface-2:#f3f4f6;
+  --vc-line:#e5e7eb;
+  --vc-line-soft:#f0f1f3;
+
+  --vc-text:#111827;
+  --vc-text-2:#4b5563;
+  --vc-text-3:#6b7280;
+  --vc-text-4:#9ca3af;
+
+  --vc-accent:#D9531E;          /* primary actions + active state ONLY */
+  --vc-accent-soft:#fdf0eb;
+
+  --vc-ok:#047857;   --vc-ok-soft:#ecfdf5;
+  --vc-warn:#b45309; --vc-warn-soft:#fffbeb;
+  --vc-err:#b91c1c;  --vc-err-soft:#fef2f2;
+
+  --vc-w:256px;
+  --vc-radius:8px;
 }
 
+/* ---------- sidebar ---------- */
 .vc-sidebar{
   position:fixed; top:0; left:0; bottom:0; width:var(--vc-w);
-  background:var(--vc-rail); border-right:1px solid var(--vc-rail-line);
+  background:var(--vc-surface); border-right:1px solid var(--vc-line);
   display:flex; flex-direction:column; z-index:1000;
-  font-family:'Inter',system-ui,sans-serif;
+  font-family:'Inter',system-ui,-apple-system,sans-serif;
 }
-
 .vc-brand{
-  display:flex; align-items:center; gap:9px;
-  padding:16px 16px 14px; text-decoration:none;
-  color:#fff; font-weight:800; font-size:14px; letter-spacing:-.01em;
-  border-bottom:1px solid var(--vc-rail-line);
+  display:flex; align-items:center; gap:10px;
+  padding:18px 18px 16px; text-decoration:none;
+  border-bottom:1px solid var(--vc-line);
 }
-.vc-logo{
-  width:24px; height:24px; border-radius:6px; background:var(--vc-accent);
-  display:flex; align-items:center; justify-content:center;
-  font-size:12px; font-weight:800; color:#fff; flex-shrink:0;
-}
+.vc-brand img{height:19px; width:auto; display:block;}
+.vc-brand span{font-weight:700; font-size:14px; color:var(--vc-text); letter-spacing:-.01em;}
 
-.vc-nav{flex:1; overflow-y:auto; padding:12px 8px;}
+.vc-nav{flex:1; overflow-y:auto; padding:14px 10px;}
 .vc-navgroup{
-  font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.08em;
-  color:#6b7280; padding:12px 8px 6px;
+  font-size:10.5px; font-weight:600; text-transform:uppercase; letter-spacing:.07em;
+  color:var(--vc-text-4); padding:14px 8px 6px;
 }
+.vc-navgroup:first-child{padding-top:2px;}
 .vc-navitem{
   display:flex; align-items:center; gap:10px;
-  padding:8px 9px; margin-bottom:1px; border-radius:6px;
-  color:var(--vc-rail-text); text-decoration:none;
+  padding:8px 10px; margin-bottom:2px; border-radius:6px;
+  color:var(--vc-text-2); text-decoration:none;
   font-size:13.5px; font-weight:500; line-height:1.3;
-  transition:background .12s, color .12s;
+  transition:background .12s,color .12s;
 }
-.vc-navitem svg{width:17px; height:17px; flex-shrink:0; opacity:.85;}
-.vc-navitem:hover{background:var(--vc-rail-2); color:var(--vc-rail-text-on);}
-.vc-navitem.on{background:var(--vc-accent); color:#fff; font-weight:600;}
-.vc-navitem.on svg{opacity:1;}
-.vc-ext{margin-left:auto; font-size:10px; opacity:.5;}
+.vc-navitem svg{width:17px; height:17px; flex-shrink:0; color:var(--vc-text-4);}
+.vc-navitem:hover{background:var(--vc-surface-2); color:var(--vc-text);}
+.vc-navitem:hover svg{color:var(--vc-text-2);}
+.vc-navitem.on{background:var(--vc-accent-soft); color:var(--vc-accent); font-weight:600;}
+.vc-navitem.on svg{color:var(--vc-accent);}
+.vc-ext{margin-left:auto; font-size:10px; color:var(--vc-text-4);}
 
 .vc-user{
-  display:flex; align-items:center; gap:9px;
-  padding:12px 14px; border-top:1px solid var(--vc-rail-line);
+  display:flex; align-items:center; gap:10px;
+  padding:12px 14px; border-top:1px solid var(--vc-line); background:var(--vc-bg);
 }
 .vc-avatar{
-  width:30px; height:30px; border-radius:50%; background:var(--vc-accent);
+  width:30px; height:30px; border-radius:50%;
+  background:var(--vc-text); color:#fff;
   display:flex; align-items:center; justify-content:center;
-  font-size:11.5px; font-weight:800; color:#fff; flex-shrink:0;
+  font-size:11px; font-weight:700; flex-shrink:0;
 }
 .vc-userinfo{display:flex; flex-direction:column; min-width:0; flex:1;}
-.vc-userinfo b{
-  font-size:12.5px; font-weight:600; color:#fff;
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-}
-.vc-userinfo em{font-size:11px; font-style:normal; color:#6b7280;}
-.vc-signout{
-  background:none; border:none; color:#6b7280; cursor:pointer;
-  padding:5px; border-radius:5px; display:flex; flex-shrink:0;
-}
+.vc-userinfo b{font-size:12.5px; font-weight:600; color:var(--vc-text);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.vc-userinfo em{font-size:11px; font-style:normal; color:var(--vc-text-4);}
+.vc-signout{background:none; border:none; color:var(--vc-text-4); cursor:pointer;
+  padding:6px; border-radius:5px; display:flex; flex-shrink:0;}
 .vc-signout svg{width:16px; height:16px;}
-.vc-signout:hover{background:var(--vc-rail-2); color:#fff;}
+.vc-signout:hover{background:var(--vc-surface-2); color:var(--vc-text);}
 
-/* push page content over */
 body.vc-shelled{margin-left:var(--vc-w) !important;}
 
 .vc-toggle{
   display:none; position:fixed; top:10px; left:10px; z-index:1001;
-  background:var(--vc-rail); color:#fff; border:1px solid var(--vc-rail-line);
-  border-radius:6px; width:36px; height:36px; font-size:16px; cursor:pointer;
+  background:var(--vc-bg); color:var(--vc-text); border:1px solid var(--vc-line);
+  border-radius:6px; width:36px; height:36px; font-size:15px; cursor:pointer;
+}
+@media(max-width:860px){
+  .vc-sidebar{transform:translateX(-100%); transition:transform .18s; box-shadow:0 0 40px rgba(0,0,0,.1);}
+  .vc-sidebar.open{transform:translateX(0);}
+  body.vc-shelled{margin-left:0 !important; padding-top:54px;}
+  .vc-toggle{display:block;}
 }
 
-@media(max-width:860px){
-  .vc-sidebar{transform:translateX(-100%); transition:transform .18s;}
-  .vc-sidebar.open{transform:translateX(0);}
-  body.vc-shelled{margin-left:0 !important; padding-top:52px;}
-  .vc-toggle{display:block;}
-  .vc-sidebar.open .vc-toggle{left:calc(var(--vc-w) + 10px);}
+/* ---------- light theme override ----------
+   The tool pages were built dark. Rather than rewrite each one, remap the
+   variables they already use so every surface goes light and legible. */
+body.vc-shelled{
+  --black:#ffffff;
+  --black-2:#ffffff;
+  --black-3:#f9fafb;
+  --cream:#111827;
+  --muted:#6b7280;
+  --gray:#6b7280;
+  --charcoal:#4b5563;
+  --line:#e5e7eb;
+  --orange:#D9531E;
+  --orange-light:#c2461a;
+  --green:#047857;
+  --red:#b91c1c;
+  --ink:#111827;
+  --ink-2:#4b5563;
+  --ink-3:#6b7280;
+  --bg:#ffffff;
+  --card:#ffffff;
+  background:var(--vc-bg) !important;
+  color:var(--vc-text) !important;
 }
+body.vc-shelled .panel,
+body.vc-shelled .card,
+body.vc-shelled .price-card,
+body.vc-shelled .pillar{
+  background:var(--vc-bg) !important;
+  border-color:var(--vc-line) !important;
+  box-shadow:0 1px 2px rgba(17,24,39,.04);
+}
+body.vc-shelled input,
+body.vc-shelled textarea,
+body.vc-shelled select{
+  background:var(--vc-bg) !important;
+  color:var(--vc-text) !important;
+  border-color:var(--vc-line) !important;
+}
+body.vc-shelled input::placeholder,
+body.vc-shelled textarea::placeholder{color:var(--vc-text-4) !important;}
+/* Script panel: keep a soft tint so talk-tracks stay visually distinct */
+body.vc-shelled .say{
+  background:var(--vc-accent-soft) !important;
+  border-left-color:var(--vc-accent) !important;
+  color:var(--vc-text) !important;
+}
+body.vc-shelled .do{color:var(--vc-text-2) !important; border-left-color:var(--vc-line) !important;}
+body.vc-shelled .warn{
+  background:var(--vc-err-soft) !important;
+  border-left-color:var(--vc-err) !important;
+  color:#7f1d1d !important;
+}
+body.vc-shelled .qa .why{color:var(--vc-text-3) !important;}
+body.vc-shelled .stage-btn{border-color:var(--vc-line) !important; color:var(--vc-text-2) !important;}
+body.vc-shelled .stage-btn.active{background:var(--vc-accent) !important; border-color:var(--vc-accent) !important; color:#fff !important;}
+body.vc-shelled th{color:var(--vc-text-3) !important; border-bottom-color:var(--vc-line) !important;}
+body.vc-shelled td{border-bottom-color:var(--vc-line-soft) !important;}
+body.vc-shelled .btn{background:var(--vc-accent); color:#fff;}
+body.vc-shelled .btn-sec,
+body.vc-shelled .btn-secondary,
+body.vc-shelled .btn-outline{
+  background:var(--vc-bg) !important; color:var(--vc-text) !important;
+  border:1px solid var(--vc-line) !important;
+}
+body.vc-shelled .btn-sec:hover,
+body.vc-shelled .btn-secondary:hover,
+body.vc-shelled .btn-outline:hover{background:var(--vc-surface) !important;}
+body.vc-shelled .btn-go,
+body.vc-shelled .btn-publish{background:var(--vc-ok) !important; color:#fff !important;}
+body.vc-shelled .btn-danger{background:var(--vc-bg) !important; color:var(--vc-err) !important; border:1px solid var(--vc-line) !important;}
+body.vc-shelled .eng-item{border-color:var(--vc-line) !important;}
+body.vc-shelled .eng-item.active{background:var(--vc-accent-soft) !important; border-color:var(--vc-accent) !important;}
+body.vc-shelled .loaded-badge{background:var(--vc-ok-soft) !important; color:var(--vc-ok) !important; border-color:#a7f3d0 !important;}
+body.vc-shelled .diff-badge{background:var(--vc-warn-soft) !important; color:var(--vc-warn) !important; border-color:#fde68a !important;}
+body.vc-shelled .passthru{background:var(--vc-surface) !important; border-color:var(--vc-line) !important; color:var(--vc-text-2) !important;}
+body.vc-shelled .invoice-link{background:var(--vc-ok-soft) !important; border-color:#a7f3d0 !important; color:var(--vc-ok) !important;}
+body.vc-shelled .note{background:var(--vc-surface) !important; border-color:var(--vc-line) !important; color:var(--vc-text-2) !important;}
+body.vc-shelled .step{background:var(--vc-bg) !important; border-color:var(--vc-line) !important;}
+body.vc-shelled .tag.live{background:var(--vc-ok-soft) !important; color:var(--vc-ok) !important;}
+body.vc-shelled .tag.manual{background:var(--vc-warn-soft) !important; color:var(--vc-warn) !important;}
+body.vc-shelled .tag.soon{background:var(--vc-surface-2) !important; color:var(--vc-text-3) !important;}
+body.vc-shelled .preview-panel{background:var(--vc-bg) !important; border-color:var(--vc-line) !important;}

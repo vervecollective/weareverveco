@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Calendar — Verve Collective</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/shell.css">
+<script type="module" src="/assets/shell.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',system-ui,sans-serif;color:#111827;line-height:1.55;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1160px;margin:0;padding:32px 36px 90px;}
+  h1{font-size:22px;font-weight:700;letter-spacing:-.02em;}
+  .lede{color:#6b7280;font-size:14px;margin-bottom:20px;}
+
+  .bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px;}
+  .bar .mo{font-size:17px;font-weight:700;min-width:170px;}
+  .nav{display:flex;gap:6px;}
+  .nav button{width:34px;height:34px;border:1px solid #e5e7eb;background:#fff;border-radius:7px;
+    cursor:pointer;font-size:15px;color:#374151;font-family:inherit;}
+  .nav button:hover{background:#f9fafb;}
+  .today{padding:0 14px;height:34px;border:1px solid #e5e7eb;background:#fff;border-radius:7px;
+    font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;}
+  .today:hover{background:#f9fafb;}
+  .legend{display:flex;gap:14px;margin-left:auto;flex-wrap:wrap;font-size:12px;color:#6b7280;}
+  .legend span{display:flex;align-items:center;gap:6px;}
+  .sw{width:9px;height:9px;border-radius:3px;}
+
+  .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:#e5e7eb;
+    border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;}
+  .dow{background:#f9fafb;padding:9px 8px;font-size:11px;font-weight:700;text-transform:uppercase;
+    letter-spacing:.05em;color:#6b7280;text-align:center;}
+  .day{background:#fff;min-height:108px;padding:7px;position:relative;}
+  .day.out{background:#fbfcfd;}
+  .day.today{background:#fffaf7;box-shadow:inset 0 0 0 2px #D9531E;}
+  .dn{font-size:12px;font-weight:600;color:#6b7280;margin-bottom:5px;}
+  .day.today .dn{color:#D9531E;font-weight:800;}
+  .day.out .dn{color:#cbd5e1;}
+  .ev{display:block;font-size:11.5px;line-height:1.3;padding:3px 6px;border-radius:5px;
+    margin-bottom:3px;font-weight:600;text-decoration:none;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .ev.shoot{background:#f5f3ff;color:#5b21b6;}
+  .ev.ms{background:#ecfdf5;color:#047857;}
+  .ev.task{background:#f1f5f9;color:#334155;}
+  .ev.late{background:#fef2f2;color:#b91c1c;}
+  .ev.clash{background:#fffbeb;color:#b45309;box-shadow:inset 0 0 0 1px #fde68a;}
+  .more{font-size:11px;color:#9ca3af;font-weight:600;padding-left:6px;}
+
+  .up{margin-top:28px;}
+  .up h2{font-size:13px;font-weight:700;margin-bottom:12px;}
+  .row{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid #e5e7eb;
+    border-radius:9px;padding:12px 14px;margin-bottom:8px;border-left:3px solid transparent;}
+  .row.shoot{border-left-color:#7c3aed;} .row.ms{border-left-color:#047857;}
+  .row.task{border-left-color:#94a3b8;} .row.clash{border-left-color:#b45309;background:#fffbeb;}
+  .row b{font-size:13.5px;font-weight:600;}
+  .row .s{font-size:12.5px;color:#6b7280;}
+  .row .d{margin-left:auto;font-size:12.5px;font-weight:600;color:#6b7280;white-space:nowrap;}
+  .warn{background:#fffbeb;border:1px solid #fde68a;border-radius:9px;padding:13px 15px;
+    font-size:13px;color:#78350f;margin-bottom:16px;}
+  .warn b{color:#451a03;}
+  .empty{color:#9ca3af;font-size:13.5px;padding:24px 0;text-align:center;}
+  @media(max-width:760px){
+    .day{min-height:76px;padding:5px;}
+    .ev{font-size:10px;padding:2px 4px;}
+    .legend{width:100%;margin-left:0;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Calendar</h1>
+  <p class="lede">Shoots, milestones and deadlines across every account.</p>
+
+  <div id="clash"></div>
+
+  <div class="bar">
+    <div class="nav"><button id="prev">&lsaquo;</button><button id="next">&rsaquo;</button></div>
+    <span class="mo" id="mo"></span>
+    <button class="today" id="jump">Today</button>
+    <div class="legend">
+      <span><i class="sw" style="background:#7c3aed"></i>Shoot</span>
+      <span><i class="sw" style="background:#047857"></i>Milestone</span>
+      <span><i class="sw" style="background:#94a3b8"></i>Task</span>
+      <span><i class="sw" style="background:#b45309"></i>Clash</span>
+    </div>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <div class="up">
+    <h2>Next 14 days</h2>
+    <div id="upcoming"></div>
+  </div>
+</div>
+
+<script>
+function $(i){return document.getElementById(i);}
+function esc(s){var d=document.createElement('div');d.textContent=s==null?'':s;return d.innerHTML;}
+function iso(d){return d.toISOString().slice(0,10);}
+
+var sb, me, role, events = [], cursor = new Date(), clashes = {};
+
+function todayISO(){ var d=new Date(); d.setHours(12,0,0,0); return iso(d); }
+
+async function fetchAll(){
+  events = [];
+
+  // Shoot days — the ones that genuinely cannot overlap for one person.
+  var dq = await sb.from('assignment_days')
+    .select('*, assignments(role_on_job, location, status, contractor_id, engagement_id, engagements(clients(business_name)))');
+  (dq.data || []).forEach(function(d){
+    var a = d.assignments || {};
+    if (!a || a.status === 'declined' || a.status === 'cancelled') return;
+    var biz = (a.engagements && a.engagements.clients && a.engagements.clients.business_name) || 'Shoot';
+    events.push({
+      kind:'shoot', date:d.work_date, title:biz + ' \u2014 ' + (a.role_on_job || 'Shoot'),
+      sub:(d.call_time ? d.call_time.slice(0,5) : 'Time TBC') + (a.location ? ' \u00b7 ' + a.location : ''),
+      who:a.contractor_id, href:'/jobs'
+    });
+  });
+
+  var mq = await sb.from('milestones')
+    .select('*, engagements(title, clients(business_name))');
+  (mq.data || []).forEach(function(m){
+    if (!m.due_date || m.status === 'done') return;
+    var e = m.engagements || {};
+    events.push({
+      kind:'ms', date:m.due_date, title:m.label,
+      sub:(e.clients && e.clients.business_name) || e.title || '',
+      href:'/internal'
+    });
+  });
+
+  var tq = await sb.from('tasks')
+    .select('*, engagements(title, clients(business_name))')
+    .neq('status','done').neq('status','cancelled');
+  (tq.data || []).forEach(function(t){
+    if (!t.due_date) return;
+    var e = t.engagements || {};
+    events.push({
+      kind:'task', date:t.due_date, title:t.title,
+      sub:(e.clients && e.clients.business_name) || e.title || '',
+      who:t.assignee_id, href:'/board'
+    });
+  });
+
+  // Same person, same day, two shoots — the scheduling error that costs money.
+  clashes = {};
+  var byPersonDay = {};
+  events.filter(function(e){ return e.kind === 'shoot' && e.who; }).forEach(function(e){
+    var k = e.who + '|' + e.date;
+    byPersonDay[k] = (byPersonDay[k] || 0) + 1;
+    if (byPersonDay[k] > 1) clashes[e.date] = true;
+  });
+}
+
+function render(){
+  var y = cursor.getFullYear(), m = cursor.getMonth();
+  $('mo').textContent = cursor.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+
+  var first = new Date(y, m, 1);
+  var start = new Date(first);
+  start.setDate(1 - first.getDay());
+
+  var html = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+    .map(function(d){ return '<div class="dow">'+d+'</div>'; }).join('');
+
+  var today = todayISO();
+  for (var i = 0; i < 42; i++){
+    var d = new Date(start); d.setDate(start.getDate() + i);
+    d.setHours(12,0,0,0);
+    var key = iso(d);
+    var out = d.getMonth() !== m;
+    var evs = events.filter(function(e){ return e.date === key; });
+
+    html += '<div class="day'+(out?' out':'')+(key===today?' today':'')+'">'+
+      '<div class="dn">'+d.getDate()+'</div>'+
+      evs.slice(0,3).map(function(e){
+        var cls = e.kind;
+        if (e.kind === 'shoot' && clashes[e.date]) cls = 'clash';
+        else if (e.kind !== 'shoot' && key < today) cls = 'late';
+        return '<a class="ev '+cls+'" href="'+e.href+'" title="'+esc(e.title+' \u2014 '+e.sub)+'">'+esc(e.title)+'</a>';
+      }).join('')+
+      (evs.length > 3 ? '<div class="more">+'+(evs.length-3)+' more</div>' : '')+
+    '</div>';
+  }
+  $('grid').innerHTML = html;
+
+  var clashDays = Object.keys(clashes).filter(function(d){ return d >= today; });
+  $('clash').innerHTML = clashDays.length
+    ? '<div class="warn"><b>Double-booked.</b> Someone is on two shoots on '+
+      clashDays.slice(0,3).map(function(d){
+        return new Date(d+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});
+      }).join(', ')+'. Check Jobs before confirming anything else.</div>'
+    : '';
+
+  var end = new Date(); end.setDate(end.getDate() + 14);
+  var soon = events.filter(function(e){ return e.date >= today && e.date <= iso(end); })
+                   .sort(function(a,b){ return a.date < b.date ? -1 : 1; });
+  $('upcoming').innerHTML = soon.length
+    ? soon.slice(0,14).map(function(e){
+        var cls = (e.kind === 'shoot' && clashes[e.date]) ? 'clash' : e.kind;
+        var dt = new Date(e.date+'T12:00:00');
+        return '<div class="row '+cls+'"><div><b>'+esc(e.title)+'</b>'+
+          '<div class="s">'+esc(e.sub)+'</div></div>'+
+          '<span class="d">'+dt.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})+'</span></div>';
+      }).join('')
+    : '<div class="empty">Nothing scheduled in the next two weeks.</div>';
+}
+
+window.vcInit = async function(){
+  sb = window.__sb; me = window.__user; role = window.__role;
+
+  if (role === 'client') {
+    document.querySelector('.wrap').innerHTML =
+      '<h1>Calendar</h1><p class="lede">Your dates are on <b>My Project</b>.</p>';
+    return;
+  }
+
+  $('prev').addEventListener('click', function(){ cursor.setMonth(cursor.getMonth()-1); render(); });
+  $('next').addEventListener('click', function(){ cursor.setMonth(cursor.getMonth()+1); render(); });
+  $('jump').addEventListener('click', function(){ cursor = new Date(); render(); });
+
+  await fetchAll();
+  render();
+};
+</script>
+</body>
+</html>

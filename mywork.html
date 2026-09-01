@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>My Work — Verve Collective</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/shell.css">
+<script type="module" src="/assets/shell.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',system-ui,sans-serif;color:#111827;line-height:1.55;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1160px;margin:0;padding:32px 36px 90px;}
+  h1{font-size:22px;font-weight:700;letter-spacing:-.02em;}
+  .lede{color:#6b7280;font-size:14px;margin-bottom:24px;}
+
+  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:28px;}
+  @media(max-width:820px){.tiles{grid-template-columns:repeat(2,1fr);}}
+  .tile{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:16px;}
+  .tile .n{font-size:26px;font-weight:800;letter-spacing:-.02em;line-height:1;}
+  .tile .l{font-size:12px;color:#6b7280;margin-top:5px;font-weight:500;}
+  .tile.late .n{color:#b91c1c;} .tile.soon .n{color:#b45309;}
+  .tile.doing .n{color:#D9531E;} .tile.done .n{color:#047857;}
+
+  .grp{margin-bottom:26px;}
+  .grp-h{display:flex;align-items:center;gap:9px;margin-bottom:10px;}
+  .grp-h b{font-size:13px;font-weight:700;}
+  .grp-h .c{font-size:11.5px;font-weight:600;color:#6b7280;background:#f3f4f6;border-radius:20px;padding:1px 8px;}
+  .grp-h .bar{flex:1;height:1px;background:#e5e7eb;}
+
+  .it{display:flex;align-items:flex-start;gap:12px;background:#fff;border:1px solid #e5e7eb;
+    border-radius:9px;padding:13px 14px;margin-bottom:8px;border-left:3px solid transparent;
+    transition:box-shadow .12s;}
+  .it:hover{box-shadow:0 2px 8px rgba(16,24,40,.08);}
+  .it.p-urgent{border-left-color:#b91c1c;} .it.p-high{border-left-color:#d97706;}
+  .it.p-normal{border-left-color:#cbd5e1;} .it.p-low{border-left-color:#e5e7eb;}
+  .it.job{border-left-color:#7c3aed;}
+  .it-b{flex:1;min-width:0;}
+  .it-t{font-size:14px;font-weight:600;line-height:1.35;}
+  .it-m{font-size:12.5px;color:#6b7280;margin-top:3px;}
+  .it-r{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0;}
+  .due{font-size:12px;font-weight:600;color:#6b7280;white-space:nowrap;}
+  .due.late{color:#b91c1c;} .due.soon{color:#b45309;}
+  .pill{font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;white-space:nowrap;}
+  .pill.todo{background:#f1f5f9;color:#475569;}
+  .pill.in_progress{background:#fdf0eb;color:#9a3412;}
+  .pill.blocked{background:#fef2f2;color:#b91c1c;}
+  .pill.review{background:#f5f3ff;color:#6d28d9;}
+  .pill.offered{background:#fdf0eb;color:#9a3412;}
+  .pill.accepted{background:#ecfdf5;color:#047857;}
+  .sel{padding:6px 9px;font-size:12px;border:1px solid #e5e7eb;border-radius:6px;
+    background:#fff;font-family:inherit;color:#111827;}
+  a.plain{text-decoration:none;color:inherit;display:block;}
+  .empty{text-align:center;padding:44px 20px;background:#fff;border:1px solid #e5e7eb;border-radius:10px;}
+  .empty b{display:block;font-size:15px;margin-bottom:5px;}
+  .empty span{font-size:13.5px;color:#6b7280;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1 id="hd">My Work</h1>
+  <p class="lede" id="ld">Everything assigned to you, across every account.</p>
+
+  <div class="tiles" id="tiles"></div>
+  <div id="body"></div>
+</div>
+
+<script>
+function $(i){return document.getElementById(i);}
+function esc(s){var d=document.createElement('div');d.textContent=s==null?'':s;return d.innerHTML;}
+var sb, me, role;
+
+function days(d){
+  if (!d) return null;
+  var t = new Date(); t.setHours(0,0,0,0);
+  return Math.round((new Date(d+'T12:00:00') - t) / 86400000);
+}
+function dueLabel(d){
+  var n = days(d);
+  if (n === null) return '';
+  if (n < 0)  return Math.abs(n) + (Math.abs(n)===1?' day':' days') + ' late';
+  if (n === 0) return 'Today';
+  if (n === 1) return 'Tomorrow';
+  if (n <= 7)  return new Date(d+'T12:00:00').toLocaleDateString('en-US',{weekday:'long'});
+  return new Date(d+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
+}
+function dueClass(d){
+  var n = days(d);
+  if (n === null) return '';
+  return n < 0 ? 'late' : (n <= 2 ? 'soon' : '');
+}
+
+function item(x){
+  if (x.kind === 'job') {
+    return '<a class="plain" href="/jobs"><div class="it job">'+
+      '<div class="it-b"><div class="it-t">'+esc(x.title)+'</div>'+
+        '<div class="it-m">'+esc(x.sub)+'</div></div>'+
+      '<div class="it-r">'+(x.due?'<span class="due '+dueClass(x.due)+'">'+dueLabel(x.due)+'</span>':'')+
+        '<span class="pill '+x.status+'">'+esc(x.statusLabel)+'</span></div></div></a>';
+  }
+  return '<div class="it p-'+x.priority+'">'+
+    '<div class="it-b"><div class="it-t">'+esc(x.title)+'</div>'+
+      '<div class="it-m">'+esc(x.sub)+'</div></div>'+
+    '<div class="it-r">'+(x.due?'<span class="due '+dueClass(x.due)+'">'+dueLabel(x.due)+'</span>':'')+
+      '<select class="sel" data-id="'+x.id+'">'+
+        ['todo','in_progress','blocked','review','done'].map(function(s){
+          var L={todo:'To do',in_progress:'In progress',blocked:'Blocked',review:'Review',done:'Done'};
+          return '<option value="'+s+'"'+(s===x.status?' selected':'')+'>'+L[s]+'</option>';
+        }).join('')+
+      '</select></div></div>';
+}
+
+function group(title, items){
+  if (!items.length) return '';
+  return '<div class="grp"><div class="grp-h"><b>'+title+'</b>'+
+    '<span class="c">'+items.length+'</span><span class="bar"></span></div>'+
+    items.map(item).join('')+'</div>';
+}
+
+window.vcInit = async function(){
+  sb = window.__sb; me = window.__user; role = window.__role;
+
+  if (role === 'client') {
+    document.querySelector('.wrap').innerHTML =
+      '<h1>My Work</h1><p class="lede">Your project lives under <b>My Project</b>.</p>';
+    return;
+  }
+
+  var tq = await sb.from('tasks')
+    .select('*, engagements(title, clients(business_name))')
+    .eq('assignee_id', me.id).neq('status','cancelled');
+
+  var aq = await sb.from('assignments')
+    .select('*, engagements(title, clients(business_name))')
+    .eq('contractor_id', me.id).in('status',['offered','accepted']);
+
+  var items = [];
+
+  (tq.data || []).forEach(function(t){
+    var e = t.engagements || {};
+    items.push({
+      kind:'task', id:t.id, title:t.title,
+      sub: ((e.clients && e.clients.business_name) || e.title || 'No account'),
+      status:t.status, priority:t.priority, due:t.due_date
+    });
+  });
+
+  (aq.data || []).forEach(function(a){
+    var e = a.engagements || {};
+    items.push({
+      kind:'job', id:a.id, title:a.role_on_job + ' \u2014 ' + ((e.clients && e.clients.business_name) || 'Job'),
+      sub: a.location || 'Shoot',
+      status:a.status, statusLabel: a.status === 'offered' ? 'Needs a reply' : 'Accepted',
+      due:a.work_date, priority:'normal'
+    });
+  });
+
+  var open = items.filter(function(x){ return x.status !== 'done'; });
+  var late = open.filter(function(x){ var n = days(x.due); return n !== null && n < 0; });
+  var soon = open.filter(function(x){ var n = days(x.due); return n !== null && n >= 0 && n <= 2; });
+  var doing = open.filter(function(x){ return x.status === 'in_progress'; });
+  var doneCt = items.filter(function(x){ return x.status === 'done'; }).length;
+
+  $('tiles').innerHTML =
+    '<div class="tile late"><div class="n">'+late.length+'</div><div class="l">Overdue</div></div>'+
+    '<div class="tile soon"><div class="n">'+soon.length+'</div><div class="l">Due in 48 hours</div></div>'+
+    '<div class="tile doing"><div class="n">'+doing.length+'</div><div class="l">In progress</div></div>'+
+    '<div class="tile done"><div class="n">'+doneCt+'</div><div class="l">Done</div></div>';
+
+  if (!open.length) {
+    $('body').innerHTML = '<div class="empty"><b>Nothing on your plate</b>'+
+      '<span>When work is assigned to you it lands here \u2014 tasks and job offers together.</span></div>';
+    return;
+  }
+
+  var offers  = open.filter(function(x){ return x.status === 'offered'; });
+  var blocked = open.filter(function(x){ return x.status === 'blocked'; });
+  var ids = offers.concat(late).concat(blocked).map(function(x){ return x.id; });
+  var rest = open.filter(function(x){ return ids.indexOf(x.id) === -1; })
+                 .sort(function(a,b){
+                   var A = days(a.due), B = days(b.due);
+                   if (A === null) return 1;
+                   if (B === null) return -1;
+                   return A - B;
+                 });
+
+  $('body').innerHTML =
+    group('Waiting on your answer', offers) +
+    group('Overdue', late) +
+    group('Blocked', blocked) +
+    group('Everything else', rest);
+
+  document.querySelectorAll('.sel').forEach(function(sel){
+    sel.addEventListener('change', async function(){
+      var patch = { status: sel.value };
+      if (sel.value === 'done') patch.completed_at = new Date().toISOString();
+      var r = await sb.from('tasks').update(patch).eq('id', sel.dataset.id);
+      if (r.error) { alert(r.error.message); return; }
+      window.vcInit();
+    });
+  });
+};
+</script>
+</body>
+</html>

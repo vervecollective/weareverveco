@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Proposal — Verve Collective</title>
+<style>
+  :root{--black:#111111;--orange:#D9531E;--cream:#F2EFE9;--slate:#555555;--muted:#ABABAB;--line:#E3DFD7}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--cream);color:var(--black);
+    font:17px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .bar{background:var(--black);padding:20px 24px}
+  .bar b{color:#fff;font-size:14px;letter-spacing:.05em;font-weight:700}
+  .bar span{display:block;color:var(--muted);font-size:13px;font-style:italic;margin-top:2px}
+  main{max-width:660px;margin:0 auto;padding:40px 24px 80px}
+  h1{font-size:34px;line-height:1.15;margin:0 0 6px;font-weight:700}
+  .for{color:var(--slate);font-size:15px;margin:0 0 36px}
+  h2{font-size:13px;letter-spacing:.06em;color:var(--orange);font-weight:700;
+    margin:40px 0 10px;border-top:2px solid var(--orange);padding-top:14px}
+  p{margin:0 0 14px;color:#2A2A2A}
+  ul{margin:0 0 14px;padding-left:20px}
+  li{margin-bottom:8px;color:#2A2A2A}
+  .money{border:1px solid var(--line);background:#fff;border-radius:6px;padding:4px 18px;margin:14px 0}
+  .money .r{display:flex;justify-content:space-between;gap:16px;padding:13px 0;border-top:1px solid var(--line)}
+  .money .r:first-child{border-top:0}
+  .money .r.total{font-weight:700}
+  .money .k{color:var(--slate);font-size:15px}
+  .money .v{font-variant-numeric:tabular-nums;text-align:right}
+  .aside{font-size:14px;color:var(--slate);border-left:3px solid var(--orange);padding:2px 0 2px 14px;margin:16px 0}
+  .cta{display:inline-block;background:var(--orange);color:#fff;text-decoration:none;
+    font-weight:700;font-size:16px;padding:15px 26px;border-radius:6px;margin-top:6px;min-height:44px}
+  footer{border-top:1px solid var(--line);margin-top:48px;padding-top:20px;color:var(--slate);font-size:13px}
+  .state{max-width:660px;margin:0 auto;padding:80px 24px;text-align:center;color:var(--slate)}
+  @media(max-width:600px){h1{font-size:27px}main{padding:28px 20px 60px}}
+</style>
+</head>
+<body>
+<div class="bar"><b>VERVE COLLECTIVE</b><span>We Run the Ads. We Build the Positioning.</span></div>
+<div id="root"><div class="state">Loading your proposal…</div></div>
+
+<script>
+(function(){
+  var FN = 'https://otqrkxjtojqlpzzvqavp.supabase.co/functions/v1/proposal';
+  var root = document.getElementById('root');
+  var token = new URLSearchParams(location.search).get('t') || '';
+
+  function esc(s){var d=document.createElement('div');d.textContent=s==null?'':String(s);return d.innerHTML;}
+  function paras(s){
+    return String(s||'').split(/\n{2,}/).filter(Boolean)
+      .map(function(t){return '<p>'+esc(t).replace(/\n/g,'<br>')+'</p>';}).join('');
+  }
+  function fail(msg){
+    root.innerHTML = '<div class="state">'+esc(msg)+
+      '<br><br>Reply to hello@weareverveco.com and we will send a fresh link.</div>';
+  }
+
+  if(!token){ fail('This link is missing its proposal code.'); return; }
+
+  fetch(FN,{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({action:'view',token:token})})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(!d.ok){ fail(d.error || 'This proposal is not available.'); return; }
+
+      var c=d.client, e=d.engagement, m=d.money, p=d.proposal;
+      var h='<main>';
+      h+='<h1>'+esc(e.title||'Proposal')+'</h1>';
+      h+='<p class="for">Prepared for '+esc(c.business_name||c.contact_name)+
+         ' · Reference '+esc(e.reference)+'</p>';
+
+      if(p.situation){ h+='<h2>Where you are</h2>'+paras(p.situation); }
+      if(p.real_cost){ h+='<h2>What it costs to leave it</h2>'+paras(p.real_cost); }
+
+      h+='<h2>What we would do</h2><ul>';
+      d.deliverables.forEach(function(l){
+        h+='<li>'+esc(l.description)+(l.qty>1?' <span style="color:#555">(×'+l.qty+')</span>':'')+'</li>';
+      });
+      h+='</ul>';
+
+      if(p.exclusions){
+        h+='<h2>What this does not cover</h2>'+paras(p.exclusions)+
+           '<div class="aside">Anything not listed above is out of scope. If you want it, we quote it '+
+           'separately rather than absorbing it quietly.</div>';
+      }
+
+      if(d.milestones.length || e.start_date){
+        h+='<h2>Timeline</h2><ul>';
+        if(e.start_date){ h+='<li>Start: '+esc(e.start_date)+'</li>'; }
+        d.milestones.forEach(function(ms){
+          h+='<li>'+esc(ms.label)+(ms.due?' — '+esc(ms.due):'')+'</li>';
+        });
+        h+='</ul>';
+      }
+
+      h+='<h2>The investment</h2><div class="money">';
+      h+='<div class="r"><span class="k">Verve Collective fee</span><span class="v">'+esc(m.verve_fee)+'</span></div>';
+      if(m.contractor_cost){
+        h+='<div class="r"><span class="k">Production cost</span><span class="v">'+esc(m.contractor_cost)+'</span></div>';
+      }
+      h+='<div class="r total"><span class="k">Total</span><span class="v">'+esc(m.total_price)+'</span></div>';
+      h+='</div>';
+      if(e.structure){ h+='<p>'+esc(e.structure)+'</p>'; }
+
+      if(m.planned_ad_spend){
+        h+='<div class="aside"><b>Advertising spend: '+esc(m.planned_ad_spend)+'.</b> '+
+           'This is not part of the total above and we never invoice it. Your card sits on Google '+
+           'and Meta directly, you see every dollar of it, and you can change the budget whenever '+
+           'you like.</div>';
+      }
+
+      if(p.checkin){ h+='<h2>How you will hear from us</h2>'+paras(p.checkin); }
+
+      h+='<h2>Next step</h2>';
+      h+=paras(p.next_step || 'Reply to this email and tell us whether the scope is right. '+
+        'If it is, we send the agreement. Nothing is committed until you sign it.');
+      h+='<a class="cta" href="mailto:hello@weareverveco.com?subject='+
+         encodeURIComponent('Re: proposal '+e.reference)+'">Reply about this proposal</a>';
+
+      h+='<footer>Verve Collective LLC · Columbia, MO · 573.203.5389 · '+
+         'hello@weareverveco.com · weareverveco.com<br>'+
+         'This proposal is a description of proposed work, not a contract. '+
+         'Nothing is binding until a signed agreement is in place.</footer>';
+      h+='</main>';
+      root.innerHTML=h;
+      document.title = (c.business_name||'Proposal') + ' — Verve Collective';
+    })
+    .catch(function(){ fail('Something went wrong loading this proposal.'); });
+})();
+</script>
+</body>
+</html>

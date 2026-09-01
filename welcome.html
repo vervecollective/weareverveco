@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Welcome — Verve Collective</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',system-ui,sans-serif;color:#111827;line-height:1.55;
+    -webkit-font-smoothing:antialiased;overflow:hidden;}
+  .split{display:grid;grid-template-columns:1fr 1fr;min-height:100vh;}
+  @media(max-width:900px){.split{grid-template-columns:1fr;} .art{display:none;}}
+
+  /* left: the work */
+  .form{display:flex;flex-direction:column;padding:44px 56px;overflow-y:auto;max-height:100vh;}
+  @media(max-width:600px){.form{padding:28px 22px;}}
+  .brand{display:flex;align-items:center;gap:10px;margin-bottom:auto;}
+  .brand img{height:20px;}
+  .brand b{font-size:15px;font-weight:800;letter-spacing:-.02em;}
+  .body{margin:40px 0;max-width:420px;}
+  h1{font-size:32px;font-weight:700;letter-spacing:-.03em;line-height:1.15;margin-bottom:10px;}
+  @media(max-width:600px){h1{font-size:25px;}}
+  .say{font-size:15.5px;color:#5C6470;margin-bottom:26px;}
+
+  label{display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:7px;}
+  input,select,textarea{width:100%;padding:13px 15px;font-size:15px;font-family:inherit;
+    border:1px solid #D8DAE0;border-radius:10px;color:#111827;}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:#9A3412;
+    box-shadow:0 0 0 4px rgba(154,52,18,.10);}
+  .fld{margin-bottom:18px;}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .help{font-size:13px;color:#5C6470;margin-top:7px;}
+
+  .chips{display:flex;gap:9px;flex-wrap:wrap;margin-top:4px;}
+  .chip{padding:10px 16px;border:1px solid #D8DAE0;border-radius:999px;background:#fff;
+    font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;color:#374151;
+    transition:all .15s;}
+  .chip:hover{border-color:#9A3412;color:#9A3412;}
+  .chip.on{background:#9A3412;border-color:#9A3412;color:#fff;font-weight:600;}
+
+  .days{display:flex;flex-direction:column;gap:9px;}
+  .day{display:grid;grid-template-columns:96px 1fr;gap:12px;align-items:center;}
+  .day .t{display:flex;gap:8px;align-items:center;}
+  .day input[type=time]{padding:9px 11px;font-size:13.5px;}
+  .day.off .t{opacity:.35;pointer-events:none;}
+
+  .foot{display:flex;align-items:center;gap:16px;padding-top:22px;}
+  .btn{background:#9A3412;color:#fff;border:none;border-radius:10px;padding:13px 26px;
+    font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;
+    transition:transform .12s,box-shadow .12s;}
+  .btn:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(154,52,18,.3);}
+  .btn:disabled{opacity:.4;transform:none;box-shadow:none;cursor:default;}
+  .skip{background:none;border:none;color:#5C6470;font-size:14px;font-weight:500;
+    cursor:pointer;font-family:inherit;}
+  .skip:hover{color:#111827;}
+  .back{background:none;border:none;color:#5C6470;font-size:14px;font-weight:600;
+    cursor:pointer;font-family:inherit;margin-right:auto;}
+
+  .bar{height:4px;background:#EDEEF1;border-radius:999px;overflow:hidden;margin-bottom:30px;max-width:420px;}
+  .bar i{display:block;height:100%;background:#9A3412;border-radius:999px;transition:width .35s cubic-bezier(.32,.72,0,1);}
+
+  /* right: the reassurance */
+  .art{background:linear-gradient(150deg,#1B1D21 0%,#3A2118 55%,#9A3412 100%);
+    position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:50px;}
+  .card{background:rgba(255,255,255,.97);border-radius:18px;padding:26px;width:100%;max-width:380px;
+    box-shadow:0 24px 60px rgba(0,0,0,.32);animation:up .5s ease both;}
+  @keyframes up{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:none;}}
+  .card h3{font-size:15px;font-weight:700;margin-bottom:14px;}
+  .rw{display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid #F1F2F4;}
+  .rw:last-child{border-bottom:none;}
+  .dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+  .rw b{font-size:13.5px;font-weight:600;flex:1;}
+  .tag{font-size:11.5px;font-weight:700;padding:4px 11px;border-radius:999px;color:#fff;}
+  .blob{position:absolute;border-radius:50%;filter:blur(70px);opacity:.4;}
+  .b1{width:340px;height:340px;background:#FDAB3D;top:-90px;right:-70px;}
+  .b2{width:280px;height:280px;background:#A25DDC;bottom:-70px;left:-60px;}
+  .note{color:rgba(255,255,255,.82);font-size:14px;text-align:center;margin-top:22px;
+    max-width:340px;line-height:1.6;position:relative;}
+  .step{display:none;} .step.on{display:block;animation:up .3s ease both;}
+</style>
+</head>
+<body>
+<div class="split">
+  <div class="form">
+    <div class="brand">
+      <img src="/assets/logo-email.png" alt=""><b>Verve Collective</b>
+    </div>
+
+    <div class="body">
+      <div class="bar"><i id="bar" style="width:20%"></i></div>
+
+      <!-- 1 -->
+      <div class="step on" id="s1">
+        <h1 id="hi">Welcome</h1>
+        <p class="say" id="intro">Two minutes and you are set up. We only ask what we actually need.</p>
+        <div class="fld"><label for="name">Your name</label>
+          <input type="text" id="name" placeholder="How it should appear to the team"></div>
+        <div class="two">
+          <div class="fld"><label for="phone">Phone</label><input type="tel" id="phone"></div>
+          <div class="fld"><label for="title">Title</label><input type="text" id="title" placeholder="Videographer"></div>
+        </div>
+      </div>
+
+      <!-- 2 -->
+      <div class="step" id="s2">
+        <h1>What do you do?</h1>
+        <p class="say">Pick everything that applies. It decides what work you get offered.</p>
+        <div class="chips" id="crafts"></div>
+        <div class="fld" style="margin-top:22px"><label for="gear">Gear you bring</label>
+          <input type="text" id="gear" placeholder="Camera body, two lenses, lav mics">
+          <p class="help">Leave it blank if that is not your thing.</p></div>
+      </div>
+
+      <!-- 3 -->
+      <div class="step" id="s3">
+        <h1>When can you work?</h1>
+        <p class="say">You set this, not us. We check it before offering you anything, so being honest here means we will not over-ask.</p>
+        <div class="days" id="days"></div>
+        <div class="fld" style="margin-top:20px"><label for="note">Anything we should know</label>
+          <input type="text" id="note" placeholder="No Fridays until October"></div>
+      </div>
+
+      <!-- 4 -->
+      <div class="step" id="s4">
+        <h1>How should we pay you?</h1>
+        <p class="say">We pay within 15 days of approving your invoice \u2014 whether or not the client has paid us.</p>
+        <div class="two">
+          <div class="fld"><label for="method">Method</label>
+            <select id="method">
+              <option value="">Choose one</option>
+              <option value="ach">Bank transfer / ACH</option>
+              <option value="zelle">Zelle</option>
+              <option value="venmo">Venmo</option>
+              <option value="paypal">PayPal</option>
+              <option value="check">Check</option>
+            </select></div>
+          <div class="fld"><label for="handle">Where to send it</label>
+            <input type="text" id="handle" placeholder="Email or handle"></div>
+        </div>
+        <p class="help">Never put full bank details here. We confirm the account with you directly.</p>
+      </div>
+
+      <!-- 5 -->
+      <div class="step" id="s5">
+        <h1>That is everything.</h1>
+        <p class="say" id="lastSay">You are set up. Here is where things live.</p>
+        <div id="tour"></div>
+      </div>
+    </div>
+
+    <div class="foot">
+      <button class="back" id="back" style="visibility:hidden">Back</button>
+      <button class="skip" id="skip">Skip for now</button>
+      <button class="btn" id="next">Continue</button>
+    </div>
+  </div>
+
+  <div class="art">
+    <div class="blob b1"></div><div class="blob b2"></div>
+    <div style="position:relative;display:flex;flex-direction:column;align-items:center">
+      <div class="card" id="preview"></div>
+      <p class="note" id="artNote">Everything in one place \u2014 the work, the dates, and what you are paid.</p>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+const sb = createClient('https://otqrkxjtojqlpzzvqavp.supabase.co',
+  'sb_publishable_OBViGLggbcOKacti5iUonA_QCzw3kBv');
+
+const { data:{ session } } = await sb.auth.getSession();
+if (!session) location.replace('/login.html?next=/welcome');
+
+const { data: prof } = await sb.from('profiles')
+  .select('*').eq('id', session.user.id).single();
+const role = (prof && prof.role) || 'contractor';
+
+const $ = (i) => document.getElementById(i);
+const CRAFTS = ['Videographer','Photographer','Drone pilot','Editor','Social creator',
+                'Motion / graphics','Copywriter','Paid media'];
+const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+/* Contractors need all five steps. Staff and clients need far less \u2014 asking
+   a client for their gear list would be absurd. */
+const STEPS = role === 'contractor' ? [1,2,3,4,5]
+            : role === 'client'     ? [1,5]
+            : [1,3,5];
+let at = 0;
+let crafts = [];
+let win = {};
+
+$('hi').textContent = 'Welcome' + (prof && prof.full_name ? ', ' + prof.full_name.split(' ')[0] : '');
+if (role === 'client') {
+  $('intro').textContent = 'One quick thing, then you can see where your project stands.';
+}
+$('name').value  = (prof && prof.full_name) || '';
+$('phone').value = (prof && prof.phone) || '';
+$('title').value = (prof && prof.title) || '';
+
+$('crafts').innerHTML = CRAFTS.map(c =>
+  `<button type="button" class="chip" data-c="${c}">${c}</button>`).join('');
+$('crafts').querySelectorAll('.chip').forEach(b => {
+  b.addEventListener('click', () => {
+    const c = b.dataset.c, i = crafts.indexOf(c);
+    if (i > -1) { crafts.splice(i,1); b.classList.remove('on'); }
+    else { crafts.push(c); b.classList.add('on'); }
+  });
+});
+
+function paintDays(){
+  $('days').innerHTML = DAYS.map((d,i) => {
+    const w = win[i] || { on:false, from:'09:00', to:'17:00' };
+    return `<div class="day ${w.on?'':'off'}">
+      <label style="display:flex;align-items:center;gap:9px;font-size:14px;font-weight:600;cursor:pointer">
+        <input type="checkbox" data-d="${i}" style="width:auto" ${w.on?'checked':''}>${d}</label>
+      <span class="t"><input type="time" data-f="${i}" value="${w.from}">
+        <span style="color:#9CA3AF;font-size:13px">to</span>
+        <input type="time" data-t="${i}" value="${w.to}"></span></div>`;
+  }).join('');
+  $('days').querySelectorAll('input').forEach(el => {
+    el.addEventListener('change', () => {
+      const i = Number(el.dataset.d ?? el.dataset.f ?? el.dataset.t);
+      win[i] = win[i] || { on:false, from:'09:00', to:'17:00' };
+      if (el.dataset.d !== undefined) win[i].on = el.checked;
+      if (el.dataset.f !== undefined) win[i].from = el.value;
+      if (el.dataset.t !== undefined) win[i].to = el.value;
+      paintDays();
+    });
+  });
+}
+[0,1,2,3,4].forEach(i => { win[i] = { on:false, from:'09:00', to:'17:00' }; });
+paintDays();
+
+const ART = {
+  1: { rows:[['Half-day shoot','#FDAB3D','Offered'],['Aerial \u2014 site + video','#00A870','Accepted']],
+       title:'Your jobs', note:'Every offer shows the date, the scope, and exactly what you are paid.' },
+  2: { rows:[['Videographer','#A25DDC','You'],['Editor','#579BFC','Marcus']],
+       title:'Who does what', note:'We only offer you work that matches what you actually do.' },
+  3: { rows:[['Tue 9:00\u201313:00','#00A870','Free'],['Thu all day','#00A870','Free'],['Fri','#C4C7D0','Off']],
+       title:'Your week', note:'We check this before offering you anything.' },
+  4: { rows:[['Invoice approved','#00A870','$600'],['Paid by ACH','#00A870','Sent']],
+       title:'Getting paid', note:'Within 15 days of approval, whether or not the client has paid us.' },
+  5: { rows:[['My Work','#9A3412','Start here'],['Jobs','#A25DDC','Offers'],['Pay','#00A870','Invoices']],
+       title:'Where things live', note:'Everything is in the menu on the left. You will not need to hunt.' }
+};
+
+function paintArt(n){
+  const a = ART[n] || ART[1];
+  $('preview').innerHTML = `<h3>${a.title}</h3>` + a.rows.map(r =>
+    `<div class="rw"><span class="dot" style="background:${r[1]}"></span>
+      <b>${r[0]}</b><span class="tag" style="background:${r[1]}">${r[2]}</span></div>`).join('');
+  $('artNote').textContent = a.note;
+}
+
+function show(){
+  const n = STEPS[at];
+  document.querySelectorAll('.step').forEach(s => s.classList.remove('on'));
+  $('s' + n).classList.add('on');
+  $('bar').style.width = Math.round(((at + 1) / STEPS.length) * 100) + '%';
+  $('back').style.visibility = at === 0 ? 'hidden' : 'visible';
+  $('next').textContent = at === STEPS.length - 1 ? 'Take me in' : 'Continue';
+  $('skip').style.display = at === STEPS.length - 1 ? 'none' : '';
+  paintArt(n);
+
+  if (n === 5) {
+    const links = role === 'contractor'
+      ? [['My Work','Everything assigned to you'],['Jobs','Offers and call sheets'],['Pay','Invoice us and track it']]
+      : role === 'client'
+      ? [['My Project','Progress, dates, files and billing']]
+      : [['Home','What needs you today'],['Engagements','Scope, price, invoice'],['Board','The work itself']];
+    $('tour').innerHTML = links.map(l =>
+      `<div class="rw"><span class="dot" style="background:#9A3412"></span>
+        <b>${l[0]}</b><span style="font-size:13px;color:#5C6470">${l[1]}</span></div>`).join('');
+  }
+}
+
+async function save(){
+  const upd = {
+    full_name: $('name').value.trim() || (prof && prof.full_name),
+    phone: $('phone').value.trim() || null,
+    title: $('title').value.trim() || null,
+    onboarded_at: new Date().toISOString()
+  };
+  if (STEPS.includes(3)) {
+    upd.available_days = Object.keys(win).filter(k => win[k].on).map(k => DAYS[Number(k)]);
+    upd.availability_note = $('note').value.trim() || null;
+  }
+  await sb.from('profiles').update(upd).eq('id', session.user.id);
+
+  if (role === 'contractor') {
+    await sb.from('contractor_details').upsert({
+      profile_id: session.user.id,
+      crafts: crafts,
+      gear: $('gear').value.trim() || null,
+      payment_method: $('method').value || null,
+      payment_handle: $('handle').value.trim() || null,
+      details_submitted_at: new Date().toISOString()
+    }, { onConflict: 'profile_id' });
+  }
+
+  if (STEPS.includes(3)) {
+    await sb.from('availability_windows').delete().eq('profile_id', session.user.id);
+    const rows = Object.keys(win).filter(k => win[k].on).map(k => ({
+      profile_id: session.user.id, weekday: Number(k), all_day: false,
+      starts_at: win[k].from, ends_at: win[k].to
+    }));
+    if (rows.length) await sb.from('availability_windows').insert(rows);
+  }
+}
+
+function land(){
+  location.href = role === 'client' ? '/project'
+                : role === 'contractor' ? '/mywork' : '/hub';
+}
+
+$('next').addEventListener('click', async () => {
+  if (at < STEPS.length - 1) { at++; show(); return; }
+  $('next').disabled = true;
+  try { await save(); } catch (e) { /* never trap someone in onboarding */ }
+  land();
+});
+$('back').addEventListener('click', () => { if (at > 0) { at--; show(); } });
+$('skip').addEventListener('click', async () => {
+  try { await sb.from('profiles').update({ onboarded_at: new Date().toISOString() })
+    .eq('id', session.user.id); } catch (e) {}
+  land();
+});
+
+show();
+</script>
+</body>
+</html>

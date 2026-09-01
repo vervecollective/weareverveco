@@ -626,3 +626,105 @@ body.vc-shelled :focus-visible{ outline:3px solid #9A3412 !important; outline-of
   flex-shrink:0;margin-top:2px;}
 .vc-peek-cb{flex:1;min-width:0;}
 .vc-peek-cb em i{font-style:normal;color:var(--vc-text-4);font-weight:400;}
+
+
+/* ================= 2026 pass =================
+   Sharper radii, tabular figures, tighter tracking on display type, structural
+   contrast instead of another grey card. Applied last so it wins. */
+
+body.vc-shelled{
+  font-feature-settings:'tnum' 1,'cv05' 1;
+  color:#0B0D10;
+}
+
+/* Radii: instrument, not toy */
+body.vc-shelled .card,
+body.vc-shelled .panel,
+body.vc-shelled .tile,
+body.vc-shelled .sec,
+body.vc-shelled .lst,
+body.vc-shelled .col,
+body.vc-shelled .it,
+body.vc-shelled .job,
+body.vc-shelled .inv,
+body.vc-shelled .eng-item,
+body.vc-shelled .step,
+body.vc-shelled .t{ border-radius:4px !important; }
+body.vc-shelled .btn,
+body.vc-shelled .btn-2,
+body.vc-shelled .btn-sec,
+body.vc-shelled input,
+body.vc-shelled select,
+body.vc-shelled textarea{ border-radius:3px !important; }
+body.vc-shelled .pill,
+body.vc-shelled .st,
+body.vc-shelled .tag,
+body.vc-shelled .perk,
+body.vc-shelled .chip{ border-radius:3px !important; }
+.vc-navitem{ border-radius:4px !important; }
+
+/* Display type: heavier, tighter, quieter borders */
+body.vc-shelled h1{
+  font-size:27px !important; font-weight:800 !important;
+  letter-spacing:-.032em !important; line-height:1.05 !important;
+}
+body.vc-shelled .lede{
+  font-size:11.5px !important; font-weight:600 !important;
+  letter-spacing:.13em !important; text-transform:uppercase !important;
+  color:#6B7280 !important; margin-top:8px !important;
+}
+body.vc-shelled .card h2,
+body.vc-shelled .sec-hd h2{
+  font-size:11px !important; font-weight:800 !important;
+  letter-spacing:.12em !important; text-transform:uppercase !important;
+  color:#6B7280 !important;
+}
+body.vc-shelled .card .hint,
+body.vc-shelled .sec-hd p{ font-size:12.5px !important; color:#4B5563 !important; }
+
+/* Numbers get room to breathe */
+body.vc-shelled .tile .n,
+body.vc-shelled .amt,
+body.vc-shelled .pay,
+body.vc-shelled .money .v{
+  letter-spacing:-.03em !important; font-weight:800 !important;
+  font-variant-numeric:tabular-nums;
+}
+
+/* Borders: one hairline, no shadows stacking up */
+body.vc-shelled .card,
+body.vc-shelled .panel,
+body.vc-shelled .tile{
+  border:1px solid #E4E6EA !important;
+  box-shadow:none !important;
+}
+body.vc-shelled a.tile:hover,
+body.vc-shelled .card:hover{ border-color:#C9CDD4 !important; }
+
+/* Table headers behave like the Gantt axis */
+body.vc-shelled thead th{
+  background:#FAFAFB !important; font-size:10.5px !important;
+  letter-spacing:.1em !important; color:#6B7280 !important;
+  border-bottom:1px solid #E4E6EA !important;
+}
+body.vc-shelled td{ border-bottom:1px solid #F1F2F4 !important; }
+
+/* Sidebar: colder, tighter */
+.vc-sidebar{ background:#FAFAFB; border-right:1px solid #E4E6EA; }
+.vc-brand span{ letter-spacing:-.02em; font-weight:800; }
+.vc-navgroup{ font-size:10px !important; letter-spacing:.13em !important; }
+.vc-navitem{ font-size:13px !important; }
+
+/* Pills read as labels, not bubbles */
+body.vc-shelled .pill,
+body.vc-shelled .st,
+body.vc-shelled .tag{
+  font-size:9.5px !important; font-weight:800 !important;
+  letter-spacing:.07em !important; text-transform:uppercase !important;
+  padding:3px 7px !important;
+}
+
+/* Primary buttons: square, confident, uppercase micro-label */
+body.vc-shelled .btn{
+  letter-spacing:.02em !important; font-weight:700 !important;
+}

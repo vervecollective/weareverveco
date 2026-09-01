@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Timeline — Verve Collective</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/shell.css">
+<script type="module" src="/assets/shell.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',system-ui,sans-serif;color:#0B0D10;line-height:1.5;
+    -webkit-font-smoothing:antialiased;font-feature-settings:'tnum' 1,'cv05' 1;}
+  .wrap{max-width:1400px;margin:0;padding:28px 32px 80px;}
+
+  /* Header: type does the work, not a card */
+  .head{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;
+    padding-bottom:18px;border-bottom:2px solid #0B0D10;margin-bottom:2px;}
+  h1{font-size:30px;font-weight:800;letter-spacing:-.035em;line-height:1;}
+  .sub{font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;
+    color:#6B7280;margin-top:9px;}
+  .ctrls{display:flex;gap:8px;align-items:center;}
+  .seg{display:flex;border:1.5px solid #0B0D10;border-radius:2px;overflow:hidden;}
+  .seg button{border:none;background:#fff;color:#0B0D10;font:600 11.5px/1 'Inter',sans-serif;
+    letter-spacing:.06em;text-transform:uppercase;padding:9px 14px;cursor:pointer;}
+  .seg button.on{background:#0B0D10;color:#fff;}
+  .pick{border:1.5px solid #0B0D10;border-radius:2px;background:#fff;font:600 12px/1 'Inter',sans-serif;
+    padding:9px 11px;color:#0B0D10;max-width:230px;}
+
+  /* Chart */
+  .chart{border:1px solid #E4E6EA;border-top:none;overflow-x:auto;}
+  .grid{min-width:900px;}
+  .axis{display:grid;position:sticky;top:0;z-index:3;background:#fff;
+    border-bottom:1px solid #E4E6EA;}
+  .axis .lbl{padding:11px 14px;font-size:10.5px;font-weight:700;letter-spacing:.1em;
+    text-transform:uppercase;color:#6B7280;border-right:1px solid #E4E6EA;}
+  .tick{padding:11px 0 9px;text-align:center;font-size:10.5px;font-weight:600;color:#6B7280;
+    border-left:1px solid #F1F2F4;}
+  .tick b{display:block;font-size:13px;font-weight:800;color:#0B0D10;letter-spacing:-.02em;}
+  .tick.now{background:#FFF7F3;}
+  .tick.now b{color:#9A3412;}
+
+  .row{display:grid;border-bottom:1px solid #F1F2F4;position:relative;min-height:44px;}
+  .row:hover{background:#FBFBFC;}
+  .row .name{padding:11px 14px;border-right:1px solid #E4E6EA;display:flex;
+    align-items:center;gap:9px;min-width:0;}
+  .row .name b{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;
+    text-overflow:ellipsis;letter-spacing:-.005em;}
+  .row .name .who{font-size:10.5px;font-weight:700;letter-spacing:.05em;color:#6B7280;
+    text-transform:uppercase;flex-shrink:0;}
+  .lane{position:relative;grid-column:2 / -1;}
+  .cell{position:absolute;top:0;bottom:0;border-left:1px solid #F1F2F4;}
+  .cell.wk{background:#FAFAFB;}
+  .cell.now{background:#FFF7F3;}
+
+  .bar{position:absolute;top:11px;height:22px;border-radius:2px;display:flex;align-items:center;
+    padding:0 9px;font-size:11px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;
+    cursor:pointer;letter-spacing:.01em;}
+  .bar:hover{filter:brightness(1.12);}
+  .bar.ghost{background:repeating-linear-gradient(135deg,#D8DBE0,#D8DBE0 4px,#E9EBEE 4px,#E9EBEE 8px);
+    color:#4B5563;}
+  .pt{position:absolute;top:14px;width:15px;height:15px;transform:rotate(45deg) translateX(-7px);
+    border:2px solid #fff;cursor:pointer;}
+  .pt:hover{filter:brightness(1.15);}
+
+  .grp{display:grid;background:#0B0D10;color:#fff;}
+  .grp .name{padding:8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.12em;
+    text-transform:uppercase;border-right:1px solid #23262B;}
+  .today-line{position:absolute;top:0;bottom:0;width:2px;background:#9A3412;z-index:2;pointer-events:none;}
+
+  .key{display:flex;gap:22px;flex-wrap:wrap;padding:14px 2px;font-size:11px;font-weight:600;
+    letter-spacing:.03em;color:#4B5563;}
+  .key span{display:flex;align-items:center;gap:7px;}
+  .sw{width:14px;height:9px;border-radius:2px;}
+  .sw.dia{width:11px;height:11px;transform:rotate(45deg);border-radius:1px;}
+  .none{padding:48px 20px;text-align:center;color:#6B7280;font-size:13px;}
+  .none b{display:block;color:#0B0D10;font-size:15px;font-weight:700;margin-bottom:5px;letter-spacing:-.01em;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <div>
+      <h1>Timeline</h1>
+      <div class="sub" id="range">—</div>
+    </div>
+    <div class="ctrls">
+      <select class="pick" id="eng"></select>
+      <div class="seg">
+        <button id="z30" class="on">30d</button><button id="z90">90d</button><button id="z180">6m</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart"><div class="grid" id="grid"></div></div>
+
+  <div class="key">
+    <span><i class="sw" style="background:#0B0D10"></i>Engagement</span>
+    <span><i class="sw" style="background:#7C3AED"></i>Shoot</span>
+    <span><i class="sw dia" style="background:#047857"></i>Milestone</span>
+    <span><i class="sw" style="background:#9A3412"></i>Task</span>
+    <span><i class="sw ghost" style="background:#D8DBE0"></i>Not scheduled</span>
+  </div>
+</div>
+
+<script>
+function $(i){return document.getElementById(i);}
+function esc(s){var d=document.createElement('div');d.textContent=s==null?'':s;return d.innerHTML;}
+var sb, me, days = 30, engId = null, engs = [];
+
+function iso(d){ return d.toISOString().slice(0,10); }
+function addD(d,n){ var x=new Date(d); x.setDate(x.getDate()+n); return x; }
+
+async function draw(){
+  var start = addD(new Date(), -7); start.setHours(12,0,0,0);
+  var end = addD(start, days);
+  $('range').textContent =
+    start.toLocaleDateString('en-US',{month:'short',day:'numeric'}) + ' — ' +
+    end.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+
+  var cols = days;
+  var tpl = '260px repeat(' + cols + ', minmax(0,1fr))';
+
+  // axis
+  var axis = '<div class="axis" style="grid-template-columns:' + tpl + '">' +
+    '<div class="lbl">Work</div>';
+  var todayIdx = -1;
+  for (var i = 0; i < cols; i++) {
+    var d = addD(start, i);
+    var isToday = iso(d) === iso(new Date());
+    if (isToday) todayIdx = i;
+    var wk = d.getDay() === 0 || d.getDay() === 6;
+    axis += '<div class="tick' + (isToday ? ' now' : '') + '">' +
+      (days <= 30 || d.getDate() === 1 || d.getDay() === 1
+        ? d.toLocaleDateString('en-US',{weekday:'narrow'}) + '<b>' + d.getDate() + '</b>'
+        : '<b>&nbsp;</b>') + '</div>';
+  }
+  axis += '</div>';
+
+  function lane(rows){
+    var cells = '';
+    for (var i = 0; i < cols; i++) {
+      var d = addD(start, i);
+      var wk = d.getDay() === 0 || d.getDay() === 6;
+      var nw = iso(d) === iso(new Date());
+      cells += '<div class="cell' + (wk ? ' wk' : '') + (nw ? ' now' : '') +
+        '" style="left:' + (i / cols * 100) + '%;width:' + (100 / cols) + '%"></div>';
+    }
+    return cells + rows;
+  }
+
+  function pos(dateStr){
+    var d = new Date(dateStr + 'T12:00:00');
+    var i = Math.round((d - start) / 86400000);
+    return { i: i, pct: (i / cols) * 100, inRange: i >= 0 && i < cols };
+  }
+
+  var body = '';
+  function group(label){
+    body += '<div class="grp" style="grid-template-columns:' + tpl + '">' +
+            '<div class="name">' + label + '</div></div>';
+  }
+  function row(name, who, bars){
+    body += '<div class="row" style="grid-template-columns:' + tpl + '">' +
+      '<div class="name"><b>' + esc(name) + '</b>' +
+      (who ? '<span class="who">' + esc(who) + '</span>' : '') + '</div>' +
+      '<div class="lane">' + lane(bars) +
+      (todayIdx >= 0 ? '<div class="today-line" style="left:' + ((todayIdx + 0.5) / cols * 100) + '%"></div>' : '') +
+      '</div></div>';
+  }
+
+  var eng = engs.filter(function(e){ return e.id === engId; })[0];
+  if (!eng) { $('grid').innerHTML = '<div class="none"><b>No engagement selected</b>Create one to see its timeline.</div>'; return; }
+
+  // engagement band
+  group('Engagement');
+  var bar = '';
+  if (eng.start_date) {
+    var a = pos(eng.start_date);
+    var b = eng.ends_on ? pos(eng.ends_on) : { pct: 100, i: cols };
+    var l = Math.max(a.pct, 0), w = Math.min(b.pct, 100) - l;
+    if (w > 0) bar = '<div class="bar" style="left:' + l + '%;width:' + w + '%;background:#0B0D10" ' +
+      'data-k="engagement" data-r="' + eng.id + '">' + esc(eng.title || 'Engagement') + '</div>';
+  }
+  row((eng.clients && eng.clients.business_name) || 'Client', null, bar);
+
+  // shoots
+  var dq = await sb.from('assignment_days')
+    .select('*, assignments(role_on_job, status, contractor_id, engagement_id)');
+  var shoots = (dq.data || []).filter(function(d){
+    var a = d.assignments || {};
+    return a.engagement_id === engId && a.status !== 'declined' && a.status !== 'cancelled';
+  });
+  if (shoots.length) {
+    group('Production');
+    var byRole = {};
+    shoots.forEach(function(d){
+      var k = (d.assignments && d.assignments.role_on_job) || 'Shoot';
+      (byRole[k] = byRole[k] || []).push(d);
+    });
+    Object.keys(byRole).forEach(function(k){
+      var bars = byRole[k].map(function(d){
+        var p = pos(d.work_date);
+        if (!p.inRange) return '';
+        return '<div class="bar" style="left:' + p.pct + '%;width:' + (100/cols) + '%;background:#7C3AED" ' +
+          'data-k="assignment" data-r="' + d.assignment_id + '">' +
+          (d.call_time ? d.call_time.slice(0,5) : '') + '</div>';
+      }).join('');
+      row(k, 'crew', bars);
+    });
+  }
+
+  // milestones
+  var mq = await sb.from('milestones').select('*').eq('engagement_id', engId).order('sort_order');
+  var ms = mq.data || [];
+  if (ms.length) {
+    group('Milestones');
+    ms.forEach(function(m){
+      var bars = '';
+      if (m.due_date) {
+        var p = pos(m.due_date);
+        var col = m.status === 'done' ? '#047857'
+                : m.status === 'blocked' ? '#991B1B'
+                : m.status === 'waiting_on_client' ? '#B45309' : '#4B5563';
+        bars = p.inRange
+          ? '<div class="pt" style="left:' + p.pct + '%;background:' + col + '" data-k="milestone" data-r="' + m.id + '"></div>'
+          : '';
+      } else {
+        bars = '<div class="bar ghost" style="left:0;width:' + (100/cols*3) + '%">no date</div>';
+      }
+      row(m.label, m.status === 'done' ? 'done' : null, bars);
+    });
+  }
+
+  // tasks with dates
+  var tq = await sb.from('tasks').select('*, profiles:assignee_id(full_name)')
+    .eq('engagement_id', engId).is('parent_task_id', null).not('due_date','is',null).order('due_date');
+  var ts = tq.data || [];
+  if (ts.length) {
+    group('Work');
+    ts.forEach(function(t){
+      var p = pos(t.due_date);
+      var done = t.status === 'done';
+      var bars = p.inRange
+        ? '<div class="bar" style="left:' + Math.max(p.pct - (100/cols*1.5), 0) + '%;width:' + (100/cols*2) +
+          '%;background:' + (done ? '#9CA3AF' : (t.status === 'blocked' ? '#991B1B' : '#9A3412')) + '" ' +
+          'data-k="task" data-r="' + t.id + '">' + esc(t.title) + '</div>'
+        : '';
+      var who = t.profiles && t.profiles.full_name ? t.profiles.full_name.split(' ')[0] : null;
+      row(t.title, who, bars);
+    });
+  }
+
+  $('grid').innerHTML = axis + body;
+
+  document.querySelectorAll('[data-k][data-r]').forEach(function(el){
+    el.addEventListener('click', function(){
+      if (window.vcPeek) window.vcPeek(el.dataset.k, el.dataset.r);
+    });
+  });
+}
+
+window.vcInit = async function(){
+  sb = window.__sb; me = window.__user;
+  if (window.__role === 'client') {
+    document.querySelector('.wrap').innerHTML = '<h1>Timeline</h1><p class="sub">Your dates are on My Project.</p>';
+    return;
+  }
+
+  var eq = await sb.from('engagements')
+    .select('id, title, start_date, ends_on, clients(business_name)')
+    .order('updated_at',{ascending:false});
+  engs = eq.data || [];
+  $('eng').innerHTML = engs.length
+    ? engs.map(function(e){
+        return '<option value="'+e.id+'">'+esc((e.clients&&e.clients.business_name)||e.title||'Untitled')+'</option>';
+      }).join('')
+    : '<option value="">No engagements</option>';
+  engId = engs.length ? engs[0].id : null;
+
+  $('eng').addEventListener('change', function(){ engId = this.value; draw(); });
+  [['z30',30],['z90',90],['z180',180]].forEach(function(z){
+    $(z[0]).addEventListener('click', function(){
+      days = z[1];
+      ['z30','z90','z180'].forEach(function(i){ $(i).classList.remove('on'); });
+      $(z[0]).classList.add('on');
+      draw();
+    });
+  });
+
+  draw();
+};
+</script>
+</body>
+</html>

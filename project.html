@@ -127,6 +127,12 @@
           <div id="milestones"><div class="empty">No milestones set yet.</div></div>
         </div>
 
+        <div class="card" id="delivCard" style="display:none">
+          <h2>Your files</h2>
+          <p class="hint">Have a look and tell us if anything needs changing.</p>
+          <div id="delivList"></div>
+        </div>
+
         <div class="card">
           <h2>What's happened</h2>
           <p class="hint">Updated automatically as work moves.</p>
@@ -251,6 +257,49 @@ window.vcInit = async function(){
           (LBL[m.status] ? '<span class="badge '+m.status+'">'+LBL[m.status]+'</span>' : '')+'</b></span>'+
         '<span class="ms-date">'+fdate(m.due_date)+'</span></div>';
     }).join('');
+  }
+
+  // deliverables shared with them
+  var dq = await sb.from('deliverables').select('*')
+    .eq('engagement_id', eng.id).eq('client_visible', true).order('sort_order');
+  if (dq.data && dq.data.length) {
+    $('delivCard').style.display = 'block';
+    var ST = { ready_for_review:['Ready for you','#b45309'], changes_requested:['Changes asked for','#b91c1c'],
+               approved:['Approved','#047857'], delivered:['Delivered','#047857'], draft:['In progress','#64748b'] };
+    $('delivList').innerHTML = dq.data.map(function(x){
+      var st = ST[x.status] || ST.draft;
+      var can = x.status === 'ready_for_review';
+      return '<div style="padding:13px 0;border-bottom:1px solid #f3f4f6">'+
+        '<div style="display:flex;align-items:center;gap:10px">'+
+          '<b style="font-size:14px;flex:1">'+esc(x.title)+'</b>'+
+          '<span style="font-size:11px;font-weight:700;color:'+st[1]+'">'+st[0]+'</span></div>'+
+        (x.description?'<div style="font-size:13px;color:#6b7280;margin-top:3px">'+esc(x.description)+'</div>':'')+
+        (x.url?'<div style="margin-top:8px"><a href="'+esc(x.url)+'" target="_blank" rel="noopener" '+
+          'style="color:#D9531E;font-weight:600;font-size:13.5px;text-decoration:none">View it \u2192</a></div>':'')+
+        (can?'<div style="display:flex;gap:8px;margin-top:11px">'+
+          '<button class="btn dvOk" data-id="'+x.id+'">Approve</button>'+
+          '<button class="btn btn-2 dvNo" data-id="'+x.id+'">Request changes</button></div>':'')+
+        '</div>';
+    }).join('');
+
+    document.querySelectorAll('.dvOk').forEach(function(b){
+      b.addEventListener('click', async function(){
+        await sb.from('deliverables').update({
+          status:'approved', approved_at:new Date().toISOString(), approved_by: me.id
+        }).eq('id', b.dataset.id);
+        location.reload();
+      });
+    });
+    document.querySelectorAll('.dvNo').forEach(function(b){
+      b.addEventListener('click', async function(){
+        var why = window.prompt('What needs changing?');
+        if (!why) return;
+        await sb.from('deliverables').update({
+          status:'changes_requested', client_feedback: why
+        }).eq('id', b.dataset.id);
+        location.reload();
+      });
+    });
   }
 
   // activity the client is allowed to see — RLS filters it, not this code

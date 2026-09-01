@@ -130,7 +130,7 @@ shell.innerHTML =
       '<path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>' +
       '<span class="vc-signout-txt">Sign out</span></button>' +
   '</div>' +
-  '<button class="vc-toggle" id="vcToggle" aria-label="Menu">☰</button>';
+  '';
 
 document.body.appendChild(shell);
 document.body.classList.add('vc-shelled');

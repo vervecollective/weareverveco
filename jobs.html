@@ -102,7 +102,9 @@
     <div id="dayRows"></div>
     <button class="btn btn-2 btn-sm" id="addDay" type="button" style="margin:2px 0 16px">+ Add another day</button>
 
-    <div class="field"><label for="loc">Location</label><input type="text" id="loc" placeholder="Address or site name"></div>
+    <label style="margin-bottom:7px">Locations</label>
+    <div id="locRows"></div>
+    <button class="btn btn-2 btn-sm" id="addLoc" type="button" style="margin:2px 0 16px">+ Add another location</button>
     <div class="row">
       <div class="field"><label for="arrival">Arrival &amp; parking notes</label>
         <input type="text" id="arrival" placeholder="Park in the rear lot, enter through the side door"></div>
@@ -133,8 +135,12 @@
       </div>
       <div class="totalbox" id="totalBox"></div>
     </div>
+    <div class="row">
+      <div class="field"><label for="pkg">Package</label><select id="pkg"></select></div>
+      <div class="field"><label for="addons">Add-ons</label><select id="addons"></select></div>
+    </div>
     <div class="field"><label for="scope">Scope — what they are being asked to do</label>
-      <textarea id="scope" rows="3" placeholder="Half-day shoot. Interview setup plus b-roll of the workshop."></textarea></div>
+      <textarea id="scope" rows="3" placeholder="Pick a package above, then adjust."></textarea></div>
     <div class="field"><label for="deliv">Deliverables</label>
       <input type="text" id="deliv" placeholder="5 edited vertical cuts, raw files delivered"></div>
     <button class="btn" id="offerBtn">Send offer</button>
@@ -318,6 +324,51 @@ window.vcInit = async function(){
       }).join('')
     : '<option value="">No contractors yet — invite one in People</option>';
 
+  /* Straight from the rate card, so a job offer and an invoice describe the
+     same work in the same words. */
+  var PACKAGES = [
+    ['Video','Quick-turn vertical video','Edit supplied client footage into one vertical cut.','1 vertical cut, up to 60s',150],
+    ['Video','Social pack — 3 videos','Edit supplied footage into three short vertical cuts.','3 vertical cuts',400],
+    ['Video','Half-day shoot','Half-day on location. Interview setup plus b-roll.','5 edited deliverables + raw files',600],
+    ['Video','Full-day shoot','Full day on location. Multiple setups.','10 edited deliverables + raw files',1200],
+    ['Video','Testimonial package','Three customer interviews, single location.','3 edited testimonials',800],
+    ['Video','Brand film','Scripted brand film, 90s\u20133min.','1 brand film + cutdowns',1100],
+    ['Aerial','Aerial — single site, stills','Part 107 flight. Stills only.','10 edited aerial stills',200],
+    ['Aerial','Aerial — site + video','Part 107 flight. Stills plus edited aerial video.','10 stills + 60s aerial cut',350],
+    ['Aerial','Aerial — progress visit','Recurring construction progress capture.','Stills + short cut per visit',150],
+    ['Photo','Headshots / product','Half-day studio or on-location stills.','15 edited images',300],
+    ['Photo','Event / brand photography','Half-day event or brand coverage.','40 edited images',450],
+    ['Photo','Full-day photography','Full day coverage.','80 edited images',800],
+    ['Social','Social content batch','Shoot and edit a batch of social-first content.','3\u20135 pieces, vertical',350]
+  ];
+  var ADDONS = [
+    ['Drone add-on to a scheduled shoot','Adds a Part 107 aerial pass to the booked shoot.','+ aerial stills and one cut',100],
+    ['Second location, same day','Adds a second site on the same shoot day.','Coverage at both locations',150],
+    ['Additional revision round','One extra round of revisions beyond the two included.','1 revision round',60],
+    ['Additional deliverable','One further edited deliverable.','1 extra edit',90],
+    ['Rush turnaround','Delivery inside 48 hours.','Priority edit',0]
+  ];
+
+  function addLocRow(v){
+    var wrap = document.getElementById('locRows');
+    var row = document.createElement('div');
+    row.style.cssText = 'display:flex;gap:8px;margin-bottom:8px;align-items:center';
+    row.innerHTML = '<input type="text" class="lc" placeholder="Address or site name" style="flex:1">' +
+                    '<button class="btn btn-danger btn-sm lx" type="button">\u00d7</button>';
+    wrap.appendChild(row);
+    if (v) row.querySelector('.lc').value = v;
+    row.querySelector('.lx').addEventListener('click', function(){
+      if (wrap.children.length > 1) row.remove();
+    });
+  }
+  function collectLocs(){
+    var out = [];
+    document.querySelectorAll('#locRows .lc').forEach(function(i){
+      if (i.value.trim()) out.push(i.value.trim());
+    });
+    return out;
+  }
+
   function addDayRow(d){
     d = d || {};
     var wrap = document.getElementById('dayRows');
@@ -456,6 +507,40 @@ window.vcInit = async function(){
   $('pay').addEventListener('input', function(){ checkMargin(); totalComp(); });
   ['miles','mrate','perdiem'].forEach(function(id){ $(id).addEventListener('input', totalComp); });
   ['mpaid','lodge','meals','parking'].forEach(function(id){ $(id).addEventListener('change', totalComp); });
+  var pk = $('pkg'), lastG = null;
+  pk.innerHTML = '<option value="">— choose a package —</option>';
+  PACKAGES.forEach(function(p, i){
+    if (p[0] !== lastG) { var og = document.createElement('optgroup'); og.label = p[0]; pk.appendChild(og); lastG = p[0]; }
+    var o = document.createElement('option');
+    o.value = i; o.textContent = p[1] + (p[4] ? '  \u2014  pays ' + money(p[4]) : '');
+    pk.lastChild.appendChild(o);
+  });
+  pk.addEventListener('change', function(){
+    if (pk.value === '') return;
+    var p = PACKAGES[Number(pk.value)];
+    $('scope').value = p[2];
+    $('deliv').value = p[3];
+    if (p[4] && !Number($('pay').value)) $('pay').value = p[4];
+    checkMargin(); totalComp();
+  });
+
+  var ad = $('addons');
+  ad.innerHTML = '<option value="">— add an extra —</option>' +
+    ADDONS.map(function(a, i){
+      return '<option value="'+i+'">'+a[0]+(a[3] ? '  \u2014  +' + money(a[3]) : '')+'</option>';
+    }).join('');
+  ad.addEventListener('change', function(){
+    if (ad.value === '') return;
+    var a = ADDONS[Number(ad.value)];
+    $('scope').value = ($('scope').value ? $('scope').value + '\n\nPlus: ' : '') + a[1];
+    $('deliv').value = $('deliv').value ? $('deliv').value + ', ' + a[2] : a[2];
+    if (a[3]) $('pay').value = (Number($('pay').value) || 0) + a[3];
+    ad.value = '';
+    checkMargin(); totalComp();
+  });
+
+  document.getElementById('addLoc').addEventListener('click', function(){ addLocRow(); });
+  addLocRow();
   document.getElementById('addDay').addEventListener('click', function(){ addDayRow(); });
   addDayRow();
   totalComp();
@@ -481,7 +566,7 @@ window.vcInit = async function(){
       scope: $('scope').value.trim(),
       deliverables: $('deliv').value.trim() || null,
       work_date: d,
-      location: $('loc').value.trim() || null,
+      location: collectLocs().join(' \u00b7 ') || null,
       pay_amount: Number($('pay').value),
       travel_miles: Number($('miles').value) || 0,
       mileage_rate: Number($('mrate').value) || 0,
@@ -534,7 +619,7 @@ window.vcInit = async function(){
           facts: [
             { label: 'Role',      value: $('role').value },
             { label: 'When',      value: whenTxt },
-            { label: 'Location',  value: $('loc').value.trim() || 'To be confirmed' },
+            { label: 'Location',  value: collectLocs().join(' \u00b7 ') || 'To be confirmed' },
             { label: 'Your pay',  value: '$' + Number($('pay').value).toFixed(2) }
           ],
           cta_url: 'https://weareverveco.com/jobs',
@@ -545,7 +630,8 @@ window.vcInit = async function(){
     } catch (mailErr) { /* the offer is saved either way */ }
 
     say('offerMsg','Offer sent and emailed. They see it on their Jobs page.', true);
-    $('scope').value=''; $('deliv').value=''; $('pay').value=''; $('loc').value='';
+    $('scope').value=''; $('deliv').value=''; $('pay').value='';
+    document.getElementById('locRows').innerHTML=''; addLocRow();
     loadJobs();
   });
 

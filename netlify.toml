@@ -108,3 +108,8 @@
   from = "/mywork"
   to = "/mywork.html"
   status = 200
+
+[[redirects]]
+  from = "/calendar"
+  to = "/calendar.html"
+  status = 200

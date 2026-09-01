@@ -54,12 +54,22 @@ export default async (req) => {
   if (!items.length) return json({ error: 'No billable line items on this engagement.' }, 400, cors);
 
   try {
-    // 1) Customer
-    const customer = await stripe('customers', key, {
-      email: eng.clientEmail || '',
-      name: eng.businessName || eng.clientName || '',
-    });
-    if (customer.error) throw new Error(customer.error.message);
+    // 1) Customer — reuse an existing one for this email rather than creating a
+    //    duplicate on every invoice, which would fragment the client's history.
+    let customer;
+    const existing = await stripe(
+      'customers?email=' + encodeURIComponent(eng.clientEmail) + '&limit=1',
+      key, null, 'GET'
+    );
+    if (existing && existing.data && existing.data.length > 0) {
+      customer = existing.data[0];
+    } else {
+      customer = await stripe('customers', key, {
+        email: eng.clientEmail || '',
+        name: eng.businessName || eng.clientName || '',
+      });
+      if (customer.error) throw new Error(customer.error.message);
+    }
 
     // 2) Line items. Ad spend is deliberately excluded — it is billed by the
     //    platform directly to the client and never runs through Verve's books.
@@ -96,17 +106,22 @@ export default async (req) => {
     const finalized = await stripe('invoices/' + invoice.id + '/finalize', key, {});
     if (finalized.error) throw new Error(finalized.error.message);
 
+    // 5) Finalizing only makes the invoice payable — it does NOT deliver it.
+    //    This is the step that actually emails the client a request for payment.
+    const sent = await stripe('invoices/' + finalized.id + '/send', key, {});
+    if (sent.error) throw new Error('Invoice created but could not be emailed: ' + sent.error.message);
+
     const updated = {
       ...eng,
       status: 'invoiced',
-      stripeInvoiceId: finalized.id,
-      stripeInvoiceUrl: finalized.hosted_invoice_url,
+      stripeInvoiceId: sent.id || finalized.id,
+      stripeInvoiceUrl: sent.hosted_invoice_url || finalized.hosted_invoice_url,
       invoicedAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
     await engStore.setJSON(eng.id, updated);
 
-    return json({ ok: true, url: finalized.hosted_invoice_url, engagement: updated }, 200, cors);
+    return json({ ok: true, url: sent.hosted_invoice_url || finalized.hosted_invoice_url, engagement: updated }, 200, cors);
   } catch (err) {
     return json({ error: String(err.message || err) }, 500, cors);
   }

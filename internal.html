@@ -137,6 +137,14 @@
           </select>
         </div>
         <div class="field"><label for="dueDays">Invoice due (days)</label><input type="number" id="dueDays" value="15"></div>
+    </div>
+    <div class="row3">
+      <div class="field"><label for="org">Organization</label>
+        <select id="org"><option value="">— none —</option></select></div>
+      <div class="field"><label for="endsOn">Ends on</label><input type="date" id="endsOn"></div>
+      <div class="field"><label for="weeklyHours">Hours per week</label>
+        <input type="number" id="weeklyHours" step="0.5" placeholder="0">
+        <p style="font-size:12px;color:#6b7280;margin-top:5px">Feeds Capacity.</p></div>
       </div>
 
       <h2 style="margin-top:22px">Line items</h2>
@@ -430,6 +438,23 @@
 })();
 </script>
 
+      <div id="teamBox" style="display:none;margin-top:26px;border-top:1px solid #e5e7eb;padding-top:20px">
+        <h2>Who is on this account</h2>
+        <p style="font-size:12.5px;color:#6b7280;margin-bottom:12px">
+          Standing involvement, not shoot days. Hours here are what Capacity uses to answer
+          whether we can take the next thing on.</p>
+        <div id="teamRows"></div>
+        <div class="row3" style="margin-top:12px">
+          <div class="field"><label for="tmWho">Person</label><select id="tmWho"></select></div>
+          <div class="field"><label for="tmRole">Their role here</label>
+            <input type="text" id="tmRole" placeholder="Account lead, editor…"></div>
+          <div class="field"><label for="tmHrs">Hours / week</label>
+            <input type="number" id="tmHrs" step="0.5" placeholder="8"></div>
+        </div>
+        <button class="btn btn-2 btn-sm" id="tmAdd">Add to account</button>
+        <p class="msg" id="tmMsg"></p>
+      </div>
+
       <div id="msBox" style="display:none;margin-top:26px;border-top:1px solid #e5e7eb;padding-top:20px">
         <h2>Timeline</h2>
         <p style="font-size:12.5px;color:#6b7280;margin-bottom:12px">
@@ -545,6 +570,9 @@ function load(e){
   $('startDate').value= (e && e.start_date) || '';
   $('leadSource').value=(e && e.lead_source) || 'verve_sourced';
   $('adSpend').value  = (e && e.ad_spend_reference) || '';
+  $('endsOn').value = (e && e.ends_on) || '';
+  $('weeklyHours').value = (e && e.weekly_hours) || '';
+  $('org').value = (e && e.clients && e.clients.organization_id) || '';
   $('clientNote').value=(e && e.client_visible_note) || '';
   $('rows').innerHTML = '';
   var lis = (e && e.line_items) || [];
@@ -552,10 +580,45 @@ function load(e){
   lis.forEach(addRow);
   if (!lis.length) addRow();
   recalc();
+  loadTeam(e && e.id);
   loadMilestones(e && e.id);
   $('payWrap').innerHTML = (e && e.stripe_invoice_url)
     ? '<a class="paylink" href="'+e.stripe_invoice_url+'" target="_blank" rel="noopener">Client payment link →<br>'+e.stripe_invoice_url+'</a>' : '';
   paintList();
+}
+
+var orgs = [], staff = [];
+
+async function loadTeam(engId){
+  var box = document.getElementById('teamBox');
+  if (!engId) { box.style.display='none'; return; }
+  box.style.display = 'block';
+
+  var r = await sb.from('engagement_team')
+    .select('*, profiles(full_name, email, colour)')
+    .eq('engagement_id', engId);
+  var rows = document.getElementById('teamRows');
+  var data = r.data || [];
+
+  rows.innerHTML = data.length ? data.map(function(t){
+    var p = t.profiles || {};
+    var nm = p.full_name || p.email || '\u2014';
+    var init = nm.split(' ').map(function(x){return x[0];}).filter(Boolean).join('').slice(0,2).toUpperCase();
+    return '<div style="display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px solid #f3f4f6">'+
+      '<span style="width:28px;height:28px;border-radius:50%;background:'+(p.colour||'#111827')+
+        ';color:#fff;display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:700">'+init+'</span>'+
+      '<span style="flex:1;min-width:0"><b style="font-size:13.5px">'+esc(nm)+'</b>'+
+        (t.role_label ? '<div style="font-size:12px;color:#6b7280">'+esc(t.role_label)+'</div>' : '')+'</span>'+
+      '<span style="font-size:13px;color:#374151;font-weight:600">'+(Number(t.weekly_hours)||0)+'h/wk</span>'+
+      '<button class="btn btn-danger btn-sm tmX" data-id="'+t.id+'">Remove</button></div>';
+  }).join('') : '<p style="font-size:13px;color:#9ca3af;padding:8px 0">Nobody assigned yet.</p>';
+
+  rows.querySelectorAll('.tmX').forEach(function(b){
+    b.addEventListener('click', async function(){
+      await sb.from('engagement_team').delete().eq('id', b.dataset.id);
+      loadTeam(engId);
+    });
+  });
 }
 
 async function loadMilestones(engId){
@@ -646,6 +709,47 @@ window.vcInit = async function(){
   $('invBtn').addEventListener('click', invoice);
   $('delBtn').addEventListener('click', del);
 
+  var oq = await sb.from('organizations').select('id, name').order('name');
+  orgs = oq.data || [];
+  $('org').innerHTML = '<option value="">\u2014 none \u2014</option>' +
+    orgs.map(function(o){ return '<option value="'+o.id+'">'+esc(o.name)+'</option>'; }).join('') +
+    '<option value="__new">+ New organization\u2026</option>';
+
+  $('org').addEventListener('change', async function(){
+    if (this.value !== '__new') return;
+    var name = window.prompt('Organization name');
+    this.value = '';
+    if (!name) return;
+    var r = await sb.from('organizations').insert({ name: name.trim(), owner_id: me.id }).select('id,name').single();
+    if (r.error) return say(r.error.message, false);
+    orgs.push(r.data);
+    $('org').innerHTML = '<option value="">\u2014 none \u2014</option>' +
+      orgs.map(function(o){ return '<option value="'+o.id+'">'+esc(o.name)+'</option>'; }).join('') +
+      '<option value="__new">+ New organization\u2026</option>';
+    $('org').value = r.data.id;
+  });
+
+  var sq = await sb.from('profiles').select('id, full_name, email').eq('is_active', true);
+  staff = sq.data || [];
+  $('tmWho').innerHTML = staff.map(function(p){
+    return '<option value="'+p.id+'">'+esc(p.full_name||p.email)+'</option>';
+  }).join('');
+
+  $('tmAdd').addEventListener('click', async function(){
+    if (!current || !current.id) return;
+    var r = await sb.from('engagement_team').upsert({
+      engagement_id: current.id,
+      profile_id: $('tmWho').value,
+      role_label: $('tmRole').value.trim() || null,
+      weekly_hours: Number($('tmHrs').value) || 0
+    }, { onConflict: 'engagement_id,profile_id' });
+    var m = document.getElementById('tmMsg');
+    m.textContent = r.error ? r.error.message : 'Added.';
+    m.className = 'msg show ' + (r.error ? 'err' : 'ok');
+    $('tmRole').value=''; $('tmHrs').value='';
+    loadTeam(current.id);
+  });
+
   await refresh();
   load(null);
 };
@@ -660,6 +764,7 @@ async function save(){
     business_name: biz,
     contact_name: $('cname').value.trim() || null,
     contact_email: $('cemail').value.trim() || null,
+    organization_id: $('org').value && $('org').value !== '__new' ? $('org').value : null,
     owner_id: me.id
   };
   if (clientId) {
@@ -683,6 +788,8 @@ async function save(){
     start_date: $('startDate').value || null,
     lead_source: $('leadSource').value,
     ad_spend_reference: Number($('adSpend').value)||0,
+    ends_on: $('endsOn').value || null,
+    weekly_hours: Number($('weeklyHours').value) || 0,
     client_visible_note: $('clientNote').value.trim() || null,
     amount_total: total
   };

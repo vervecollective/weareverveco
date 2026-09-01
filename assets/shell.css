@@ -617,3 +617,12 @@ body.vc-shelled a:not(.btn):not(.vc-navitem):not(.tile):not(.r):not(.card){ colo
 
 /* Focus ring visible against every background */
 body.vc-shelled :focus-visible{ outline:3px solid #9A3412 !important; outline-offset:2px !important; }
+
+
+/* peek: comments with author avatars */
+.vc-peek-c{display:flex;gap:9px;align-items:flex-start;}
+.vc-peek-av{width:22px;height:22px;border-radius:50%;background:#111827;color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;
+  flex-shrink:0;margin-top:2px;}
+.vc-peek-cb{flex:1;min-width:0;}
+.vc-peek-cb em i{font-style:normal;color:var(--vc-text-4);font-weight:400;}

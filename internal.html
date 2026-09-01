@@ -180,6 +180,256 @@
       <p class="msg" id="msg"></p>
       <div id="payWrap"></div>
 
+<section class="vc-proposals" id="vc-proposals">
+  <style>
+    .vc-proposals { margin-top: 32px; }
+    .vc-proposals .vcp-card {
+      background: #ffffff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 20px;
+    }
+    .vc-proposals h2 { font-size: 15px; font-weight: 700; color: #111827; margin: 0 0 4px; }
+    .vc-proposals .vcp-hint { font-size: 13px; color: #6b7280; margin: 0 0 16px; }
+    .vc-proposals label { display: block; font-size: 13px; font-weight: 600; color: #4b5563; margin: 14px 0 6px; }
+    .vc-proposals select, .vc-proposals textarea {
+      width: 100%; padding: 10px 12px; font: 400 16px/1.5 inherit; color: #111827;
+      background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; resize: vertical;
+    }
+    .vc-proposals select { height: 46px; padding: 0 12px; }
+    .vc-proposals textarea { min-height: 84px; }
+    .vc-proposals select:focus-visible, .vc-proposals textarea:focus-visible,
+    .vc-proposals button:focus-visible { outline: 2px solid #D9531E; outline-offset: 2px; }
+
+    .vc-proposals .vcp-actions {
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+      margin-top: 20px; padding-top: 18px; border-top: 1px solid #e5e7eb;
+    }
+    .vc-proposals .vcp-btn {
+      height: 44px; padding: 0 18px; border: 0; border-radius: 8px; cursor: pointer;
+      background: #D9531E; color: #fff; font: 600 15px/1 inherit;
+    }
+    .vc-proposals .vcp-btn.sec { background: #fff; color: #111827; border: 1px solid #e5e7eb; }
+    .vc-proposals .vcp-btn[disabled] { opacity: .45; cursor: default; }
+    .vc-proposals .vcp-status { font-size: 14px; color: #4b5563; }
+
+    .vc-proposals .vcp-note { border-radius: 8px; padding: 12px 14px; font-size: 14px; margin-top: 16px; }
+    .vc-proposals .vcp-note.ok   { background: #ecfdf5; color: #047857; }
+    .vc-proposals .vcp-note.warn { background: #fffbeb; color: #b45309; }
+    .vc-proposals .vcp-note.err  { background: #fef2f2; color: #b91c1c; }
+    .vc-proposals .vcp-note a { color: inherit; word-break: break-all; }
+
+    .vc-proposals .vcp-row {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 13px 0; border-top: 1px solid #e5e7eb; min-height: 44px;
+    }
+    .vc-proposals .vcp-row:first-of-type { border-top: 0; }
+    .vc-proposals .vcp-who { flex: 1 1 auto; min-width: 0; }
+    .vc-proposals .vcp-name { font-size: 14px; font-weight: 600; color: #111827; }
+    .vc-proposals .vcp-sub { font-size: 13px; color: #6b7280; margin-top: 2px; }
+    .vc-proposals .vcp-pill {
+      flex: none; margin-top: 2px; font-size: 12px; font-weight: 600;
+      padding: 3px 9px; border-radius: 999px;
+    }
+    .vc-proposals .vcp-pill.draft  { background: #f3f4f6; color: #4b5563; }
+    .vc-proposals .vcp-pill.sent   { background: #fffbeb; color: #b45309; }
+    .vc-proposals .vcp-pill.viewed { background: #ecfdf5; color: #047857; }
+
+    @media (max-width: 640px) { .vc-proposals .vcp-btn { width: 100%; } }
+  </style>
+
+  <div class="vcp-card">
+    <h2>Proposals</h2>
+    <p class="vcp-hint">
+      Scope, timeline and price come from the engagement. Write the parts only you know,
+      then send. Sending moves the deal to Proposal Sent.
+    </p>
+
+    <label for="vcp-eng">Engagement</label>
+    <select id="vcp-eng"></select>
+
+    <label for="vcp-situation">Where they are</label>
+    <textarea id="vcp-situation" placeholder="What they told you on the call, in their words."></textarea>
+
+    <label for="vcp-cost">What it costs them to leave it</label>
+    <textarea id="vcp-cost" placeholder="The number or the consequence they named. Not a scare tactic — their own answer."></textarea>
+
+    <label for="vcp-exclusions">What this does not cover</label>
+    <textarea id="vcp-exclusions" placeholder="Name the obvious adjacent things you are not doing, so nobody assumes them."></textarea>
+
+    <label for="vcp-checkin">How they will hear from you</label>
+    <textarea id="vcp-checkin" placeholder="Reporting cadence and what a check-in actually looks like."></textarea>
+
+    <label for="vcp-next">Next step</label>
+    <textarea id="vcp-next" placeholder="One action. Leave blank for the default reply-and-confirm wording."></textarea>
+
+    <div class="vcp-actions">
+      <button type="button" class="vcp-btn sec" id="vcp-save">Save draft</button>
+      <button type="button" class="vcp-btn" id="vcp-send" disabled>Send to client</button>
+      <span class="vcp-status" id="vcp-status"></span>
+    </div>
+
+    <div id="vcp-out"></div>
+
+    <div style="margin-top:24px;padding-top:18px;border-top:1px solid #e5e7eb">
+      <h2>Sent</h2>
+      <p class="vcp-hint">Green means they opened it.</p>
+      <div id="vcp-list"></div>
+    </div>
+  </div>
+</section>
+
+<script>
+(() => {
+  const root = document.getElementById('vc-proposals');
+  if (!root) return;
+
+  // ── Adjust this line if your Supabase client is not called `supabase` ──
+  const VC_TOKEN = async () => {
+    const { data } = await window.__sb.auth.getSession();
+    return data?.session?.access_token || null;
+  };
+
+  const FN = 'https://otqrkxjtojqlpzzvqavp.supabase.co/functions/v1/proposal';
+  const $ = (id) => document.getElementById(id);
+  const el = (tag, cls, text) => {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  };
+
+  let proposalId = null;
+
+  async function api(payload) {
+    const token = await VC_TOKEN();
+    if (!token) throw new Error('Your session has expired. Sign in again.');
+    const res = await fetch(FN, {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok || body.error) throw new Error(body.error || 'The request failed.');
+    return body;
+  }
+
+  function note(kind, text, link) {
+    const n = el('div', 'vcp-note ' + kind, text);
+    if (link) {
+      n.append(document.createElement('br'));
+      const a = el('a', null, link);
+      a.href = link;
+      n.append(a);
+    }
+    return n;
+  }
+
+  function fields() {
+    return {
+      engagement_id: $('vcp-eng').value || null,
+      situation:  $('vcp-situation').value,
+      real_cost:  $('vcp-cost').value,
+      exclusions: $('vcp-exclusions').value,
+      checkin:    $('vcp-checkin').value,
+      next_step:  $('vcp-next').value,
+    };
+  }
+
+  $('vcp-eng').addEventListener('change', () => {
+    // A different engagement is a different proposal, not an edit of this one.
+    proposalId = null;
+    $('vcp-send').disabled = true;
+    $('vcp-out').textContent = '';
+    $('vcp-status').textContent = '';
+  });
+
+  $('vcp-save').addEventListener('click', async () => {
+    const f = fields();
+    $('vcp-out').textContent = '';
+    if (!f.engagement_id) {
+      $('vcp-out').append(note('err', 'Pick an engagement first.'));
+      return;
+    }
+    $('vcp-save').disabled = true;
+    $('vcp-status').textContent = 'Saving…';
+    try {
+      const r = await api({ action: 'save', proposal_id: proposalId, ...f });
+      proposalId = r.proposal_id;
+      $('vcp-send').disabled = false;
+      $('vcp-status').textContent = 'Draft saved.';
+    } catch (err) {
+      $('vcp-status').textContent = '';
+      $('vcp-out').append(note('err', err.message));
+    }
+    $('vcp-save').disabled = false;
+  });
+
+  $('vcp-send').addEventListener('click', async () => {
+    if (!proposalId) return;
+    $('vcp-send').disabled = true;
+    $('vcp-out').textContent = '';
+    $('vcp-status').textContent = 'Sending…';
+    try {
+      // Save first so what goes out is what is on screen.
+      await api({ action: 'save', proposal_id: proposalId, ...fields() });
+      const r = await api({ action: 'send', proposal_id: proposalId });
+      $('vcp-status').textContent = '';
+      $('vcp-out').append(note('ok', 'Sent to ' + r.sent_to + '. Deal moved to Proposal Sent.', r.url));
+      proposalId = null;
+      load();
+    } catch (err) {
+      $('vcp-status').textContent = '';
+      $('vcp-out').append(note('err', err.message));
+      $('vcp-send').disabled = false;
+    }
+  });
+
+  async function load() {
+    const list = $('vcp-list');
+    list.textContent = '';
+    const { proposals } = await api({ action: 'list' });
+    if (!proposals.length) {
+      list.append(el('p', 'vcp-hint', 'Nothing sent yet.'));
+      return;
+    }
+    for (const p of proposals) {
+      if (p.status === 'draft') continue;
+      const row = el('div', 'vcp-row');
+      const who = el('div', 'vcp-who');
+      const eng = p.engagements || {};
+      who.append(el('div', 'vcp-name',
+        (eng.clients && eng.clients.business_name) || eng.title || 'Untitled'));
+      const seen = p.view_count
+        ? 'Opened ' + p.view_count + (p.view_count === 1 ? ' time' : ' times')
+        : 'Not opened yet';
+      who.append(el('div', 'vcp-sub',
+        (p.sent_at ? 'Sent ' + new Date(p.sent_at).toLocaleDateString() + ' · ' : '') + seen));
+      row.append(who, el('span', 'vcp-pill ' + p.status, p.status));
+      list.append(row);
+    }
+  }
+
+  (async () => {
+    try {
+      const { data } = await supabase.from('engagements')
+        .select('id, title, clients(business_name)')
+        .order('updated_at', { ascending: false });
+      $('vcp-eng').innerHTML = '<option value="">— pick an engagement —</option>' +
+        (data || []).map((e) =>
+          '<option value="' + e.id + '">' +
+          ((e.clients && e.clients.business_name) || e.title || 'Untitled') +
+          '</option>').join('');
+      await load();
+      root.hidden = false;
+    } catch (err) {
+      // Clients and contractors have no business here; stay hidden for them.
+      if (!/staff|role|permission/i.test(err.message)) {
+        root.hidden = false;
+        $('vcp-out').append(note('err', err.message));
+      }
+    }
+  })();
+})();
+</script>
+
       <div id="msBox" style="display:none;margin-top:26px;border-top:1px solid #e5e7eb;padding-top:20px">
         <h2>Timeline</h2>
         <p style="font-size:12.5px;color:#6b7280;margin-bottom:12px">

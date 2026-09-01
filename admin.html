@@ -313,7 +313,7 @@
   }
 
   function loadContent(){
-    var pw = sessionStorage.getItem(PASSWORD_KEY) || '';
+    var pw = localStorage.getItem(PASSWORD_KEY) || '';
     Promise.all([
       fetch('/api/content?mode=draft', { headers: { 'x-admin-password': pw } }).then(function(r){ return r.ok ? r.json() : null; }),
       fetch('/api/content').then(function(r){ return r.json(); })
@@ -388,7 +388,7 @@
   document.getElementById('unlockBtn').addEventListener('click', function(){
     var pw = pwInput.value;
     if (!pw) return;
-    sessionStorage.setItem(PASSWORD_KEY, pw);
+    localStorage.setItem(PASSWORD_KEY, pw);
     document.getElementById('gateError').classList.remove('show');
     loadContent();
   });
@@ -410,7 +410,7 @@
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-admin-password': sessionStorage.getItem(PASSWORD_KEY) || ''
+        'x-admin-password': localStorage.getItem(PASSWORD_KEY) || ''
       },
       body: JSON.stringify(payload)
     }).then(function(res){
@@ -434,7 +434,7 @@
   // what makes both buttons actually work.
   form.addEventListener('click', function(e){
     if (e.target && e.target.id === 'previewBtn'){
-      var pw = sessionStorage.getItem(PASSWORD_KEY) || '';
+      var pw = localStorage.getItem(PASSWORD_KEY) || '';
       window.open('/?preview=1&pw=' + encodeURIComponent(pw), '_blank');
       return;
     }
@@ -446,12 +446,12 @@
       var payload = currentFormValues();
       fetch('/api/content', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-admin-password': sessionStorage.getItem(PASSWORD_KEY) || '' },
+        headers: { 'Content-Type': 'application/json', 'x-admin-password': localStorage.getItem(PASSWORD_KEY) || '' },
         body: JSON.stringify(payload)
       }).then(function(){
         return fetch('/api/content', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-admin-password': sessionStorage.getItem(PASSWORD_KEY) || '' },
+          headers: { 'Content-Type': 'application/json', 'x-admin-password': localStorage.getItem(PASSWORD_KEY) || '' },
           body: JSON.stringify({ _publish: true })
         });
       }).then(function(res){
@@ -522,7 +522,7 @@
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-admin-password': sessionStorage.getItem(PASSWORD_KEY) || ''
+        'x-admin-password': localStorage.getItem(PASSWORD_KEY) || ''
       },
       body: JSON.stringify({ _newPassword: newPw })
     }).then(function(res){
@@ -537,7 +537,7 @@
           status.className = 'status show err';
           return;
         }
-        sessionStorage.setItem(PASSWORD_KEY, newPw);
+        localStorage.setItem(PASSWORD_KEY, newPw);
         document.getElementById('newPw').value = '';
         status.textContent = 'Password updated. Use the new one next time you log in.';
         status.className = 'status show ok';

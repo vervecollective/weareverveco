@@ -119,8 +119,13 @@
             <div class="fld"><label for="capHours">Hours a week you can take</label>
               <input type="number" id="capHours" step="1" min="0" placeholder="20">
               <p class="help">Realistic, not best case.</p></div>
-            <div class="fld"><label>Days you usually work</label>
-              <div id="dayPicks" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px"></div></div>
+            <div class="fld"><label>Implied by your days</label>
+              <input type="text" id="impliedHrs" disabled>
+              <p class="help">Calculated from the times below.</p></div>
+          </div>
+          <div style="margin:6px 0 16px">
+            <label style="margin-bottom:8px">When you can work</label>
+            <div id="dayRows"></div>
           </div>
           <div class="fld"><label for="availNote">Anything we should know</label>
             <input type="text" id="availNote" placeholder="No Fridays until October · prefer 2 weeks notice for shoots"></div>
@@ -257,34 +262,54 @@ function vcInit(){
   }
 
   var DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-  var chosen = (window.__profile && window.__profile.available_days) || ['Mon','Tue','Wed','Thu','Fri'];
+  var win = {};   // weekday index -> {on, all_day, starts_at, ends_at}
 
-  function paintDays(){
-    $('dayPicks').innerHTML = DAYS.map(function(d){
-      var on = chosen.indexOf(d) > -1;
-      return '<button type="button" data-d="'+d+'" style="padding:7px 11px;border-radius:6px;'+
-        'border:1px solid '+(on?'#D9531E':'#d1d5db')+';background:'+(on?'#fdf0eb':'#fff')+';'+
-        'color:'+(on?'#9a3412':'#6b7280')+';font-size:12.5px;font-weight:600;cursor:pointer;'+
-        'font-family:inherit">'+d+'</button>';
-    }).join('');
-    $('dayPicks').querySelectorAll('button').forEach(function(b){
-      b.addEventListener('click', function(){
-        var d = b.dataset.d, i = chosen.indexOf(d);
-        if (i > -1) chosen.splice(i,1); else chosen.push(d);
-        paintDays();
-      });
+  function impliedHours(){
+    var t = 0;
+    Object.keys(win).forEach(function(k){
+      var w = win[k];
+      if (!w.on) return;
+      if (w.all_day) { t += 8; return; }
+      if (!w.starts_at || !w.ends_at) return;
+      var a = w.starts_at.split(':'), b = w.ends_at.split(':');
+      var mins = (Number(b[0])*60+Number(b[1])) - (Number(a[0])*60+Number(a[1]));
+      if (mins > 0) t += mins/60;
     });
+    return Math.round(t*10)/10;
   }
 
-  // Clients have no availability to declare.
-  if (window.__role === 'client') {
-    var ab = $('availBlock'); if (ab) ab.remove();
-  } else {
-    var p0 = window.__profile || {};
-    $('capHours').value  = p0.weekly_capacity_hours != null ? p0.weekly_capacity_hours : '';
-    $('availNote').value = p0.availability_note || '';
-    $('acceptWork').checked = p0.accepting_work !== false;
-    paintDays();
+  function paintDays(){
+    $('dayRows').innerHTML = DAYS.map(function(d, i){
+      var w = win[i] || { on:false, all_day:false, starts_at:'09:00', ends_at:'17:00' };
+      return '<div style="display:grid;grid-template-columns:74px 96px 1fr;gap:9px;align-items:center;'+
+        'padding:7px 0;border-bottom:1px solid #f3f4f6">'+
+        '<label style="display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;cursor:pointer">'+
+          '<input type="checkbox" class="dOn" data-i="'+i+'" style="width:auto"'+(w.on?' checked':'')+'>'+d+'</label>'+
+        '<label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:'+(w.on?'#374151':'#c8ccd2')+';cursor:pointer">'+
+          '<input type="checkbox" class="dAll" data-i="'+i+'" style="width:auto"'+(w.all_day?' checked':'')+
+          (w.on?'':' disabled')+'>All day</label>'+
+        '<span style="display:flex;align-items:center;gap:7px">'+
+          '<input type="time" class="dFrom" data-i="'+i+'" value="'+(w.starts_at||'09:00')+'"'+
+            ((!w.on||w.all_day)?' disabled':'')+' style="padding:6px 8px;font-size:12.5px">'+
+          '<span style="color:#9ca3af;font-size:12px">to</span>'+
+          '<input type="time" class="dTo" data-i="'+i+'" value="'+(w.ends_at||'17:00')+'"'+
+            ((!w.on||w.all_day)?' disabled':'')+' style="padding:6px 8px;font-size:12.5px">'+
+        '</span></div>';
+    }).join('');
+
+    $('dayRows').querySelectorAll('input').forEach(function(el){
+      el.addEventListener('change', function(){
+        var i = Number(el.dataset.i);
+        win[i] = win[i] || { on:false, all_day:false, starts_at:'09:00', ends_at:'17:00' };
+        if (el.classList.contains('dOn'))   win[i].on = el.checked;
+        if (el.classList.contains('dAll'))  win[i].all_day = el.checked;
+        if (el.classList.contains('dFrom')) win[i].starts_at = el.value;
+        if (el.classList.contains('dTo'))   win[i].ends_at = el.value;
+        paintDays();
+        $('impliedHrs').value = impliedHours() + ' hours a week';
+      });
+    });
+    $('impliedHrs').value = impliedHours() + ' hours a week';
   }
 
   $('saveProfile').addEventListener('click', async function(){
@@ -300,11 +325,27 @@ function vcInit(){
     if (window.__role !== 'client' && $('capHours')) {
       await sb.from('profiles').update({
         weekly_capacity_hours: Number($('capHours').value) || 0,
-        available_days: chosen,
+        available_days: Object.keys(win).filter(function(k){return win[k].on;}).map(function(k){return DAYS[Number(k)];}),
         availability_note: $('availNote').value.trim() || null,
         accepting_work: $('acceptWork').checked,
         capacity_updated_at: new Date().toISOString()
       }).eq('id', window.__user.id);
+
+      // Replace rather than merge, so unticking a day actually removes it.
+      await sb.from('availability_windows').delete().eq('profile_id', window.__user.id);
+      var rows = [];
+      Object.keys(win).forEach(function(k){
+        var w = win[k];
+        if (!w.on) return;
+        rows.push({
+          profile_id: window.__user.id,
+          weekday: Number(k),
+          all_day: !!w.all_day,
+          starts_at: w.all_day ? null : (w.starts_at || '09:00'),
+          ends_at:   w.all_day ? null : (w.ends_at   || '17:00')
+        });
+      });
+      if (rows.length) await sb.from('availability_windows').insert(rows);
     }
     $('saveProfile').disabled = false;
     if (error) return msg('profileMsg', error.message, false);

@@ -78,7 +78,12 @@ Enforced by Postgres RLS policies, not by hiding UI. Helper functions live in a 
 | `/settings` | Profile, security, team invites, split defaults | Live |
 | `/help` | Role-specific onboarding | Live |
 | `/project` | Client portal: progress, milestones, billing, requests | Live |
-| `/jobs` | Job offers with call sheets, accept/decline | Live |
+| `/jobs` | Job offers with call sheets, multi-day, travel/lodging | Live |
+| `/mywork` | Everything assigned to you, across accounts | Live |
+| `/board` | Task kanban, comments, @mentions, share links | Live |
+| `/calendar` | Shoots, milestones, tasks + clash detection | Live |
+| `/capacity` | Team load and can-we-take-it planning | Live |
+| `/pay` | Contractor invoicing, approval, payment | Live |
 | `/documents` | Send + track signatures | Live |
 | `/audit` | Social + ad audit with counted checklist | Live (manual data) |
 | `/team` | People: team, contractors, client logins | Live |
@@ -101,6 +106,24 @@ Enforced by Postgres RLS policies, not by hiding UI. Helper functions live in a 
 
 ## 6. Known gaps — ranked
 
+### Collaboration layer (built after the first draft)
+- **Tasks** under milestones, internal by default, with a configurable kanban
+- **Comments** threaded per task with @mention autocomplete and email
+- **Presence** — heartbeat, live "who's around" panel, 5-minute timeout
+- **Capacity** — self-declared per-day availability windows, load bars, what-if planner
+- **Organizations** above clients; engagements have date windows and weekly hours
+- **Contractor invoicing** — they bill, you approve, you mark paid, both sides emailed
+- **Deliverables** — links not uploads; client approves or requests changes
+- **Peek drawer** in the shell so detail opens in place on every page
+- **Hub dashboard** with stall detection across 7 patterns
+- **Propagation triggers** — tasks roll up to milestones, everything logs to `activity`,
+  accepted shoots become timeline milestones
+
+### Demo data
+A `DEMO —` prefixed organization, client and engagement exist for walking the platform.
+Remove with: `delete from public.organizations where name like 'DEMO%';`
+**Never cite any of it as traction.**
+
 ### Done since first draft
 - All five documents drafted, brand-consistent, `hello@` throughout
 - SignWell replaces Dropbox Sign (~$4/mo vs $100–300 — no monthly minimum)
@@ -121,9 +144,10 @@ Enforced by Postgres RLS policies, not by hiding UI. Helper functions live in a 
 6. **Contractors cannot submit their own details.** W-9 and payment info still collected by email.
 
 ### P2 — degrades the product
-4. **Supermetrics dashboards not built.** Audit data is entered by hand, which does not scale past one person.
-5. **Milestones are read-only.** `/project` displays them; nothing writes them. Console's timeline builder should save them.
-6. **No email on payment.** Webhook updates records silently. Needs a Resend key.
+4. **Supermetrics dashboards not built.** Blocked: no live ad account is connected to Supermetrics.
+   Connect one real account, then build one Studio dashboard and embed it in `/audit`.
+5. ~~Milestones read-only~~ — DONE. Console publishes them; staff edit status on the engagement.
+6. ~~No email on payment~~ — DONE. Branded mail via Google Apps Script webapp.
 
 ### P3 — polish
 7. QA sweep of all docs against the built flow
@@ -132,10 +156,18 @@ Enforced by Postgres RLS policies, not by hiding UI. Helper functions live in a 
 10. `/help` needs updating — no mention of Audits, Documents, or Jobs
 11. No early warning on stalled engagements (proposal sent 21 days ago, no movement)
 
+### Never exercised with a real person
+No contractor or client has ever signed in. Role separation, the job-offer email,
+the signature flow and contractor invoicing are all built and syntax-checked but
+unwalked. **Invite a test contractor and walk their whole path before a real one.**
+
 ### Recurring mistake to avoid
-Broad CSS rules keep clobbering specific ones written earlier — it caused the
-black flash, the invisible button hover, and the oversized mobile logo. Scope
-new rules narrowly rather than widening existing ones.
+Two patterns have caused every self-inflicted bug in this build:
+1. **Broad CSS rules clobbering specific ones** — caused the black flash, the
+   invisible button hover, and the oversized mobile logo. Scope new rules narrowly.
+2. **Replacing a *range* of code rather than an exact string** — silently ate the
+   availability initialiser, so the day grid rendered empty. Always match an exact
+   string so a failed patch errors instead of deleting neighbouring code.
 
 ---
 

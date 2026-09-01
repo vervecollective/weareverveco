@@ -80,7 +80,13 @@
   .danger{border-color:#fecaca;}
   .danger .sec-hd{border-bottom-color:#fecaca;}
 </style>
-</head>
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-M43X6GPH');</script>
+<!-- End Google Tag Manager --></head>
 <body>
 <div class="wrap">
   <h1>Settings</h1>
@@ -312,6 +318,41 @@ function vcInit(){
     $('impliedHrs').value = impliedHours() + ' hours a week';
   }
 
+  // Initialise the availability block. This was lost in an earlier edit, which
+  // is why the day rows never rendered.
+  (async function initAvailability(){
+    if (window.__role === 'client') {
+      var ab = document.getElementById('availBlock');
+      if (ab) ab.remove();
+      return;
+    }
+    var p0 = window.__profile || {};
+    if ($('capHours'))   $('capHours').value   = p0.weekly_capacity_hours != null ? p0.weekly_capacity_hours : '';
+    if ($('availNote'))  $('availNote').value  = p0.availability_note || '';
+    if ($('acceptWork')) $('acceptWork').checked = p0.accepting_work !== false;
+
+    try {
+      var wq = await sb.from('availability_windows')
+        .select('*').eq('profile_id', window.__user.id);
+      (wq.data || []).forEach(function(w){
+        win[w.weekday] = {
+          on: true,
+          all_day: w.all_day,
+          starts_at: (w.starts_at || '09:00').slice(0,5),
+          ends_at:   (w.ends_at   || '17:00').slice(0,5)
+        };
+      });
+    } catch (e) { /* show the empty grid rather than nothing */ }
+
+    // Sensible default for someone who has never set it.
+    if (!Object.keys(win).length) {
+      [0,1,2,3,4].forEach(function(i){
+        win[i] = { on:false, all_day:false, starts_at:'09:00', ends_at:'17:00' };
+      });
+    }
+    paintDays();
+  })();
+
   $('saveProfile').addEventListener('click', async function(){
     $('saveProfile').disabled = true;
     var { error } = await sb.from('profiles').update({
@@ -452,5 +493,8 @@ function vcInit(){
 }
 window.addEventListener('vc-auth-ready', vcInit);
 </script>
-</body>
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-M43X6GPH"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) --></body>
 </html>

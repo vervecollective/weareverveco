@@ -509,3 +509,40 @@ body.vc-shelled .tag.soon{ background:#f1f5f9 !important; color:#475569 !importa
     transform:translateY(102%);}
   .vc-peek.on{transform:translateY(0);}
 }
+
+
+/* ================= notifications ================= */
+.vc-bell{position:absolute;top:16px;right:14px;background:none;border:none;cursor:pointer;
+  color:var(--vc-text-3);padding:5px;border-radius:7px;display:flex;}
+.vc-bell:hover{background:var(--vc-surface-2);color:var(--vc-text);}
+.vc-bell svg{width:18px;height:18px;}
+.vc-bell-n{position:absolute;top:1px;right:0;min-width:16px;height:16px;padding:0 4px;
+  border-radius:9px;background:var(--vc-accent);color:#fff;font-size:9.5px;font-weight:800;
+  display:none;align-items:center;justify-content:center;line-height:1;}
+.vc-sidebar{position:fixed;}
+.vc-brand{position:relative;}
+
+.vc-tray{position:absolute;top:56px;left:10px;right:10px;z-index:1250;
+  background:#fff;border:1px solid var(--vc-line);border-radius:11px;
+  box-shadow:0 10px 34px rgba(16,24,40,.16);display:none;max-height:62vh;overflow:hidden;}
+.vc-tray.on{display:block;}
+.vc-tray-h{display:flex;align-items:center;justify-content:space-between;
+  padding:12px 14px;border-bottom:1px solid var(--vc-line);}
+.vc-tray-h b{font-size:12.5px;font-weight:700;}
+.vc-tray-h button{background:none;border:none;font-size:11.5px;font-weight:600;
+  color:var(--vc-accent);cursor:pointer;font-family:inherit;padding:0;}
+.vc-tray-b{overflow-y:auto;max-height:calc(62vh - 46px);}
+.vc-tray-none{font-size:12.5px;color:var(--vc-text-3);padding:18px 14px;line-height:1.6;}
+
+.vc-nt{display:flex;gap:10px;padding:11px 14px;text-decoration:none;color:inherit;
+  border-bottom:1px solid var(--vc-line-soft);align-items:flex-start;}
+.vc-nt:last-child{border-bottom:none;}
+.vc-nt:hover{background:var(--vc-surface);}
+.vc-nt.unread{background:#fdf7f4;}
+.vc-nt.unread:hover{background:#fdf0eb;}
+.vc-nt-i{font-size:12px;color:var(--vc-accent);margin-top:2px;flex-shrink:0;}
+.vc-nt-b{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+.vc-nt-b b{font-size:12.5px;font-weight:600;line-height:1.35;}
+.vc-nt-b em{font-size:11.5px;font-style:normal;color:var(--vc-text-3);line-height:1.4;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.vc-nt-t{font-size:10.5px;color:var(--vc-text-4);flex-shrink:0;margin-top:2px;}

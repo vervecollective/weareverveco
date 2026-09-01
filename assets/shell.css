@@ -182,3 +182,58 @@ body .tag.live{background:var(--vc-ok-soft) !important; color:var(--vc-ok) !impo
 body .tag.manual{background:var(--vc-warn-soft) !important; color:var(--vc-warn) !important;}
 body .tag.soon{background:var(--vc-surface-2) !important; color:var(--vc-text-3) !important;}
 body .preview-panel{background:var(--vc-bg) !important; border-color:var(--vc-line) !important;}
+
+
+/* ---------- form controls ----------
+   Native selects render inconsistently across browsers and read as unstyled
+   next to everything else. Custom chevron, explicit surface, real focus ring. */
+body.vc-shelled select{
+  -webkit-appearance:none; -moz-appearance:none; appearance:none;
+  background-color:#fff !important;
+  background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%236b7280' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
+  background-repeat:no-repeat !important;
+  background-position:right 11px center !important;
+  padding-right:32px !important;
+  border:1px solid #d1d5db !important;
+  border-radius:6px !important;
+  color:#111827 !important;
+  font-family:inherit;
+  cursor:pointer;
+}
+body.vc-shelled select:hover{border-color:#9ca3af !important;}
+body.vc-shelled select:focus,
+body.vc-shelled input:focus,
+body.vc-shelled textarea:focus{
+  outline:none !important;
+  border-color:#D9531E !important;
+  box-shadow:0 0 0 3px #fdf0eb !important;
+}
+/* Grey out the placeholder option so it reads as "nothing chosen" */
+body.vc-shelled select:has(option[value=""]:checked){color:#6b7280 !important;}
+body.vc-shelled select option{color:#111827; background:#fff; padding:6px;}
+body.vc-shelled select optgroup{
+  color:#6b7280; font-size:11px; font-weight:700;
+  text-transform:uppercase; letter-spacing:.05em;
+}
+body.vc-shelled select:disabled{background-color:#f9fafb !important; color:#9ca3af !important; cursor:default;}
+
+body.vc-shelled input,
+body.vc-shelled textarea{
+  border:1px solid #d1d5db !important;
+  border-radius:6px !important;
+  background:#fff !important;
+  color:#111827 !important;
+}
+body.vc-shelled input:hover,
+body.vc-shelled textarea:hover{border-color:#9ca3af !important;}
+body.vc-shelled input::placeholder,
+body.vc-shelled textarea::placeholder{color:#9ca3af !important;}
+
+/* Number inputs: hide spinners, they fight the layout in line-item tables */
+body.vc-shelled input[type=number]::-webkit-outer-spin-button,
+body.vc-shelled input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none; margin:0;}
+body.vc-shelled input[type=number]{-moz-appearance:textfield;}
+
+/* Table inputs sit flush — no double borders inside a bordered row */
+body.vc-shelled td input{background:#fff !important;}
+body.vc-shelled td input:not(:focus){border-color:#e5e7eb !important;}

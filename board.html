@@ -101,6 +101,11 @@
   .sugg.on{display:block;}
   .sugg div{padding:9px 12px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:8px;}
   .sugg div:hover,.sugg div.sel{background:#fdf0eb;}
+  .ro-t{font-size:17px;font-weight:700;line-height:1.35;margin-bottom:10px;}
+  .ro-d{font-size:14px;color:#374151;white-space:pre-wrap;margin-bottom:18px;}
+  .ro-d.none{color:#9ca3af;font-style:italic;}
+  .ro-f{display:flex;justify-content:space-between;gap:14px;padding:9px 0;border-bottom:1px solid #f3f4f6;font-size:13.5px;}
+  .ro-f span{color:#6b7280;} .ro-f b{font-weight:600;}
   .empty{color:#9ca3af;font-size:13px;text-align:center;padding:26px 10px;}
 </style>
 </head>
@@ -125,8 +130,16 @@
 
 <div class="veil" id="veil"></div>
 <div class="sheet" id="sheet">
-  <div class="sheet-h"><b id="sheetTitle">Task</b><button class="x" id="close">&times;</button></div>
-  <div class="sheet-b">
+  <div class="sheet-h"><b id="sheetTitle">Task</b>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="btn btn-2" id="editBtn" style="padding:6px 13px;font-size:12.5px">Edit</button>
+      <button class="x" id="close">&times;</button>
+    </div>
+  </div>
+  <div class="sheet-b" id="readView" style="display:none">
+    <div id="roBody"></div>
+  </div>
+  <div class="sheet-b" id="editView">
     <div class="field"><label for="tTitle">Title</label><input type="text" id="tTitle"></div>
     <div class="field"><label for="tDetail">Detail</label><textarea id="tDetail" rows="3"></textarea></div>
     <div class="row">
@@ -289,11 +302,34 @@ function open(id, status){
   $('del').style.display = current ? '' : 'none';
   toggleBlocked();
   $('msg').className = 'msg';
+  if (current) { readView(); mode(false); } else { mode(true); }
   loadComments(current ? current.id : null);
   $('cmText').value = ''; $('cmVisible').checked = false;
   $('veil').classList.add('on'); $('sheet').classList.add('on');
   setTimeout(function(){ $('tTitle').focus(); }, 180);
 }
+function readView(){
+  if (!current) return;
+  var who = people.filter(function(p){return p.id===current.assignee_id;})[0];
+  var L = {todo:'To do',in_progress:'In progress',blocked:'Blocked',review:'Review',done:'Done'};
+  var P = {low:'Low',normal:'Normal',high:'High',urgent:'Urgent'};
+  $('roBody').innerHTML =
+    '<div class="ro-t">'+esc(current.title)+'</div>'+
+    '<div class="ro-d'+(current.detail?'':' none')+'">'+esc(current.detail||'No detail added.')+'</div>'+
+    '<div class="ro-f"><span>Status</span><b>'+(L[current.status]||current.status)+'</b></div>'+
+    '<div class="ro-f"><span>Priority</span><b>'+(P[current.priority]||current.priority)+'</b></div>'+
+    '<div class="ro-f"><span>Assignee</span><b>'+esc(who?(who.full_name||who.email):'Unassigned')+'</b></div>'+
+    '<div class="ro-f"><span>Due</span><b>'+(current.due_date?dueText(current.due_date):'\u2014')+'</b></div>'+
+    (current.blocked_reason?'<div class="ro-f"><span>Blocked by</span><b>'+esc(current.blocked_reason)+'</b></div>':'')+
+    '<div class="ro-f"><span>Client sees this</span><b>'+(current.client_visible?'Yes':'No')+'</b></div>';
+}
+
+function mode(edit){
+  $('readView').style.display = edit ? 'none' : 'block';
+  $('editView').style.display = edit ? 'block' : 'none';
+  $('editBtn').style.display  = edit ? 'none' : '';
+}
+
 function shut(){ $('veil').classList.remove('on'); $('sheet').classList.remove('on'); current=null; }
 function toggleBlocked(){ $('blockWrap').style.display = $('tStatus').value === 'blocked' ? '' : 'none'; }
 
@@ -440,6 +476,7 @@ window.vcInit = async function(){
   $('eng').addEventListener('change', function(){ engId = this.value; load(); });
   $('filt').addEventListener('change', render);
   $('tStatus').addEventListener('change', toggleBlocked);
+  $('editBtn').addEventListener('click', function(){ mode(true); });
   $('close').addEventListener('click', shut);
   $('cancel').addEventListener('click', shut);
   $('veil').addEventListener('click', shut);

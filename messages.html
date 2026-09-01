@@ -234,8 +234,10 @@ function titleOf(c){
   return o ? (o.full_name || o.email) : 'Conversation';
 }
 function avOf(p, cls){
-  if (p && p.avatar_url) return '<span class="'+cls+'" style="background-image:url('+esc(p.avatar_url)+')"></span>';
-  return '<span class="'+cls+'">'+ini(p ? (p.full_name||p.email) : '?')+'</span>';
+  var tag = (p && p.id) ? ' data-profile="'+p.id+'"' : '';
+  if (p && p.avatar_url)
+    return '<span class="'+cls+'"'+tag+' style="background-image:url('+esc(p.avatar_url)+')"></span>';
+  return '<span class="'+cls+'"'+tag+'>'+ini(p ? (p.full_name||p.email) : '?')+'</span>';
 }
 
 async function react(mid, e){

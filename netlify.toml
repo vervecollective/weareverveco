@@ -42,3 +42,8 @@
   from = "/internal"
   to = "/internal.html"
   status = 200
+
+[[redirects]]
+  from = "/console"
+  to = "/console.html"
+  status = 200

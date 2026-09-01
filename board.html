@@ -16,7 +16,8 @@
   .lede{color:#6b7280;font-size:14px;margin-bottom:20px;}
 
   .bar{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:22px;}
-  .bar .f{flex:1;min-width:190px;}
+  .bar .f{flex:1;min-width:150px;}
+  .bar{align-items:flex-end;}
   label{display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:5px;}
   input,select,textarea{width:100%;padding:9px 11px;font-size:13.5px;font-family:inherit;}
 
@@ -117,15 +118,22 @@
   <p class="lede">The work underneath the milestones. Internal unless you share it.</p>
 
   <div class="bar">
+    <div class="f"><label for="org">Organization</label>
+      <select id="org"><option value="">All organizations</option></select></div>
     <div class="f"><label for="eng">Engagement</label><select id="eng"></select></div>
+    <div class="f"><label for="assignee">Assignee</label>
+      <select id="assignee"><option value="">Anyone</option></select></div>
     <div class="f"><label for="filt">Show</label>
       <select id="filt">
         <option value="all">Everything</option>
         <option value="mine">Assigned to me</option>
         <option value="unassigned">Unassigned</option>
         <option value="client">Client-visible</option>
+        <option value="overdue">Overdue</option>
       </select></div>
+    <button class="btn btn-2" id="clearF" style="height:38px">Clear</button>
   </div>
+  <p id="fcount" style="font-size:12.5px;color:#6b7280;margin:-8px 0 16px"></p>
 
   <div class="board" id="board"></div>
 </div>
@@ -223,14 +231,29 @@ function dueText(d){
   return dt.toLocaleDateString('en-US',{month:'short',day:'numeric'});
 }
 
+function overdue(t){
+  if (!t.due_date || t.status === 'done') return false;
+  var today = new Date(); today.setHours(0,0,0,0);
+  return new Date(t.due_date + 'T12:00:00') < today;
+}
+
 function render(){
   var f = $('filt').value;
+  var who = $('assignee').value;
+
   var shown = tasks.filter(function(t){
+    if (who && t.assignee_id !== who) return false;
     if (f === 'mine') return t.assignee_id === me.id;
     if (f === 'unassigned') return !t.assignee_id;
     if (f === 'client') return t.client_visible;
+    if (f === 'overdue') return overdue(t);
     return true;
   });
+
+  var hidden = tasks.length - shown.length;
+  $('fcount').textContent = hidden > 0
+    ? shown.length + ' of ' + tasks.length + ' tasks shown \u00b7 ' + hidden + ' hidden by filters'
+    : '';
 
   $('board').innerHTML = COLS.map(function(c){
     var inCol = shown.filter(function(t){ return t.status === c[0]; })
@@ -483,18 +506,43 @@ window.vcInit = async function(){
   $('tAssignee').innerHTML = '<option value="">Unassigned</option>' +
     people.map(function(p){ return '<option value="'+p.id+'">'+esc(p.full_name||p.email)+'</option>'; }).join('');
 
+  var oq = await sb.from('organizations').select('id, name').order('name');
+  $('org').innerHTML = '<option value="">All organizations</option>' +
+    (oq.data || []).map(function(o){ return '<option value="'+o.id+'">'+esc(o.name)+'</option>'; }).join('');
+
+  $('assignee').innerHTML = '<option value="">Anyone</option>' +
+    people.map(function(p){ return '<option value="'+p.id+'">'+esc(p.full_name||p.email)+'</option>'; }).join('');
+
+  var allEngs = [];
   var eq = await sb.from('engagements')
-    .select('id, title, clients(business_name)').order('updated_at',{ascending:false});
-  var engs = eq.data || [];
-  $('eng').innerHTML = engs.length
-    ? engs.map(function(e){
-        return '<option value="'+e.id+'">'+esc((e.clients&&e.clients.business_name)||e.title||'Untitled')+'</option>';
-      }).join('')
-    : '<option value="">No engagements yet</option>';
-  engId = engs.length ? engs[0].id : null;
+    .select('id, title, clients(business_name, organization_id)').order('updated_at',{ascending:false});
+  allEngs = eq.data || [];
+
+  window.paintEngs = paintEngs;
+  function paintEngs(){
+    var orgId = $('org').value;
+    var list = orgId
+      ? allEngs.filter(function(e){ return e.clients && e.clients.organization_id === orgId; })
+      : allEngs;
+    $('eng').innerHTML = list.length
+      ? list.map(function(e){
+          return '<option value="'+e.id+'">'+esc((e.clients&&e.clients.business_name)||e.title||'Untitled')+'</option>';
+        }).join('')
+      : '<option value="">No engagements here</option>';
+    engId = list.length ? list[0].id : null;
+    return load();
+  }
+
+  $('org').addEventListener('change', paintEngs);
+  paintEngs();
 
   $('eng').addEventListener('change', function(){ engId = this.value; load(); });
   $('filt').addEventListener('change', render);
+  $('assignee').addEventListener('change', render);
+  $('clearF').addEventListener('click', function(){
+    $('org').value = ''; $('filt').value = 'all'; $('assignee').value = '';
+    paintEngs();
+  });
   $('tStatus').addEventListener('change', toggleBlocked);
   $('editBtn').addEventListener('click', function(){ mode(true); });
 

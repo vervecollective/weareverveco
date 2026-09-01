@@ -334,7 +334,7 @@ if (role !== 'client') {
         if (!t) throw new Error('Not found');
         const { data: cm } = await sb.from('comments')
           .select('body, created_at, profiles:author_id(full_name)')
-          .eq('task_id', id).order('created_at', { ascending:false }).limit(3);
+          .eq('task_id', id).order('created_at', { ascending:false }).limit(8);
 
         html = '<h3>' + esc(t.title) + '</h3>' +
           (t.detail ? '<p class="vc-peek-d">' + esc(t.detail) + '</p>' : '') +
@@ -345,10 +345,18 @@ if (role !== 'client') {
           fld('Due', t.due_date ? date(t.due_date) : '\u2014') +
           (t.blocked_reason ? fld('Blocked by', t.blocked_reason) : '') +
           ((cm && cm.length)
-            ? '<div class="vc-peek-cm"><b>Latest discussion</b>' + cm.map((c) =>
-                '<div class="vc-peek-c"><em>' + esc((c.profiles && c.profiles.full_name) || 'Someone') + '</em>' +
-                esc(c.body) + '</div>').join('') + '</div>'
-            : '');
+            ? '<div class="vc-peek-cm"><b>Discussion (' + cm.length + ')</b>' + cm.map((c) => {
+                const nm = (c.profiles && c.profiles.full_name) || 'Someone';
+                const ini = nm.split(' ').map(x => x[0]).filter(Boolean).join('').slice(0,2).toUpperCase();
+                const when = new Date(c.created_at)
+                  .toLocaleDateString('en-US',{ month:'short', day:'numeric' });
+                return '<div class="vc-peek-c">' +
+                  '<span class="vc-peek-av">' + ini + '</span>' +
+                  '<span class="vc-peek-cb"><em>' + esc(nm) +
+                  ' \u00b7 <i>' + when + '</i></em>' + esc(c.body) + '</span></div>';
+              }).join('') + '</div>'
+            : '<div class="vc-peek-cm"><b>Discussion</b>' +
+              '<p class="vc-peek-load">No comments yet. Open the task on the board to add one.</p></div>');
 
       } else if (kind === 'assignment') {
         const { data: a } = await sb.from('assignments')

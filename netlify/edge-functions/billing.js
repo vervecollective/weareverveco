@@ -107,3 +107,5 @@ export default async (req) => {
 };
 
 export const config = { path: '/api/billing' };
+
+// Redeploy trigger: pick up STRIPE_SECRET_KEY env var.

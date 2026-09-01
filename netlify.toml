@@ -29,3 +29,16 @@
   from = "/work"
   to = "/work.html"
   status = 200
+
+[[edge_functions]]
+  function = "engagements"
+  path = "/api/engagements"
+
+[[edge_functions]]
+  function = "billing"
+  path = "/api/billing"
+
+[[redirects]]
+  from = "/internal"
+  to = "/internal.html"
+  status = 200

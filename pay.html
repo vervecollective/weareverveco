@@ -133,6 +133,22 @@
     <p class="msg" id="iMsg"></p>
   </div>
 
+  <div class="card" id="payoutCard" style="display:none">
+    <h2 id="poTitle">Account owner shares</h2>
+    <p class="hint" id="poHint">Calculated on money actually collected, minus what contractors were paid — not on what was billed.</p>
+    <div id="poBuild" style="display:none">
+      <div class="row3">
+        <div class="field"><label for="poEng">Engagement</label><select id="poEng"></select></div>
+        <div class="field"><label for="poFrom">From</label><input type="date" id="poFrom"></div>
+        <div class="field"><label for="poTo">To</label><input type="date" id="poTo"></div>
+      </div>
+      <div id="poPreview"></div>
+      <button class="btn" id="poCreate" style="margin-top:12px">Create this payout</button>
+      <p class="msg" id="poMsg"></p>
+    </div>
+    <div id="poList" style="margin-top:16px"></div>
+  </div>
+
   <div class="card">
     <h2 id="listTitle">Invoices</h2>
     <div id="list"><div class="empty">Loading…</div></div>
@@ -263,6 +279,58 @@ async function setStatus(id, status, method){
   loadInvoices();
 }
 
+async function loadPayouts(){
+  var card = $('payoutCard');
+  var q = sb.from('payouts')
+    .select('*, engagements(clients(business_name)), profiles:account_owner_id(full_name)')
+    .order('period_start',{ascending:false});
+  if (role === 'account_owner') q = q.eq('account_owner_id', me.id);
+  var r = await q;
+  var rows = r.data || [];
+
+  if (role === 'contractor') { card.style.display = 'none'; return; }
+  card.style.display = 'block';
+
+  var COL = { pending:'#b45309', approved:'#1d4ed8', paid:'#047857', void:'#64748b' };
+  $('poList').innerHTML = rows.length ? rows.map(function(p){
+    var biz = (p.engagements && p.engagements.clients && p.engagements.clients.business_name) || 'Engagement';
+    var who = (p.profiles && p.profiles.full_name) || '';
+    var acts = '';
+    if (role === 'owner' && p.status === 'pending') {
+      acts = '<button class="btn btn-go btn-sm poAp" data-id="'+p.id+'">Approve</button>';
+    } else if (role === 'owner' && p.status === 'approved') {
+      acts = '<button class="btn btn-go btn-sm poPd" data-id="'+p.id+'">Mark paid</button>';
+    }
+    return '<div class="inv '+p.status+'" style="border-left-color:'+COL[p.status]+'">'+
+      '<div class="inv-b"><b>'+esc(biz)+(who && role==='owner' ? ' \u2014 '+esc(who) : '')+'</b>'+
+      '<div class="s">'+p.period_start+' \u2192 '+p.period_end+' \u00b7 '+
+        'collected '+money(p.gross_revenue)+', crew '+money(p.contractor_cost)+
+        ', margin '+money(p.gross_margin)+'</div>'+
+      '<div class="s">Split '+Number(p.owner_pct)+'/'+Number(p.verve_pct)+
+        ' \u00b7 Verve keeps '+money(p.verve_amount)+'</div>'+
+      (acts?'<div class="acts">'+acts+'</div>':'')+
+      '</div><div class="inv-r"><div class="amt">'+money(p.owner_amount)+'</div>'+
+      '<span class="pill '+(p.status==='paid'?'paid':(p.status==='approved'?'approved':'submitted'))+'">'+
+      p.status+'</span></div></div>';
+  }).join('') : '<div class="empty"><b>No shares yet</b>'+
+    (role==='owner'?'Build one above once an engagement has collected money.':'Your share appears here once it is calculated.')+'</div>';
+
+  $('poList').querySelectorAll('.poAp').forEach(function(b){
+    b.addEventListener('click', async function(){
+      await sb.from('payouts').update({ status:'approved', approved_at:new Date().toISOString(), approved_by: me.id }).eq('id', b.dataset.id);
+      loadPayouts();
+    });
+  });
+  $('poList').querySelectorAll('.poPd').forEach(function(b){
+    b.addEventListener('click', async function(){
+      var how = window.prompt('How was it paid?', 'ACH');
+      if (how === null) return;
+      await sb.from('payouts').update({ status:'paid', paid_at:new Date().toISOString(), paid_method:how }).eq('id', b.dataset.id);
+      loadPayouts();
+    });
+  });
+}
+
 window.vcInit = async function(){
   sb = window.__sb; me = window.__user; role = window.__role;
 
@@ -372,6 +440,63 @@ window.vcInit = async function(){
     $('listTitle').textContent = 'Contractor invoices';
   }
 
+  if (role === 'owner') {
+    $('poBuild').style.display = 'block';
+    var eq = await sb.from('engagements')
+      .select('id, title, owner_id, clients(business_name)').order('updated_at',{ascending:false});
+    var engs = eq.data || [];
+    $('poEng').innerHTML = engs.map(function(e){
+      return '<option value="'+e.id+'" data-owner="'+(e.owner_id||'')+'">'+
+        esc((e.clients&&e.clients.business_name)||e.title||'Untitled')+'</option>';
+    }).join('');
+
+    var now = new Date();
+    $('poFrom').value = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0,10);
+    $('poTo').value   = new Date(now.getFullYear(), now.getMonth()+1, 0).toISOString().slice(0,10);
+
+    async function preview(){
+      var eid = $('poEng').value;
+      if (!eid) return;
+      var r = await sb.rpc('calc_payout', { eid: eid, p_start: $('poFrom').value, p_end: $('poTo').value });
+      var d = (r.data && r.data[0]) || null;
+      if (!d) { $('poPreview').innerHTML = ''; return; }
+      $('poPreview').innerHTML =
+        '<div class="note" style="margin-top:12px">'+
+        '<div style="display:flex;justify-content:space-between;padding:3px 0"><span>Collected from client</span><b>'+money(d.gross)+'</b></div>'+
+        '<div style="display:flex;justify-content:space-between;padding:3px 0"><span>Paid to crew</span><b>\u2212 '+money(d.cost)+'</b></div>'+
+        '<div style="display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid #e5e7eb;margin-top:4px"><span>Gross margin</span><b>'+money(d.margin)+'</b></div>'+
+        '<div style="display:flex;justify-content:space-between;padding:3px 0"><span>Account owner ('+Number(d.owner_pct)+'%)</span><b style="color:#047857">'+money(d.owner_amount)+'</b></div>'+
+        '<div style="display:flex;justify-content:space-between;padding:3px 0"><span>Verve ('+Number(d.verve_pct)+'%)</span><b>'+money(d.verve_amount)+'</b></div>'+
+        '</div>';
+      $('poPreview').dataset.calc = JSON.stringify(d);
+    }
+    ['poEng','poFrom','poTo'].forEach(function(id){ $(id).addEventListener('change', preview); });
+    preview();
+
+    $('poCreate').addEventListener('click', async function(){
+      var d = $('poPreview').dataset.calc ? JSON.parse($('poPreview').dataset.calc) : null;
+      if (!d) return say('poMsg','Nothing to calculate.', false);
+      var opt = $('poEng').selectedOptions[0];
+      var ownerId = opt && opt.dataset.owner;
+      if (!ownerId) return say('poMsg','That engagement has no account owner.', false);
+      if (Number(d.margin) <= 0) return say('poMsg','No margin collected in that period yet.', false);
+
+      var r = await sb.from('payouts').insert({
+        engagement_id: $('poEng').value,
+        account_owner_id: ownerId,
+        period_start: $('poFrom').value,
+        period_end: $('poTo').value,
+        gross_revenue: d.gross, contractor_cost: d.cost, gross_margin: d.margin,
+        owner_pct: d.owner_pct, verve_pct: d.verve_pct,
+        owner_amount: d.owner_amount, verve_amount: d.verve_amount
+      });
+      if (r.error) return say('poMsg', r.error.message, false);
+      say('poMsg','Created. Approve it when you are ready to pay.', true);
+      loadPayouts();
+    });
+  }
+
+  loadPayouts();
   loadInvoices();
 };
 </script>

@@ -24,6 +24,8 @@
   .today{padding:0 14px;height:34px;border:1px solid #e5e7eb;background:#fff;border-radius:7px;
     font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;}
   .today:hover{background:#f9fafb;}
+  .filt{height:34px;padding:0 10px;border:1px solid #e5e7eb;border-radius:7px;background:#fff;
+    font-size:12.5px;font-family:inherit;color:#111827;max-width:170px;}
   .legend{display:flex;gap:14px;margin-left:auto;flex-wrap:wrap;font-size:12px;color:#6b7280;}
   .legend span{display:flex;align-items:center;gap:6px;}
   .sw{width:9px;height:9px;border-radius:3px;}
@@ -79,6 +81,14 @@
     <div class="nav"><button id="prev">&lsaquo;</button><button id="next">&rsaquo;</button></div>
     <span class="mo" id="mo"></span>
     <button class="today" id="jump">Today</button>
+    <select id="fOrg" class="filt"><option value="">All organizations</option></select>
+    <select id="fWho" class="filt"><option value="">Everyone</option></select>
+    <select id="fKind" class="filt">
+      <option value="">Everything</option>
+      <option value="shoot">Shoots only</option>
+      <option value="ms">Milestones only</option>
+      <option value="task">Tasks only</option>
+    </select>
     <div class="legend">
       <span><i class="sw" style="background:#7c3aed"></i>Shoot</span>
       <span><i class="sw" style="background:#047857"></i>Milestone</span>
@@ -117,24 +127,26 @@ async function fetchAll(){
     events.push({
       kind:'shoot', date:d.work_date, title:biz + ' \u2014 ' + (a.role_on_job || 'Shoot'),
       sub:(d.call_time ? d.call_time.slice(0,5) : 'Time TBC') + (a.location ? ' \u00b7 ' + a.location : ''),
-      who:a.contractor_id, kind2:'assignment', ref:d.assignment_id
+      who:a.contractor_id, kind2:'assignment', ref:d.assignment_id,
+      org:(a.engagements&&a.engagements.clients&&a.engagements.clients.organization_id)||null
     });
   });
 
   var mq = await sb.from('milestones')
-    .select('*, engagements(title, clients(business_name))');
+    .select('*, engagements(title, clients(business_name, organization_id))');
   (mq.data || []).forEach(function(m){
     if (!m.due_date || m.status === 'done') return;
     var e = m.engagements || {};
     events.push({
       kind:'ms', date:m.due_date, title:m.label,
       sub:(e.clients && e.clients.business_name) || e.title || '',
-      kind2:'milestone', ref:m.id
+      kind2:'milestone', ref:m.id,
+      org:(m.engagements&&m.engagements.clients&&m.engagements.clients.organization_id)||null
     });
   });
 
   var tq = await sb.from('tasks')
-    .select('*, engagements(title, clients(business_name))')
+    .select('*, engagements(title, clients(business_name, organization_id))')
     .neq('status','done').neq('status','cancelled');
   (tq.data || []).forEach(function(t){
     if (!t.due_date) return;
@@ -142,7 +154,8 @@ async function fetchAll(){
     events.push({
       kind:'task', date:t.due_date, title:t.title,
       sub:(e.clients && e.clients.business_name) || e.title || '',
-      who:t.assignee_id, kind2:'task', ref:t.id
+      who:t.assignee_id, kind2:'task', ref:t.id,
+      org:(t.engagements&&t.engagements.clients&&t.engagements.clients.organization_id)||null
     });
   });
 
@@ -156,7 +169,18 @@ async function fetchAll(){
   });
 }
 
+function visible(){
+  var o = $('fOrg').value, w = $('fWho').value, k = $('fKind').value;
+  return events.filter(function(e){
+    if (o && e.org !== o) return false;
+    if (w && e.who !== w) return false;
+    if (k && e.kind !== k) return false;
+    return true;
+  });
+}
+
 function render(){
+  var shown = visible();
   var y = cursor.getFullYear(), m = cursor.getMonth();
   $('mo').textContent = cursor.toLocaleDateString('en-US',{month:'long',year:'numeric'});
 
@@ -173,7 +197,7 @@ function render(){
     d.setHours(12,0,0,0);
     var key = iso(d);
     var out = d.getMonth() !== m;
-    var evs = events.filter(function(e){ return e.date === key; });
+    var evs = shown.filter(function(e){ return e.date === key; });
 
     html += '<div class="day'+(out?' out':'')+(key===today?' today':'')+'">'+
       '<div class="dn">'+d.getDate()+'</div>'+
@@ -198,7 +222,7 @@ function render(){
     : '';
 
   var end = new Date(); end.setDate(end.getDate() + 14);
-  var soon = events.filter(function(e){ return e.date >= today && e.date <= iso(end); })
+  var soon = shown.filter(function(e){ return e.date >= today && e.date <= iso(end); })
                    .sort(function(a,b){ return a.date < b.date ? -1 : 1; });
   setTimeout(function(){
     document.querySelectorAll('[data-k][data-r]').forEach(function(el){
@@ -239,6 +263,16 @@ window.vcInit = async function(){
   $('prev').addEventListener('click', function(){ cursor.setMonth(cursor.getMonth()-1); render(); });
   $('next').addEventListener('click', function(){ cursor.setMonth(cursor.getMonth()+1); render(); });
   $('jump').addEventListener('click', function(){ cursor = new Date(); render(); });
+
+  var oq = await sb.from('organizations').select('id, name').order('name');
+  $('fOrg').innerHTML = '<option value="">All organizations</option>' +
+    (oq.data||[]).map(function(o){ return '<option value="'+o.id+'">'+esc(o.name)+'</option>'; }).join('');
+
+  var pq = await sb.from('profiles').select('id, full_name').eq('is_active', true);
+  $('fWho').innerHTML = '<option value="">Everyone</option>' +
+    (pq.data||[]).map(function(p){ return '<option value="'+p.id+'">'+esc(p.full_name||'')+'</option>'; }).join('');
+
+  ['fOrg','fWho','fKind'].forEach(function(id){ $(id).addEventListener('change', render); });
 
   await fetchAll();
   render();

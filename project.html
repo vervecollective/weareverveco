@@ -287,6 +287,20 @@ window.vcInit = async function(){
         await sb.from('deliverables').update({
           status:'approved', approved_at:new Date().toISOString(), approved_by: me.id
         }).eq('id', b.dataset.id);
+        try {
+          var { data:{ session } } = await sb.auth.getSession();
+          await fetch('https://otqrkxjtojqlpzzvqavp.supabase.co/functions/v1/notify', {
+            method:'POST',
+            headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},
+            body: JSON.stringify({
+              to:'hello@weareverveco.com',
+              subject:'Client approved a deliverable',
+              heading:'Approved',
+              body:(biz||'A client')+' approved something you shared.',
+              cta_url:'https://weareverveco.com/internal', cta_label:'Open the engagement'
+            })
+          });
+        } catch(e){}
         location.reload();
       });
     });
@@ -297,6 +311,20 @@ window.vcInit = async function(){
         await sb.from('deliverables').update({
           status:'changes_requested', client_feedback: why
         }).eq('id', b.dataset.id);
+        try {
+          var { data:{ session } } = await sb.auth.getSession();
+          await fetch('https://otqrkxjtojqlpzzvqavp.supabase.co/functions/v1/notify', {
+            method:'POST',
+            headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},
+            body: JSON.stringify({
+              to:'hello@weareverveco.com',
+              subject:'Client asked for changes',
+              heading:'Changes requested',
+              body:(biz||'A client')+' asked for changes:\n\n\u201C'+why+'\u201D',
+              cta_url:'https://weareverveco.com/internal', cta_label:'Open the engagement'
+            })
+          });
+        } catch(e){}
         location.reload();
       });
     });
@@ -344,6 +372,21 @@ window.vcInit = async function(){
     });
     btn.disabled = false;
     if (r.error) return msg('reqMsg', r.error.message, false);
+    try {
+      var { data:{ session } } = await sb.auth.getSession();
+      await fetch('https://otqrkxjtojqlpzzvqavp.supabase.co/functions/v1/notify', {
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},
+        body: JSON.stringify({
+          to:'hello@weareverveco.com',
+          subject:'Question from ' + (biz || 'a client'),
+          heading:'A client has a question',
+          body: b,
+          facts:[{label:'Client', value: biz || '\u2014'}],
+          cta_url:'https://weareverveco.com/internal', cta_label:'Open the engagement'
+        })
+      });
+    } catch(e){}
     document.getElementById('rSubject').value=''; document.getElementById('rBody').value='';
     msg('reqMsg','Sent. We\u2019ll come back to you.', true);
     loadReqs();

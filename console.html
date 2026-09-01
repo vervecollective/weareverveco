@@ -67,21 +67,15 @@
   .status{font-size:13px;margin-top:10px;display:none;}
   .status.show{display:block;}
   .status.ok{color:var(--green);} .status.err{color:var(--red);}
-  #app{display:none;}
+  #app{display:block;}
   .toplinks{display:flex;gap:14px;margin-bottom:18px;font-size:12.5px;}
   .toplinks a{color:var(--muted);text-decoration:none;}
   .toplinks a:hover{color:var(--orange-light);}
 </style>
+<link rel="stylesheet" href="/assets/shell.css">
+<script type="module" src="/assets/shell.js"></script>
 </head>
 <body>
-
-<div class="gate" id="gate">
-  <h1>Call Console</h1>
-  <p class="sub">Internal — enter admin password</p>
-  <input type="password" id="pw" placeholder="Password" autofocus>
-  <button class="btn full" id="unlockBtn">Unlock</button>
-  <p class="status err" id="gateErr">Wrong password.</p>
-</div>
 
 <div id="app"><div class="wrap">
   <h1>Call Console</h1>
@@ -146,18 +140,6 @@
   </div>
 </div></div>
 
-<script type="module">
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-window.__sb = createClient(
-  'https://otqrkxjtojqlpzzvqavp.supabase.co',
-  'sb_publishable_OBViGLggbcOKacti5iUonA_QCzw3kBv'
-);
-const { data:{ session } } = await window.__sb.auth.getSession();
-if (!session) { location.href = '/login.html'; }
-window.__token = session ? session.access_token : '';
-window.__user  = session ? session.user : null;
-window.dispatchEvent(new Event('vc-auth-ready'));
-</script>
 <script>
 var PW='vc_admin_pw', current=null, engagements=[], stage='discovery';
 
@@ -350,16 +332,14 @@ function loadEngagements(){
   });
 }
 
-document.getElementById('unlockBtn').addEventListener('click',function(){
-  var v=document.getElementById('pw').value; if(!v)return;
-  localStorage.setItem(PW,v);
+function vcInit(){
   loadEngagements().then(function(){
-    document.getElementById('gate').style.display='none';
-    document.getElementById('app').style.display='block';
     renderStages();renderScript();renderCapture();renderDeposit();
-  }).catch(function(){document.getElementById('gateErr').classList.add('show');});
-});
-document.getElementById('pw').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('unlockBtn').click();});
+  }).catch(function(){
+    renderStages();renderScript();renderCapture();renderDeposit();
+  });
+}
+window.vcInit = vcInit;
 
 document.getElementById('engSel').addEventListener('change',function(e){
   current=engagements.filter(function(x){return x.id===e.target.value;})[0]||null;
@@ -388,6 +368,6 @@ document.getElementById('saveBtn').addEventListener('click',function(){
   }).catch(function(){document.getElementById('saveStatus').textContent='Save failed.';document.getElementById('saveStatus').className='status show err';});
 });
 </script>
-<script>window.addEventListener('vc-auth-ready',function(){var b=document.getElementById('unlockBtn');if(b)b.click();});</script>
+<script>window.addEventListener('vc-auth-ready',function(){ if (typeof vcInit==='function') vcInit(); });</script>
 </body>
 </html>

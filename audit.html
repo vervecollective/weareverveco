@@ -48,6 +48,22 @@
     font-size:13.5px;white-space:pre-wrap;line-height:1.65;margin-top:16px;}
   .bench{font-size:12.5px;color:#6b7280;margin-top:8px;}
   .empty{color:#9ca3af;font-size:13px;padding:14px 0;text-align:center;}
+  details.rub{border:1px solid #e5e7eb;border-radius:8px;background:#f9fafb;margin:0 0 18px;}
+  details.rub summary{cursor:pointer;padding:13px 16px;font-size:13.5px;font-weight:600;color:#111827;list-style:none;}
+  details.rub summary::-webkit-details-marker{display:none;}
+  details.rub summary:before{content:'\25B8';display:inline-block;margin-right:9px;color:#D9531E;transition:transform .15s;}
+  details.rub[open] summary:before{transform:rotate(90deg);}
+  details.rub .rb{padding:0 16px 16px;}
+  .rq{font-size:12.5px;font-weight:700;color:#D9531E;text-transform:uppercase;letter-spacing:.05em;margin:16px 0 8px;}
+  .rq:first-child{margin-top:4px;}
+  .rr{display:grid;grid-template-columns:minmax(150px,1fr) 1.6fr;gap:10px;padding:8px 0;border-bottom:1px solid #eef0f2;font-size:12.8px;}
+  .rr:last-child{border-bottom:none;}
+  .rr .see{color:#4b5563;font-weight:600;}
+  .rr .write{color:#111827;}
+  .rr .write em{color:#6b7280;font-style:normal;}
+  @media(max-width:700px){.rr{grid-template-columns:1fr;gap:3px;}}
+  .rnote{font-size:12.5px;color:#6b7280;margin-top:12px;padding-top:10px;border-top:1px solid #e5e7eb;}
+
 </style>
 </head>
 <body>
@@ -96,6 +112,27 @@
   <div class="card">
     <h2>What you see</h2>
     <p class="hint">These five questions, every time. Consistency is what makes audits comparable across accounts.</p>
+    <details class="rub">
+      <summary>Cheat sheet — if you see this, write this</summary>
+      <div class="rb">
+
+        <div class="rq">1 · The story</div>
+<div class="rr"><span class="see">Posting stopped or went irregular</span><span class="write">“Posting was consistent through [month], then dropped to [n] a week. Reach followed it down.”</span></div><div class="rr"><span class="see">Posting steady, reach falling</span><span class="write">“Output has held steady but reach has fallen [n]% over 90 days — the audience is there, the content is not landing.”</span></div><div class="rr"><span class="see">Reach fine, engagement near zero</span><span class="write">“Content is being seen and ignored. That is a message problem, not a distribution problem.”</span></div><div class="rr"><span class="see">Followers growing, engagement flat</span><span class="write">“The follower count is going up while engagement stays flat, which usually means the new followers are not buyers.”</span></div><div class="rr"><span class="see">Everything is one format</span><span class="write">“Almost all output is [static images / reshared posts]. There is no format variety to test against.”</span></div><div class="rr"><span class="see">Nothing has changed at all</span><span class="write">“Ninety days of consistent, unchanging output. Nothing is broken and nothing is improving — this account is idling.”</span></div><div class="rr"><span class="see">Active on one platform only</span><span class="write">“All effort is on [platform]. That is fine if the customer is there, and expensive if they are not.”</span></div>
+        <div class="rq">2 · What is genuinely working</div>
+<div class="rr"><span class="see">One format outperforms</span><span class="write">“[Format] posts consistently outperform everything else, at roughly [n]x the engagement.”</span></div><div class="rr"><span class="see">Faces beat products</span><span class="write">“Posts with a person in them outperform product shots. The audience responds to people here.”</span></div><div class="rr"><span class="see">A topic keeps landing</span><span class="write">“Anything about [topic] outperforms. That is a signal worth building on.”</span></div><div class="rr"><span class="see">Consistency itself</span><span class="write">“The posting discipline is real. Most accounts this size cannot sustain it, and it is a foundation to build on.”</span></div><div class="rr"><span class="see">Good bio / profile setup</span><span class="write">“The profile is set up correctly — clear bio, working link, right category. That part is done.”</span></div><div class="rr"><span class="see">Genuinely nothing</span><span class="write">“Nothing has cleared [n]% engagement in 90 days. I would rather say that plainly than invent a strength.”</span></div>
+        <div class="rq">3 · The gap costing the most</div>
+<div class="rr"><span class="see">No link, no offer, no CTA</span><span class="write">“There is no path from a post to a purchase. Attention arrives and has nowhere to go.”</span></div><div class="rr"><span class="see">Engagement rate under 0.5%</span><span class="write">“Content is reaching the wrong people. Below half a percent is a targeting problem, not a volume problem.”</span></div><div class="rr"><span class="see">All awareness, no conversion</span><span class="write">“Everything is top-of-funnel. Nothing asks anyone to do anything.”</span></div><div class="rr"><span class="see">Wrong platform for the buyer</span><span class="write">“The effort is on [platform] and the customer is on [other]. The work is fine, the room is wrong.”</span></div><div class="rr"><span class="see">No tracking installed</span><span class="write">“There is no conversion tracking, so nobody can tell which of this is working. That has to be fixed before anything is scaled.”</span></div><div class="rr"><span class="see">Competitors running ads, they aren't</span><span class="write">“[Competitor] is running paid; this account is not. They are buying the attention this account is trying to earn.”</span></div><div class="rr"><span class="see">Inconsistent brand</span><span class="write">“Tone and look change post to post, so nothing compounds into recognition.”</span></div>
+        <div class="rq">4 · What we would do <em style="text-transform:none;letter-spacing:0;color:#6b7280;font-weight:400">(three moves, tied to the gap)</em></div>
+<div class="rr"><span class="see">Gap = no conversion path</span><span class="write">“Add one clear offer, put it in the bio and in every third post, and install tracking so we can see what converts.”</span></div><div class="rr"><span class="see">Gap = low engagement rate</span><span class="write">“Cut posting volume, raise the quality bar, and test [winning format] for four weeks before changing anything else.”</span></div><div class="rr"><span class="see">Gap = no tracking</span><span class="write">“Install conversion tracking first. Establish a baseline for 30 days. Change nothing until we can measure it.”</span></div><div class="rr"><span class="see">Gap = wrong platform</span><span class="write">“Hold [current] at maintenance level and run a 60-day test on [other] before shifting real budget.”</span></div><div class="rr"><span class="see">Gap = competitors buying attention</span><span class="write">“Start a small paid test against the audience already engaging organically, at a spend level we can afford to learn from.”</span></div><div class="rr"><span class="see">Gap = inconsistency</span><span class="write">“Set one format, one voice, and a fixed cadence for 90 days. Consistency compounds; variety this early does not.”</span></div>
+        <div class="rq">5 · The one thing to fix first <em style="text-transform:none;letter-spacing:0;color:#6b7280;font-weight:400">(two weeks, visible)</em></div>
+<div class="rr"><span class="see">Nothing is measured</span><span class="write">“Install conversion tracking this month. Everything else is guesswork until that exists.”</span></div><div class="rr"><span class="see">No offer anywhere</span><span class="write">“Put one clear offer in the bio and pin a post about it this week.”</span></div><div class="rr"><span class="see">One format clearly wins</span><span class="write">“For the next two weeks, post only [format] and nothing else. Then we look again.”</span></div><div class="rr"><span class="see">Posting has stalled</span><span class="write">“Get back to [n] posts a week for two weeks before we change anything about what is posted.”</span></div><div class="rr"><span class="see">Spending with no oversight</span><span class="write">“Pause the campaigns that have not converted in 30 days. Stop the bleed before optimising anything.”</span></div>
+        <div class="rnote"><b>Rules.</b> Never invent a number — if you did not see it, do not write it.
+        Describe changes, not states: “reach fell 60%” beats “reach is 12,000”. Pick exactly one gap and one
+        first action; two of either means the audit is not finished. And never promise a result — observations
+        are defensible, forecasts are not.</div>
+      </div>
+    </details>
+
     <div class="field"><label for="story">1. The story — what is actually happening here?</label>
       <textarea id="story" rows="3" placeholder="They post consistently but reach collapsed in month two…"></textarea></div>
     <div class="field"><label for="strengths">2. What is genuinely working</label>

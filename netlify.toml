@@ -103,3 +103,8 @@
   from = "/board"
   to = "/board.html"
   status = 200
+
+[[redirects]]
+  from = "/mywork"
+  to = "/mywork.html"
+  status = 200

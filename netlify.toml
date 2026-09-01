@@ -118,3 +118,8 @@
   from = "/pay"
   to = "/pay.html"
   status = 200
+
+[[redirects]]
+  from = "/capacity"
+  to = "/capacity.html"
+  status = 200

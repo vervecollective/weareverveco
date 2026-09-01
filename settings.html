@@ -102,8 +102,11 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         <div class="fld avatar-row">
           <div class="av" id="av"></div>
           <div style="flex:1">
-            <label for="avatar_url">Profile photo URL</label>
-            <input type="url" id="avatar_url" placeholder="https://...">
+            <label for="avatarFile">Profile photo</label>
+            <input type="file" id="avatarFile" accept="image/png,image/jpeg,image/webp,image/gif"
+              style="padding:8px 10px;font-size:13px">
+            <p class="help" id="avHelp">PNG, JPG or WebP, up to 2MB. Uploaded and hosted for you.</p>
+            <input type="hidden" id="avatar_url">
             <p class="help">Paste a link to an image. Initials are used if left empty.</p>
           </div>
         </div>
@@ -280,7 +283,32 @@ function vcInit(){
   $('role_display').value = ({owner:'Owner',account_owner:'Account Owner',contractor:'Contractor',client:'Client'})[role] || role;
   $('email').value = (window.__user && window.__user.email) || '';
   paintAvatar();
-  $('avatar_url').addEventListener('input', paintAvatar);
+  $('avatarFile').addEventListener('change', async function(){
+    var f = this.files && this.files[0];
+    if (!f) return;
+    if (f.size > 2 * 1024 * 1024) {
+      $('avHelp').textContent = 'That file is over 2MB. Pick a smaller one.';
+      $('avHelp').style.color = '#991B1B';
+      this.value = ''; return;
+    }
+    $('avHelp').textContent = 'Uploading\u2026'; $('avHelp').style.color = '#4b5563';
+
+    var ext = (f.name.split('.').pop() || 'png').toLowerCase();
+    // Own folder per user — storage policy only permits writing into your own.
+    var path = window.__user.id + '/avatar-' + Date.now() + '.' + ext;
+
+    var up = await sb.storage.from('avatars').upload(path, f, { upsert: true, contentType: f.type });
+    if (up.error) {
+      $('avHelp').textContent = up.error.message;
+      $('avHelp').style.color = '#991B1B';
+      return;
+    }
+    var pub = sb.storage.from('avatars').getPublicUrl(path);
+    $('avatar_url').value = pub.data.publicUrl;
+    paintAvatar();
+    $('avHelp').textContent = 'Uploaded. Save changes to keep it.';
+    $('avHelp').style.color = '#065F46';
+  });
 
   function paintAvatar(){
     var u = $('avatar_url').value.trim(), a = $('av');

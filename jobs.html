@@ -163,6 +163,37 @@ async function respond(id, status){
     .update({ status: status, responded_at: new Date().toISOString() })
     .eq('id', id);
   if (r.error) return alert(r.error.message);
+
+  // Let staff know without them having to check the board.
+  try {
+    var { data:{ session } } = await sb.auth.getSession();
+    var a = (await sb.from('assignments')
+      .select('role_on_job, work_date, pay_amount, engagements(clients(business_name))')
+      .eq('id', id).single()).data;
+    var who = (window.__profile && window.__profile.full_name) || me.email;
+    var biz = (a && a.engagements && a.engagements.clients && a.engagements.clients.business_name) || '';
+    await fetch('https://otqrkxjtojqlpzzvqavp.supabase.co/functions/v1/notify', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},
+      body: JSON.stringify({
+        to: 'hello@weareverveco.com',
+        subject: who + ' ' + status + ' the ' + (a ? a.role_on_job : 'job') + ' job',
+        heading: who + ' ' + status + ' a job',
+        body: status === 'accepted'
+          ? 'The date is confirmed. Send them the brief and any client assets they need.'
+          : 'You will need to find someone else for this date.',
+        facts: [
+          { label: 'Contractor', value: who },
+          { label: 'Role',       value: a ? a.role_on_job : '\u2014' },
+          { label: 'Client',     value: biz || '\u2014' },
+          { label: 'Date',       value: (a && a.work_date) || 'TBC' }
+        ],
+        cta_url: 'https://weareverveco.com/jobs',
+        cta_label: 'Open Jobs'
+      })
+    });
+  } catch (e) { /* the response is recorded either way */ }
+
   loadJobs();
 }
 
@@ -325,7 +356,37 @@ window.vcInit = async function(){
         .update({ contractor_cost: Number($('pay').value) })
         .eq('id', liId);
     }
-    say('offerMsg','Offer sent. They see it on their Jobs page.', true);
+    // Email the contractor. The link deep-links to /jobs and survives login.
+    try {
+      var c = contractors.filter(function(x){return x.id===$('con').value;})[0];
+      var e = (await sb.from('engagements').select('clients(business_name)').eq('id', $('eng').value).single()).data;
+      var whenTxt = d ? new Date(d+'T12:00:00').toLocaleDateString('en-US',
+          {weekday:'long', month:'long', day:'numeric'}) : 'Date to be confirmed';
+      if ($('wstart').value) whenTxt += ' \u00b7 ' + $('wstart').value + ($('wend').value ? '\u2013'+$('wend').value : '');
+
+      var { data:{ session } } = await sb.auth.getSession();
+      await fetch('https://otqrkxjtojqlpzzvqavp.supabase.co/functions/v1/notify', {
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},
+        body: JSON.stringify({
+          to: c ? c.email : null,
+          subject: 'New job offer \u2014 ' + $('role').value,
+          heading: 'You have a new job offer',
+          body: 'Open the link below to see the full scope and accept or decline.',
+          facts: [
+            { label: 'Role',      value: $('role').value },
+            { label: 'When',      value: whenTxt },
+            { label: 'Location',  value: $('loc').value.trim() || 'To be confirmed' },
+            { label: 'Your pay',  value: '$' + Number($('pay').value).toFixed(2) }
+          ],
+          cta_url: 'https://weareverveco.com/jobs',
+          cta_label: 'View and respond',
+          footnote: 'Declining is completely fine \u2014 we would rather know early.'
+        })
+      });
+    } catch (mailErr) { /* the offer is saved either way */ }
+
+    say('offerMsg','Offer sent and emailed. They see it on their Jobs page.', true);
     $('scope').value=''; $('deliv').value=''; $('pay').value=''; $('loc').value='';
     loadJobs();
   });

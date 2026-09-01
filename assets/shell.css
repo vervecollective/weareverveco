@@ -337,7 +337,11 @@ body.vc-shelled .tag.soon{ background:#f1f5f9 !important; color:#475569 !importa
   /* Nothing should push the page wider than the screen. */
   html,body{max-width:100%;overflow-x:hidden;}
   body.vc-shelled *{max-width:100%;}
-  body.vc-shelled img,body.vc-shelled iframe{height:auto;}
+  /* Guard against oversized media, but never override an explicitly sized
+     UI image — that is what blew the logo up to full size. */
+  body.vc-shelled iframe{max-width:100%;}
+  body.vc-shelled img:not(.vc-brand img){max-width:100%;}
+  .vc-brand img{height:19px !important;width:auto !important;}
 
   .vc-sidebar{
     width:min(84vw,300px); z-index:1200;

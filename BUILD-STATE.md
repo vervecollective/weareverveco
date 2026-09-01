@@ -100,7 +100,7 @@ Enforced by Postgres RLS policies, not by hiding UI. Helper functions live in a 
 ### P1 — blocks real operation
 1. **Contract signing not wired.** Dropbox Sign API key is in Netlify env (`DROPBOX_SIGN_API_KEY`) but nothing calls it. **Your own process says contract → deposit → work.** The system currently lets you skip it.
 2. **`/jobs` does not exist.** Contractors can be invited but have nowhere to accept work. Blocks hiring.
-3. **Contractor agreements do not exist** — ICA, IP assignment/NDA, model release. Without IP assignment you cannot legally license contractor footage to a client.
+3. ~~Contractor agreements do not exist~~ — **DONE.** All five documents drafted (see §11). Attorney review still outstanding.
 
 ### P2 — degrades the product
 4. **Supermetrics dashboards not built.** Audit data is entered by hand, which does not scale past one person.
@@ -185,7 +185,29 @@ Enforced by Postgres RLS policies, not by hiding UI. Helper functions live in a 
 
 ---
 
-## 10. Credentials location
+## 10. Document library
+
+All five carry the same brand, signature blocks that cannot split across pages, and `hello@weareverveco.com` — never a personal address.
+
+| Document | Purpose | When it is signed |
+|---|---|---|
+| Client Services Agreement | Standing terms of the client relationship | Once, before the first project |
+| Statement of Work | Scope, exclusions, dates, price for one project | Per project, before the deposit invoice |
+| Independent Contractor Agreement | The contractor relationship and classification | Once, before any assignment |
+| Confidentiality & IP Assignment | Confidentiality + assignment of work product | Once, alongside the ICA |
+| Appearance & Property Release | Consent from people and property owners on a shoot | Per shoot, returned with deliverables |
+
+**Order that must not slip:**
+`CSA signed → SOW signed → deposit invoice → deposit clears → work begins`
+`ICA + IP/NDA + W-9 on file → contractor sees scope → assignment offered`
+
+**Outstanding:** one attorney review pass across all five before first real use.
+
+**Email standard, corrected:** contracts and client-facing documents use `hello@weareverveco.com`. This supersedes the earlier instruction in the build prompt to standardise on `trae@`. The Playbook still says `trae@` and needs updating.
+
+---
+
+## 11. Credentials location
 
 All secrets live in environment variables, never in the repo.
 

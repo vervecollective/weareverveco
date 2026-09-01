@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Sign in — Verve Collective</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#1a1d21;--ink-3:#616873;--bg:#f7f8fa;--card:#fff;--line:#e3e6ea;--orange:#D9531E;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--ink);
+    display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;-webkit-font-smoothing:antialiased;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:32px;
+    width:100%;max-width:380px;box-shadow:0 1px 3px rgba(26,29,33,.06);}
+  .brand{display:flex;align-items:center;gap:9px;margin-bottom:22px;}
+  .brand .dot{width:26px;height:26px;border-radius:6px;background:var(--ink);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;}
+  .brand span{font-weight:800;font-size:15px;letter-spacing:-.01em;}
+  h1{font-size:19px;font-weight:800;margin-bottom:4px;}
+  .sub{font-size:13.5px;color:var(--ink-3);margin-bottom:22px;}
+  label{display:block;font-size:12px;font-weight:700;color:var(--ink-3);margin-bottom:5px;}
+  input{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:7px;
+    font-size:14px;font-family:inherit;margin-bottom:14px;}
+  input:focus{outline:none;border-color:var(--orange);}
+  .btn{width:100%;background:var(--ink);color:#fff;border:none;border-radius:7px;padding:12px;
+    font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;}
+  .btn:hover{background:#000;}
+  .btn:disabled{opacity:.55;cursor:default;}
+  .msg{font-size:13px;margin-top:14px;display:none;}
+  .msg.show{display:block;}
+  .msg.err{color:#b42318;} .msg.ok{color:#1f9254;}
+  .alt{margin-top:18px;padding-top:16px;border-top:1px solid var(--line);font-size:12.5px;color:var(--ink-3);text-align:center;}
+  .alt a{color:var(--ink);font-weight:600;cursor:pointer;text-decoration:none;}
+  .alt a:hover{color:var(--orange);}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="brand"><span class="dot">V</span><span>Verve Collective</span></div>
+  <h1 id="hd">Sign in</h1>
+  <p class="sub" id="sd">Use your Verve account.</p>
+
+  <label for="email">Email</label>
+  <input type="email" id="email" autocomplete="email" autofocus>
+
+  <label for="password">Password</label>
+  <input type="password" id="password" autocomplete="current-password">
+
+  <button class="btn" id="go">Sign in</button>
+  <p class="msg" id="msg"></p>
+
+  <div class="alt">
+    <a id="toggleReset">Forgot your password?</a>
+  </div>
+</div>
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+const SUPABASE_URL = 'https://otqrkxjtojqlpzzvqavp.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_OBViGLggbcOKacti5iUonA_QCzw3kBv';
+
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+const $ = id => document.getElementById(id);
+let mode = 'signin';
+
+function say(t, ok){
+  const m = $('msg');
+  m.textContent = t;
+  m.className = 'msg show ' + (ok ? 'ok' : 'err');
+}
+
+// Already signed in? Go straight through.
+const { data:{ session } } = await sb.auth.getSession();
+if (session) location.href = '/hub';
+
+$('toggleReset').addEventListener('click', () => {
+  mode = mode === 'signin' ? 'reset' : 'signin';
+  const reset = mode === 'reset';
+  $('hd').textContent = reset ? 'Reset password' : 'Sign in';
+  $('sd').textContent = reset ? 'We will email you a reset link.' : 'Use your Verve account.';
+  $('password').style.display = reset ? 'none' : '';
+  document.querySelector('label[for=password]').style.display = reset ? 'none' : '';
+  $('go').textContent = reset ? 'Send reset link' : 'Sign in';
+  $('toggleReset').textContent = reset ? 'Back to sign in' : 'Forgot your password?';
+  $('msg').className = 'msg';
+});
+
+async function submit(){
+  const email = $('email').value.trim();
+  const password = $('password').value;
+  if (!email) return say('Enter your email.');
+
+  $('go').disabled = true;
+  try {
+    if (mode === 'reset') {
+      const { error } = await sb.auth.resetPasswordForEmail(email, {
+        redirectTo: location.origin + '/login.html'
+      });
+      if (error) throw error;
+      say('Check your email for the reset link.', true);
+      $('go').disabled = false;
+      return;
+    }
+
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    location.href = '/hub';
+  } catch (e) {
+    say(e.message || 'Could not sign in.');
+    $('go').disabled = false;
+  }
+}
+
+$('go').addEventListener('click', submit);
+['email','password'].forEach(id => $(id).addEventListener('keydown', e => {
+  if (e.key === 'Enter') submit();
+}));
+</script>
+</body>
+</html>

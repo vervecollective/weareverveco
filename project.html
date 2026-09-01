@@ -90,6 +90,15 @@
   .msg.show{display:block;}
   .msg.ok{color:#047857;} .msg.err{color:#b91c1c;}
   .empty{color:#9ca3af;font-size:13.5px;padding:20px 0;text-align:center;}
+  .fd{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid #f3f4f6;}
+  .fd:last-child{border-bottom:none;}
+  .fd-d{width:9px;height:9px;border-radius:50%;background:#d1d5db;margin-top:6px;flex-shrink:0;}
+  .fd.stage .fd-d{background:#D9531E;}
+  .fd.payment .fd-d{background:#047857;}
+  .fd.milestone_status .fd-d{background:#1d4ed8;}
+  .fd-b{flex:1;min-width:0;}
+  .fd-b b{font-size:13.5px;font-weight:600;display:block;}
+  .fd-b em{font-size:11.5px;font-style:normal;color:#9ca3af;}
   #noproj{display:none;}
 </style>
 </head>
@@ -116,6 +125,12 @@
           <h2>Timeline</h2>
           <p class="hint">Dates can move — we'll tell you before they do.</p>
           <div id="milestones"><div class="empty">No milestones set yet.</div></div>
+        </div>
+
+        <div class="card">
+          <h2>What's happened</h2>
+          <p class="hint">Updated automatically as work moves.</p>
+          <div id="feed"><div class="empty">Nothing yet.</div></div>
         </div>
 
         <div class="card">
@@ -235,6 +250,19 @@ window.vcInit = async function(){
         '<span class="ms-b"><b>'+esc(m.label)+
           (LBL[m.status] ? '<span class="badge '+m.status+'">'+LBL[m.status]+'</span>' : '')+'</b></span>'+
         '<span class="ms-date">'+fdate(m.due_date)+'</span></div>';
+    }).join('');
+  }
+
+  // activity the client is allowed to see — RLS filters it, not this code
+  var fq = await sb.from('activity').select('*')
+    .eq('engagement_id', eng.id).order('created_at',{ascending:false}).limit(20);
+  if (fq.data && fq.data.length) {
+    $('feed').innerHTML = fq.data.map(function(a){
+      var cls = a.verb.indexOf('milestone') === 0 ? 'milestone_status' : a.verb;
+      return '<div class="fd '+esc(cls)+'"><span class="fd-d"></span><div class="fd-b">'+
+        '<b>'+esc(a.summary)+'</b>'+
+        '<em>'+new Date(a.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'})+'</em>'+
+        '</div></div>';
     }).join('');
   }
 

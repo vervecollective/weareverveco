@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Platform — Verve Collective</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --black:#111111; --black-2:#171717; --black-3:#1d1d1d;
+    --orange:#D9531E; --orange-light:#E8703F;
+    --cream:#F2EFE9; --muted:#ABABAB; --line: rgba(242,239,233,0.10);
+    --green:#7fd99a; --red:#e08a8a;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:'Inter',system-ui,sans-serif; background:var(--black); color:var(--cream); line-height:1.5;}
+  .wrap{max-width:1180px; margin:0 auto; padding:40px 32px 96px;}
+  @media(max-width:640px){ .wrap{padding:28px 18px 80px;} }
+  h1{font-size:24px; font-weight:800; margin-bottom:6px;}
+  .sub{color:var(--muted); font-size:14px; margin-bottom:32px;}
+  .gate{max-width:360px; margin:120px auto; text-align:center;}
+  .gate input{width:100%; padding:14px 16px; border:1px solid var(--line); border-radius:8px; background:var(--black-2); color:var(--cream); font-size:15px; margin-bottom:14px;}
+  .btn{display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    background:var(--orange); color:#fff; border:none; border-radius:8px; padding:12px 22px;
+    font-weight:700; font-size:14px; cursor:pointer; transition:background .15s; font-family:inherit;}
+  .btn:hover{background:var(--orange-light);}
+  .btn.full{width:100%;}
+  .btn-sec{background:transparent; border:1.5px solid rgba(242,239,233,0.28); color:var(--cream);}
+  .btn-sec:hover{background:rgba(242,239,233,0.06);}
+  .btn-go{background:var(--green); color:#0c2d16;}
+  .btn-go:hover{background:#95e3ad;}
+  .btn-danger{background:transparent; border:1.5px solid rgba(224,138,138,0.4); color:var(--red);}
+  .btn-danger:hover{background:rgba(224,138,138,0.1);}
+  .btn-sm{padding:7px 12px; font-size:12px;}
+
+  .layout{display:grid; grid-template-columns:300px 1fr; gap:28px; align-items:start;}
+  @media(max-width:900px){ .layout{grid-template-columns:1fr;} }
+  .panel{background:var(--black-2); border:1px solid var(--line); border-radius:12px; padding:20px;}
+  .panel h2{font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--orange); margin-bottom:14px;}
+
+  .eng-item{padding:11px 12px; border:1px solid var(--line); border-radius:8px; margin-bottom:8px; cursor:pointer; transition:border-color .15s;}
+  .eng-item:hover{border-color:rgba(217,83,30,.45);}
+  .eng-item.active{border-color:var(--orange); background:var(--black-3);}
+  .eng-item .nm{font-weight:700; font-size:14px;}
+  .eng-item .meta{font-size:12px; color:var(--muted); margin-top:3px;}
+  .pill{display:inline-block; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.05em;
+    padding:2px 7px; border-radius:20px; margin-top:6px;}
+  .pill.draft{background:rgba(171,171,171,.15); color:var(--muted);}
+  .pill.invoiced{background:rgba(127,217,154,.15); color:var(--green);}
+
+  label{display:block; font-size:11px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;}
+  input[type=text], input[type=email], input[type=number], textarea, select{
+    width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:8px;
+    background:var(--black-3); color:var(--cream); font-family:inherit; font-size:14px;}
+  input:focus, textarea:focus, select:focus{outline:none; border-color:var(--orange);}
+  .row{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:16px;}
+  @media(max-width:640px){ .row{grid-template-columns:1fr;} }
+  .field{margin-bottom:16px;}
+
+  table{width:100%; border-collapse:collapse; margin-top:6px;}
+  th{text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); padding:8px 6px; border-bottom:1px solid var(--line);}
+  td{padding:6px; border-bottom:1px solid rgba(242,239,233,.05); vertical-align:middle;}
+  td input{padding:8px 10px; font-size:13.5px;}
+  .num{text-align:right;}
+  .totals{margin-top:18px; border-top:1px solid var(--line); padding-top:14px;}
+  .trow{display:flex; justify-content:space-between; font-size:14px; margin-bottom:7px;}
+  .trow.big{font-size:19px; font-weight:800; margin-top:10px;}
+  .trow .lbl{color:var(--muted);}
+  .passthru{background:rgba(217,83,30,.07); border:1px solid rgba(217,83,30,.25); border-radius:8px; padding:14px; margin-top:16px; font-size:13px; color:var(--muted);}
+  .passthru strong{color:var(--cream);}
+
+  .divider{height:1px; background:var(--line); margin:26px 0;}
+  .actions{display:flex; gap:12px; flex-wrap:wrap; margin-top:20px;}
+  .status{font-size:13.5px; margin-top:14px; display:none;}
+  .status.show{display:block;}
+  .status.ok{color:var(--green);} .status.err{color:var(--red);}
+  .linkout{display:block; font-size:13px; color:var(--muted); text-decoration:none; margin-bottom:7px;}
+  .linkout:hover{color:var(--orange-light);}
+  .invoice-link{display:block; margin-top:14px; padding:13px; background:rgba(127,217,154,.1);
+    border:1px solid rgba(127,217,154,.3); border-radius:8px; color:var(--green); text-decoration:none; font-weight:700; font-size:13.5px; word-break:break-all;}
+  #app{display:none;}
+</style>
+</head>
+<body>
+
+<div class="gate" id="gate">
+  <h1>Verve Platform</h1>
+  <p class="sub">Internal — enter admin password</p>
+  <input type="password" id="pw" placeholder="Password" autofocus>
+  <button class="btn full" id="unlockBtn">Unlock</button>
+  <p class="status err" id="gateErr">Wrong password — try again.</p>
+</div>
+
+<div id="app">
+<div class="wrap">
+  <h1>Platform</h1>
+  <p class="sub">Scope an engagement, itemize it, invoice it. Ad spend never runs through these books.</p>
+
+  <div class="layout">
+    <div>
+      <div class="panel" style="margin-bottom:18px;">
+        <h2>Engagements</h2>
+        <button class="btn full btn-sec btn-sm" id="newBtn" style="margin-bottom:14px;">+ New engagement</button>
+        <div id="engList"></div>
+      </div>
+
+      <div class="panel" style="margin-bottom:18px;">
+        <h2>Jump to</h2>
+        <a class="linkout" href="https://app.hubspot.com/contacts/51849674/objects/0-3/views/all/board" target="_blank" rel="noopener">HubSpot — deal board →</a>
+        <a class="linkout" href="https://dashboard.stripe.com/invoices" target="_blank" rel="noopener">Stripe — invoices →</a>
+        <a class="linkout" href="/admin.html">Site content admin →</a>
+      </div>
+
+      <div class="panel">
+        <h2>Data</h2>
+        <p style="font-size:12.5px; color:var(--muted); margin-bottom:12px;">Purge deletes every engagement record permanently. Stripe invoices are unaffected.</p>
+        <button class="btn full btn-danger btn-sm" id="purgeBtn">Purge all engagements</button>
+        <p class="status" id="purgeStatus"></p>
+      </div>
+    </div>
+
+    <div class="panel" id="editor">
+      <h2 id="editorTitle">New engagement</h2>
+
+      <div class="row">
+        <div><label for="clientName">Contact name</label><input type="text" id="clientName"></div>
+        <div><label for="clientEmail">Contact email</label><input type="email" id="clientEmail"></div>
+      </div>
+      <div class="row">
+        <div><label for="businessName">Business name</label><input type="text" id="businessName"></div>
+        <div><label for="daysUntilDue">Invoice due (days)</label><input type="number" id="daysUntilDue" value="15"></div>
+      </div>
+
+      <div class="divider"></div>
+
+      <h2>Line items</h2>
+      <div class="field">
+        <label for="catalog">Quick-add from catalog</label>
+        <select id="catalog"><option value="">— choose a service —</option></select>
+      </div>
+
+      <table>
+        <thead><tr>
+          <th style="width:52%">Description</th><th style="width:12%">Qty</th>
+          <th style="width:20%">Unit price</th><th style="width:12%" class="num">Total</th><th></th>
+        </tr></thead>
+        <tbody id="itemRows"></tbody>
+      </table>
+      <button class="btn btn-sec btn-sm" id="addRowBtn" style="margin-top:12px;">+ Add blank line</button>
+
+      <div class="totals">
+        <div class="trow"><span class="lbl">Billable subtotal</span><span id="subtotal">$0.00</span></div>
+        <div class="trow big"><span>Invoice total</span><span id="grandTotal">$0.00</span></div>
+      </div>
+
+      <div class="field" style="margin-top:20px;">
+        <label for="adSpend">Client ad spend this period (reference only)</label>
+        <input type="number" id="adSpend" placeholder="0">
+      </div>
+      <div class="passthru">
+        <strong>Not invoiced.</strong> Ad spend is billed by Google and Meta directly to the client's card. It is recorded here for reporting and to calculate percentage-based fees — it never appears on a Verve invoice and never touches these books.
+      </div>
+
+      <div class="field" style="margin-top:20px;">
+        <label for="invoiceNote">Invoice note (visible to client)</label>
+        <textarea id="invoiceNote" rows="2" placeholder="Verve Collective LLC — services as scoped."></textarea>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-sec" id="saveBtn">Save engagement</button>
+        <button class="btn btn-go" id="invoiceBtn">Create Stripe invoice →</button>
+        <button class="btn btn-danger btn-sm" id="deleteBtn">Delete</button>
+      </div>
+      <p class="status" id="saveStatus"></p>
+      <div id="invoiceLinkWrap"></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+var PW_KEY = 'vc_admin_pw';
+var current = null;
+var engagements = [];
+
+var CATALOG = [
+  { g:'Paid Media', d:'Paid media management — Local/Emerging tier', p:750 },
+  { g:'Paid Media', d:'Paid media management — Growing tier (% of spend)', p:0 },
+  { g:'Paid Media', d:'Paid media management — Established tier (% of spend)', p:0 },
+  { g:'Paid Media', d:'Campaign setup — one-time', p:0 },
+  { g:'Product Marketing', d:'Positioning & messaging project', p:1500 },
+  { g:'Product Marketing', d:'Go-to-market strategy project', p:3000 },
+  { g:'Creative — Recurring', d:'Creative Refresh — 4 cuts/mo, no shoot', p:450 },
+  { g:'Creative — Recurring', d:'Creative Production — quarterly half-day + 6 cuts/mo', p:950 },
+  { g:'Creative — Recurring', d:'Full Creative — monthly half-day + 8-10 cuts/mo', p:1800 },
+  { g:'Creative — Project', d:'Quick-turn vertical video (client footage)', p:350 },
+  { g:'Creative — Project', d:'Social pack — 3 quick-turn videos', p:850 },
+  { g:'Creative — Project', d:'Half-day shoot — 5 deliverables', p:1500 },
+  { g:'Creative — Project', d:'Full-day shoot — 10 deliverables', p:2800 },
+  { g:'Creative — Project', d:'Testimonial package — 3 subjects', p:1800 },
+  { g:'Creative — Project', d:'Brand film — scripted, 90 sec-3 min', p:2500 },
+  { g:'Aerial', d:'Aerial — Single Site (10 stills + 60-sec cut)', p:450 },
+  { g:'Aerial', d:'Aerial — Site + Video (stills + 90-sec piece)', p:750 },
+  { g:'Aerial', d:'Aerial — Progress Series, per visit', p:350 },
+  { g:'Add-ons', d:'Drone add-on to scheduled shoot', p:250 },
+  { g:'Add-ons', d:'Additional revision round', p:150 },
+  { g:'Add-ons', d:'Additional deliverable', p:200 },
+  { g:'Add-ons', d:'Second location, same shoot day', p:350 },
+  { g:'Travel', d:'Mileage — 30-100 mi round trip (per mile)', p:0.70 },
+  { g:'Travel', d:'Travel half-day fee (100+ mi)', p:200 },
+  { g:'Travel', d:'Lodging — at cost, itemized', p:0 }
+];
+
+function pw(){ return sessionStorage.getItem(PW_KEY) || ''; }
+function money(n){ return '$' + (Number(n)||0).toFixed(2); }
+function api(path, opts){
+  opts = opts || {};
+  opts.headers = Object.assign({ 'Content-Type':'application/json', 'x-admin-password': pw() }, opts.headers||{});
+  return fetch(path, opts);
+}
+function setStatus(el, msg, ok){
+  var e = document.getElementById(el);
+  e.textContent = msg; e.className = 'status show ' + (ok ? 'ok' : 'err');
+}
+
+// ---- catalog ----
+(function(){
+  var sel = document.getElementById('catalog'); var lastG = null;
+  CATALOG.forEach(function(c, i){
+    if (c.g !== lastG){ var og = document.createElement('optgroup'); og.label = c.g; og.id='g'+i; sel.appendChild(og); lastG = c.g; }
+    var o = document.createElement('option');
+    o.value = i; o.textContent = c.d + (c.p ? '  —  ' + money(c.p) : '');
+    sel.lastChild.appendChild(o);
+  });
+  sel.addEventListener('change', function(){
+    if (sel.value === '') return;
+    var c = CATALOG[Number(sel.value)];
+    addRow({ description: c.d, qty: 1, unitPrice: c.p });
+    sel.value = '';
+  });
+})();
+
+// ---- line items ----
+function addRow(item){
+  item = item || { description:'', qty:1, unitPrice:0 };
+  var tb = document.getElementById('itemRows');
+  var tr = document.createElement('tr');
+  tr.innerHTML =
+    '<td><input type="text" class="li-desc" value=""></td>' +
+    '<td><input type="number" class="li-qty" value="1" min="1"></td>' +
+    '<td><input type="number" class="li-price" value="0" step="0.01"></td>' +
+    '<td class="num li-total">$0.00</td>' +
+    '<td><button class="btn btn-danger btn-sm li-del" type="button">×</button></td>';
+  tb.appendChild(tr);
+  tr.querySelector('.li-desc').value = item.description || '';
+  tr.querySelector('.li-qty').value = item.qty || 1;
+  tr.querySelector('.li-price').value = item.unitPrice || 0;
+  tr.addEventListener('input', recalc);
+  tr.querySelector('.li-del').addEventListener('click', function(){ tr.remove(); recalc(); });
+  recalc();
+}
+
+function recalc(){
+  var sub = 0;
+  document.querySelectorAll('#itemRows tr').forEach(function(tr){
+    var q = Number(tr.querySelector('.li-qty').value) || 0;
+    var p = Number(tr.querySelector('.li-price').value) || 0;
+    var t = q * p; sub += t;
+    tr.querySelector('.li-total').textContent = money(t);
+  });
+  document.getElementById('subtotal').textContent = money(sub);
+  document.getElementById('grandTotal').textContent = money(sub);
+}
+
+function collectItems(){
+  var out = [];
+  document.querySelectorAll('#itemRows tr').forEach(function(tr){
+    var d = tr.querySelector('.li-desc').value.trim();
+    if (!d) return;
+    out.push({ description:d, qty:Number(tr.querySelector('.li-qty').value)||1, unitPrice:Number(tr.querySelector('.li-price').value)||0 });
+  });
+  return out;
+}
+
+// ---- form <-> record ----
+function loadRecord(rec){
+  current = rec;
+  document.getElementById('editorTitle').textContent = rec ? (rec.businessName || rec.clientName || 'Engagement') : 'New engagement';
+  document.getElementById('clientName').value = (rec && rec.clientName) || '';
+  document.getElementById('clientEmail').value = (rec && rec.clientEmail) || '';
+  document.getElementById('businessName').value = (rec && rec.businessName) || '';
+  document.getElementById('daysUntilDue').value = (rec && rec.daysUntilDue) || 15;
+  document.getElementById('adSpend').value = (rec && rec.adSpend) || '';
+  document.getElementById('invoiceNote').value = (rec && rec.invoiceNote) || '';
+  document.getElementById('itemRows').innerHTML = '';
+  ((rec && rec.lineItems) || []).forEach(addRow);
+  if (!rec || !(rec.lineItems||[]).length) addRow();
+  recalc();
+
+  var wrap = document.getElementById('invoiceLinkWrap');
+  wrap.innerHTML = (rec && rec.stripeInvoiceUrl)
+    ? '<a class="invoice-link" href="' + rec.stripeInvoiceUrl + '" target="_blank" rel="noopener">Client payment link — open or copy →<br>' + rec.stripeInvoiceUrl + '</a>'
+    : '';
+  renderList();
+}
+
+function renderList(){
+  var el = document.getElementById('engList');
+  if (!engagements.length){ el.innerHTML = '<p style="font-size:13px;color:var(--muted);">No engagements yet.</p>'; return; }
+  el.innerHTML = engagements.map(function(e){
+    var total = (e.lineItems||[]).reduce(function(s,li){ return s + (Number(li.qty)||1)*(Number(li.unitPrice)||0); },0);
+    return '<div class="eng-item' + (current && current.id===e.id ? ' active':'') + '" data-id="' + e.id + '">' +
+      '<div class="nm">' + (e.businessName || e.clientName || 'Untitled') + '</div>' +
+      '<div class="meta">' + money(total) + ' · ' + new Date(e.updatedAt).toLocaleDateString() + '</div>' +
+      '<span class="pill ' + (e.status==='invoiced'?'invoiced':'draft') + '">' + (e.status==='invoiced'?'Invoiced':'Draft') + '</span></div>';
+  }).join('');
+  el.querySelectorAll('.eng-item').forEach(function(d){
+    d.addEventListener('click', function(){
+      var rec = engagements.filter(function(x){ return x.id===d.dataset.id; })[0];
+      if (rec) loadRecord(rec);
+    });
+  });
+}
+
+function refresh(){
+  return api('/api/engagements').then(function(r){
+    if (r.status === 401) throw new Error('unauth');
+    return r.json();
+  }).then(function(d){ engagements = d.engagements || []; renderList(); });
+}
+
+// ---- actions ----
+document.getElementById('unlockBtn').addEventListener('click', function(){
+  var v = document.getElementById('pw').value; if (!v) return;
+  sessionStorage.setItem(PW_KEY, v);
+  refresh().then(function(){
+    document.getElementById('gate').style.display='none';
+    document.getElementById('app').style.display='block';
+    loadRecord(null);
+  }).catch(function(){ document.getElementById('gateErr').classList.add('show'); });
+});
+document.getElementById('pw').addEventListener('keydown', function(e){
+  if (e.key === 'Enter') document.getElementById('unlockBtn').click();
+});
+
+document.getElementById('newBtn').addEventListener('click', function(){ loadRecord(null); });
+document.getElementById('addRowBtn').addEventListener('click', function(){ addRow(); });
+
+document.getElementById('saveBtn').addEventListener('click', function(){
+  var payload = {
+    id: current ? current.id : undefined,
+    clientName: document.getElementById('clientName').value,
+    clientEmail: document.getElementById('clientEmail').value,
+    businessName: document.getElementById('businessName').value,
+    daysUntilDue: Number(document.getElementById('daysUntilDue').value) || 15,
+    adSpend: Number(document.getElementById('adSpend').value) || 0,
+    invoiceNote: document.getElementById('invoiceNote').value,
+    lineItems: collectItems(),
+    status: (current && current.status) || 'draft'
+  };
+  api('/api/engagements', { method:'POST', body: JSON.stringify(payload) })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (d.error) return setStatus('saveStatus', d.error, false);
+      setStatus('saveStatus', 'Saved.', true);
+      return refresh().then(function(){ loadRecord(d.engagement); });
+    })
+    .catch(function(){ setStatus('saveStatus','Save failed.',false); });
+});
+
+document.getElementById('invoiceBtn').addEventListener('click', function(){
+  if (!current || !current.id) return setStatus('saveStatus','Save the engagement first.',false);
+  if (!document.getElementById('clientEmail').value) return setStatus('saveStatus','A contact email is required to invoice.',false);
+  if (!window.confirm('Create a real Stripe invoice for this engagement? This generates a payable link.')) return;
+  setStatus('saveStatus','Creating invoice…',true);
+  api('/api/billing', { method:'POST', body: JSON.stringify({ engagementId: current.id }) })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (d.error) return setStatus('saveStatus', d.error, false);
+      setStatus('saveStatus','Invoice created. Payment link below.', true);
+      return refresh().then(function(){ loadRecord(d.engagement); });
+    })
+    .catch(function(){ setStatus('saveStatus','Invoice failed.',false); });
+});
+
+document.getElementById('deleteBtn').addEventListener('click', function(){
+  if (!current || !current.id) return;
+  if (!window.confirm('Delete this engagement permanently? Stripe invoices are not affected.')) return;
+  api('/api/engagements', { method:'POST', body: JSON.stringify({ _delete: current.id }) })
+    .then(function(){ return refresh(); })
+    .then(function(){ loadRecord(null); setStatus('saveStatus','Deleted.', true); });
+});
+
+document.getElementById('purgeBtn').addEventListener('click', function(){
+  if (!window.confirm('Delete EVERY engagement record permanently? This cannot be undone.')) return;
+  api('/api/engagements', { method:'POST', body: JSON.stringify({ _purgeAll:'PURGE ALL ENGAGEMENTS' }) })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      setStatus('purgeStatus','Purged ' + (d.purged||0) + ' records.', true);
+      return refresh();
+    })
+    .then(function(){ loadRecord(null); });
+});
+</script>
+</body>
+</html>

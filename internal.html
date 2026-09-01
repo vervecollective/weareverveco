@@ -438,6 +438,22 @@
 })();
 </script>
 
+      <div id="delivBox" style="display:none;margin-top:26px;border-top:1px solid #e5e7eb;padding-top:20px">
+        <h2>Deliverables</h2>
+        <p style="font-size:12.5px;color:#6b7280;margin-bottom:12px">
+          Links, not uploads — the files stay in Frame.io or Drive. Nothing reaches the client until you share it.</p>
+        <div id="delivRows"></div>
+        <div class="row3" style="margin-top:12px">
+          <div class="field"><label for="dvTitle">Title</label><input type="text" id="dvTitle" placeholder="Hero cut v2"></div>
+          <div class="field"><label for="dvKind">Type</label>
+            <select id="dvKind"><option value="video">Video</option><option value="photo">Photos</option>
+              <option value="document">Document</option><option value="link">Link</option><option value="other">Other</option></select></div>
+          <div class="field"><label for="dvUrl">Link</label><input type="text" id="dvUrl" placeholder="https://f.io/…"></div>
+        </div>
+        <button class="btn btn-2 btn-sm" id="dvAdd">Add deliverable</button>
+        <p class="msg" id="dvMsg"></p>
+      </div>
+
       <div id="teamBox" style="display:none;margin-top:26px;border-top:1px solid #e5e7eb;padding-top:20px">
         <h2>Who is on this account</h2>
         <p style="font-size:12.5px;color:#6b7280;margin-bottom:12px">
@@ -580,6 +596,7 @@ function load(e){
   lis.forEach(addRow);
   if (!lis.length) addRow();
   recalc();
+  loadDeliverables(e && e.id);
   loadTeam(e && e.id);
   loadMilestones(e && e.id);
   $('payWrap').innerHTML = (e && e.stripe_invoice_url)
@@ -588,6 +605,51 @@ function load(e){
 }
 
 var orgs = [], staff = [];
+
+async function loadDeliverables(engId){
+  var box = document.getElementById('delivBox');
+  if (!engId) { box.style.display='none'; return; }
+  box.style.display = 'block';
+  var r = await sb.from('deliverables').select('*').eq('engagement_id', engId).order('sort_order');
+  var rows = document.getElementById('delivRows');
+  var d = r.data || [];
+  var ST = { draft:'Draft', ready_for_review:'With client', changes_requested:'Changes asked',
+             approved:'Approved', delivered:'Delivered' };
+  var COL = { draft:'#64748b', ready_for_review:'#b45309', changes_requested:'#b91c1c',
+              approved:'#047857', delivered:'#047857' };
+
+  rows.innerHTML = d.length ? d.map(function(x){
+    return '<div style="display:flex;align-items:center;gap:11px;padding:10px 0;border-bottom:1px solid #f3f4f6">'+
+      '<span style="width:8px;height:8px;border-radius:50%;background:'+COL[x.status]+';flex-shrink:0"></span>'+
+      '<span style="flex:1;min-width:0"><b style="font-size:13.5px">'+esc(x.title)+'</b>'+
+        ' <span style="font-size:11.5px;color:#9ca3af">v'+x.version+'</span>'+
+        (x.url?'<div style="font-size:12px"><a href="'+esc(x.url)+'" target="_blank" rel="noopener" style="color:#D9531E">Open</a></div>':'')+
+        (x.client_feedback?'<div style="font-size:12px;color:#b91c1c;margin-top:2px">\u201C'+esc(x.client_feedback)+'\u201D</div>':'')+
+      '</span>'+
+      '<span style="font-size:11px;font-weight:700;color:'+COL[x.status]+'">'+ST[x.status]+'</span>'+
+      '<button class="btn btn-2 btn-sm dvShare" data-id="'+x.id+'" data-on="'+x.client_visible+'">'+
+        (x.client_visible?'Shared':'Share')+'</button>'+
+      '<button class="btn btn-danger btn-sm dvX" data-id="'+x.id+'">\u00d7</button></div>';
+  }).join('') : '<p style="font-size:13px;color:#9ca3af;padding:8px 0">Nothing yet.</p>';
+
+  rows.querySelectorAll('.dvShare').forEach(function(b){
+    b.addEventListener('click', async function(){
+      var on = b.dataset.on === 'true';
+      await sb.from('deliverables').update({
+        client_visible: !on,
+        status: !on ? 'ready_for_review' : 'draft'
+      }).eq('id', b.dataset.id);
+      loadDeliverables(engId);
+    });
+  });
+  rows.querySelectorAll('.dvX').forEach(function(b){
+    b.addEventListener('click', async function(){
+      if (!window.confirm('Remove this deliverable?')) return;
+      await sb.from('deliverables').delete().eq('id', b.dataset.id);
+      loadDeliverables(engId);
+    });
+  });
+}
 
 async function loadTeam(engId){
   var box = document.getElementById('teamBox');
@@ -734,6 +796,23 @@ window.vcInit = async function(){
   $('tmWho').innerHTML = staff.map(function(p){
     return '<option value="'+p.id+'">'+esc(p.full_name||p.email)+'</option>';
   }).join('');
+
+  $('dvAdd').addEventListener('click', async function(){
+    if (!current || !current.id) return;
+    if (!$('dvTitle').value.trim()) return;
+    var r = await sb.from('deliverables').insert({
+      engagement_id: current.id,
+      title: $('dvTitle').value.trim(),
+      kind: $('dvKind').value,
+      url: $('dvUrl').value.trim() || null,
+      created_by: me.id
+    });
+    var m = document.getElementById('dvMsg');
+    m.textContent = r.error ? r.error.message : 'Added. Share it when it is ready.';
+    m.className = 'msg show ' + (r.error ? 'err' : 'ok');
+    $('dvTitle').value=''; $('dvUrl').value='';
+    loadDeliverables(current.id);
+  });
 
   $('tmAdd').addEventListener('click', async function(){
     if (!current || !current.id) return;

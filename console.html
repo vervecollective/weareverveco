@@ -121,6 +121,8 @@
         </div>
         <div id="milestones"></div>
         <p class="hint">Dates are working-day estimates from the start date. Adjust on the call — they're a starting point, not a promise.</p>
+        <button class="btn btn-sec btn-sm" id="pushMs" style="margin-top:10px">Publish timeline to client portal</button>
+        <p class="status" id="msStatus"></p>
       </div>
 
       <div class="panel">
@@ -363,6 +365,46 @@ document.getElementById('engSel').addEventListener('change',function(e){
   }
   renderCapture();
 });
+document.getElementById('pushMs').addEventListener('click', async function(){
+  var st = document.getElementById('msStatus');
+  function tell(t, ok){ st.textContent=t; st.className='status show '+(ok?'ok':'err'); }
+
+  if (!current) return tell('Pick an engagement first.', false);
+  var sd = document.getElementById('startDate').value;
+  if (!sd) return tell('Set a start date first.', false);
+
+  var tr = document.getElementById('track').value;
+  var base = new Date(sd + 'T12:00:00');
+  var rows = TRACKS[tr].map(function(m, i){
+    var d = new Date(base); d.setDate(d.getDate() + m[0]);
+    return {
+      engagement_id: current.id,
+      label: m[1],
+      due_date: d.toISOString().slice(0,10),
+      status: 'pending',
+      sort_order: i
+    };
+  });
+
+  if (!window.confirm('Publish ' + rows.length + ' milestones to the client portal? This replaces any timeline already there.')) return;
+
+  var btn = this; btn.disabled = true;
+  try {
+    // Replace rather than append, so re-publishing after a date change does not duplicate.
+    var del = await window.__sb.from('milestones').delete().eq('engagement_id', current.id);
+    if (del.error) throw new Error(del.error.message);
+    var ins = await window.__sb.from('milestones').insert(rows);
+    if (ins.error) throw new Error(ins.error.message);
+
+    var upd = await window.__sb.from('engagements')
+      .update({ start_date: sd, track: tr }).eq('id', current.id);
+    if (upd.error) throw new Error(upd.error.message);
+
+    tell('Published. The client sees these dates on their project page now.', true);
+  } catch(e){ tell(e.message, false); }
+  finally { btn.disabled = false; }
+});
+
 document.getElementById('startDate').addEventListener('change',renderTimeline);
 document.getElementById('track').addEventListener('change',renderTimeline);
 document.getElementById('projTotal').addEventListener('input',renderDeposit);

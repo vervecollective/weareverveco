@@ -863,7 +863,20 @@ body.vc-shelled thead th{
 
 /* Empty states get room, like the references */
 body.vc-shelled .empty,
-body.vc-shelled .none{ padding:44px 24px !important; }
+body.vc-shelled div.none,
+body.vc-shelled p.none{ padding:44px 24px !important; }
+/* Avatars must never be caught by layout rules — this one was being
+   stretched into an oval by the empty-state padding above. */
+body.vc-shelled .av,
+body.vc-shelled .av.none,
+body.vc-shelled .mini-avatar,
+body.vc-shelled .vc-pres-av{
+  width:22px !important; height:22px !important; padding:0 !important;
+  border-radius:50% !important; flex:0 0 22px !important;
+  display:inline-flex !important; align-items:center !important;
+  justify-content:center !important; overflow:hidden;
+}
+body.vc-shelled .avatar-lg{ width:60px !important; height:60px !important; padding:0 !important; }
 
 /* Things appear rather than snap */
 @keyframes vcIn{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;} }
@@ -873,3 +886,16 @@ body.vc-shelled .tile{ animation:vcIn .26s ease both; }
   body.vc-shelled .card, body.vc-shelled .tile{ animation:none; }
   body.vc-shelled .btn:hover, body.vc-shelled .card:hover{ transform:none; }
 }
+
+
+/* ---- board card meta: subtasks and comments always legible ---- */
+body.vc-shelled .t-meta{ gap:8px !important; align-items:center !important; }
+body.vc-shelled .cmc,
+body.vc-shelled .stc{
+  display:inline-flex !important; align-items:center; gap:4px;
+  font-size:11.5px; font-weight:700; color:#5C6470;
+  background:#F1F2F4; border-radius:999px; padding:3px 8px;
+}
+body.vc-shelled .cmc svg,
+body.vc-shelled .stc svg{ width:12px; height:12px; }
+body.vc-shelled .stc.all{ background:#E4F7EF; color:#00875A; }

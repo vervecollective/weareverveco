@@ -70,6 +70,10 @@
       <div class="field"><label for="eng">Engagement</label><select id="eng"></select></div>
       <div class="field"><label for="con">Contractor</label><select id="con"></select></div>
     </div>
+    <div class="field"><label for="lineItem">Bill this against a line item</label>
+      <select id="lineItem"><option value="">— pick an engagement first —</option></select>
+      <p style="font-size:12px;color:#6b7280;margin-top:5px" id="marginNote"></p>
+    </div>
     <div class="row">
       <div class="field"><label for="role">Role on this job</label>
         <select id="role">
@@ -204,6 +208,58 @@ window.vcInit = async function(){
       }).join('')
     : '<option value="">No contractors yet — invite one in People</option>';
 
+  var lineItems = [];
+
+  async function loadLineItems(){
+    var sel = document.getElementById('lineItem');
+    var eid = $('eng').value;
+    if (!eid) { sel.innerHTML = '<option value="">— pick an engagement first —</option>'; return; }
+    var r = await sb.from('line_items').select('*').eq('engagement_id', eid).order('sort_order');
+    lineItems = r.data || [];
+    sel.innerHTML = '<option value="">— not tied to a line item —</option>' +
+      lineItems.map(function(li){
+        return '<option value="'+li.id+'">'+esc(li.description)+' \u2014 client '+money(li.unit_price)+
+               ', budgeted '+money(li.contractor_cost||0)+'</option>';
+      }).join('');
+    checkMargin();
+  }
+
+  /* The pay you offer and the contractor cost you budgeted are two different
+     numbers. If they drift apart, the margin shown in Engagements is wrong.
+     This surfaces that instead of letting it pass silently. */
+  function checkMargin(){
+    var note = document.getElementById('marginNote');
+    var li = lineItems.filter(function(x){return x.id === document.getElementById('lineItem').value;})[0];
+    if (!li) { note.textContent = ''; note.style.color = '#6b7280'; return; }
+
+    var budgeted = Number(li.contractor_cost) || 0;
+    var offering = Number($('pay').value) || 0;
+    var client = Number(li.unit_price) || 0;
+
+    if (!offering) {
+      $('pay').value = budgeted || '';
+      offering = budgeted;
+    }
+
+    var margin = client - offering;
+    var pct = client > 0 ? Math.round((margin / client) * 100) : 0;
+    var drift = offering - budgeted;
+
+    var msg = 'Client pays ' + money(client) + ' \u00b7 you keep ' + money(margin) + ' (' + pct + '%)';
+    if (Math.abs(drift) > 0.005) {
+      msg += ' \u2014 that is ' + money(Math.abs(drift)) + (drift > 0 ? ' MORE' : ' less') +
+             ' than the ' + money(budgeted) + ' budgeted on this line.';
+      note.style.color = drift > 0 ? '#b45309' : '#047857';
+    } else {
+      note.style.color = '#6b7280';
+    }
+    if (pct < 20 && client > 0) {
+      msg += ' Margin is thin.';
+      note.style.color = '#b91c1c';
+    }
+    note.textContent = msg;
+  }
+
   function checkGate(){
     var c = contractors.filter(function(x){return x.id===$('con').value;})[0];
     var el = $('gateNote');
@@ -226,7 +282,15 @@ window.vcInit = async function(){
     return !hard;
   }
   $('con').addEventListener('change', checkGate);
+  $('eng').addEventListener('change', loadLineItems);
+  document.getElementById('lineItem').addEventListener('change', function(){
+    var li = lineItems.filter(function(x){return x.id === this.value;}.bind(this))[0];
+    if (li && Number(li.contractor_cost)) $('pay').value = Number(li.contractor_cost);
+    checkMargin();
+  });
+  $('pay').addEventListener('input', checkMargin);
   checkGate();
+  loadLineItems();
 
   $('offerBtn').addEventListener('click', async function(){
     if (!$('eng').value)   return say('offerMsg','Pick an engagement.', false);
@@ -252,6 +316,15 @@ window.vcInit = async function(){
     });
     btn.disabled=false;
     if (r.error) return say('offerMsg', r.error.message, false);
+
+    // Keep the line item's contractor cost in step with what was actually offered,
+    // so the margin panel in Engagements reflects reality.
+    var liId = document.getElementById('lineItem').value;
+    if (liId) {
+      await sb.from('line_items')
+        .update({ contractor_cost: Number($('pay').value) })
+        .eq('id', liId);
+    }
     say('offerMsg','Offer sent. They see it on their Jobs page.', true);
     $('scope').value=''; $('deliv').value=''; $('pay').value=''; $('loc').value='';
     loadJobs();

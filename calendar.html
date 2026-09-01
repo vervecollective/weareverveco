@@ -38,7 +38,7 @@
   .dn{font-size:12px;font-weight:600;color:#6b7280;margin-bottom:5px;}
   .day.today .dn{color:#D9531E;font-weight:800;}
   .day.out .dn{color:#cbd5e1;}
-  .ev{display:block;font-size:11.5px;line-height:1.3;padding:3px 6px;border-radius:5px;
+  .ev{display:block;width:100%;text-align:left;border:none;font-family:inherit;cursor:pointer;font-size:11.5px;line-height:1.3;padding:3px 6px;border-radius:5px;
     margin-bottom:3px;font-weight:600;text-decoration:none;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .ev.shoot{background:#f5f3ff;color:#5b21b6;}
@@ -117,7 +117,7 @@ async function fetchAll(){
     events.push({
       kind:'shoot', date:d.work_date, title:biz + ' \u2014 ' + (a.role_on_job || 'Shoot'),
       sub:(d.call_time ? d.call_time.slice(0,5) : 'Time TBC') + (a.location ? ' \u00b7 ' + a.location : ''),
-      who:a.contractor_id, href:'/jobs'
+      who:a.contractor_id, kind2:'assignment', ref:d.assignment_id
     });
   });
 
@@ -129,7 +129,7 @@ async function fetchAll(){
     events.push({
       kind:'ms', date:m.due_date, title:m.label,
       sub:(e.clients && e.clients.business_name) || e.title || '',
-      href:'/internal'
+      kind2:'milestone', ref:m.id
     });
   });
 
@@ -142,7 +142,7 @@ async function fetchAll(){
     events.push({
       kind:'task', date:t.due_date, title:t.title,
       sub:(e.clients && e.clients.business_name) || e.title || '',
-      who:t.assignee_id, href:'/board'
+      who:t.assignee_id, kind2:'task', ref:t.id
     });
   });
 
@@ -181,7 +181,8 @@ function render(){
         var cls = e.kind;
         if (e.kind === 'shoot' && clashes[e.date]) cls = 'clash';
         else if (e.kind !== 'shoot' && key < today) cls = 'late';
-        return '<a class="ev '+cls+'" href="'+e.href+'" title="'+esc(e.title+' \u2014 '+e.sub)+'">'+esc(e.title)+'</a>';
+        return '<button class="ev '+cls+'" data-k="'+e.kind2+'" data-r="'+(e.ref||'')+'" title="'+
+               esc(e.title+' \u2014 '+e.sub)+'">'+esc(e.title)+'</button>';
       }).join('')+
       (evs.length > 3 ? '<div class="more">+'+(evs.length-3)+' more</div>' : '')+
     '</div>';
@@ -199,15 +200,31 @@ function render(){
   var end = new Date(); end.setDate(end.getDate() + 14);
   var soon = events.filter(function(e){ return e.date >= today && e.date <= iso(end); })
                    .sort(function(a,b){ return a.date < b.date ? -1 : 1; });
+  setTimeout(function(){
+    document.querySelectorAll('[data-k][data-r]').forEach(function(el){
+      if (el.__wired) return; el.__wired = true;
+      el.addEventListener('click', function(){
+        if (el.dataset.r && window.vcPeek) window.vcPeek(el.dataset.k, el.dataset.r);
+      });
+    });
+  }, 0);
+
   $('upcoming').innerHTML = soon.length
     ? soon.slice(0,14).map(function(e){
         var cls = (e.kind === 'shoot' && clashes[e.date]) ? 'clash' : e.kind;
         var dt = new Date(e.date+'T12:00:00');
-        return '<div class="row '+cls+'"><div><b>'+esc(e.title)+'</b>'+
+        return '<div class="row '+cls+'" data-k="'+e.kind2+'" data-r="'+(e.ref||'')+'" style="cursor:pointer"><div><b>'+esc(e.title)+'</b>'+
           '<div class="s">'+esc(e.sub)+'</div></div>'+
           '<span class="d">'+dt.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})+'</span></div>';
       }).join('')
     : '<div class="empty">Nothing scheduled in the next two weeks.</div>';
+
+  document.querySelectorAll('[data-k][data-r]').forEach(function(el){
+    if (el.__wired) return; el.__wired = true;
+    el.addEventListener('click', function(){
+      if (el.dataset.r && window.vcPeek) window.vcPeek(el.dataset.k, el.dataset.r);
+    });
+  });
 }
 
 window.vcInit = async function(){

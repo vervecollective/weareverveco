@@ -26,6 +26,30 @@
   @media(max-width:1000px){.board{grid-template-columns:repeat(2,minmax(0,1fr));}}
   @media(max-width:620px){.board{grid-template-columns:1fr;}}
 
+  .vw{border:none;background:#fff;color:#4b5563;font-size:12.5px;font-weight:600;
+    padding:0 14px;cursor:pointer;font-family:inherit;}
+  .vw.on{background:#111827;color:#fff;}
+  /* list view */
+  .lst{background:#fff;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;}
+  .lrow{display:grid;grid-template-columns:24px 1fr 150px 118px 96px 34px;gap:11px;
+    align-items:center;padding:11px 14px;border-bottom:1px solid #f3f4f6;}
+  .lrow:last-child{border-bottom:none;}
+  .lrow:hover{background:#fafbfc;}
+  .lrow.sub{padding-left:44px;background:#fbfcfd;}
+  .lhead{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
+    color:#4b5563;background:#f9fafb;}
+  .ltitle{font-size:13.5px;font-weight:600;cursor:pointer;}
+  .ltitle:hover{color:#9A3412;}
+  .lsub{font-size:11.5px;color:#4b5563;}
+  .lsel{padding:5px 8px;font-size:12px;border:1px solid #d1d5db;border-radius:6px;background:#fff;font-family:inherit;}
+  .lcaret{background:none;border:none;cursor:pointer;color:#6b7280;font-size:11px;padding:0;}
+  /* subtasks in the panel */
+  .stk{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid #f3f4f6;}
+  .stk:last-child{border-bottom:none;}
+  .stk input[type=checkbox]{width:auto;}
+  .stk span{flex:1;font-size:13px;}
+  .stk span.done{text-decoration:line-through;color:#9ca3af;}
+  .stk em{font-size:11.5px;font-style:normal;color:#4b5563;}
   .col{background:#f4f5f7;border-radius:12px;padding:10px;min-height:120px;transition:background .15s,box-shadow .15s;}
   .col.over{background:#fdf0eb;box-shadow:inset 0 0 0 2px #f0b79c;}
   .col-h{display:flex;align-items:center;gap:8px;padding:4px 6px 10px;}
@@ -131,11 +155,15 @@
         <option value="client">Client-visible</option>
         <option value="overdue">Overdue</option>
       </select></div>
+    <div style="display:flex;gap:0;border:1px solid #9ca3af;border-radius:7px;overflow:hidden;height:38px">
+      <button class="vw on" id="vBoard">Board</button><button class="vw" id="vList">List</button>
+    </div>
     <button class="btn btn-2" id="clearF" style="height:38px">Clear</button>
   </div>
   <p id="fcount" style="font-size:12.5px;color:#6b7280;margin:-8px 0 16px"></p>
 
   <div class="board" id="board"></div>
+  <div class="lst" id="list" style="display:none"></div>
 </div>
 
 <div class="veil" id="veil"></div>
@@ -184,6 +212,16 @@
       <button class="btn btn-danger" id="del" style="margin-left:auto">Delete</button>
     </div>
     <p class="msg" id="msg"></p>
+
+    <div id="stWrap" style="display:none;margin-top:20px;padding-top:16px;border-top:1px solid #e5e7eb">
+      <h3 style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#4b5563;margin-bottom:10px">Subtasks</h3>
+      <div id="stList"></div>
+      <div style="display:flex;gap:8px;margin-top:9px">
+        <input type="text" id="stNew" placeholder="Add a subtask" style="flex:1">
+        <input type="date" id="stDue" style="width:145px">
+        <button class="btn btn-2" id="stAdd">Add</button>
+      </div>
+    </div>
 
     <div class="cm-wrap" id="cmWrap" style="display:none">
       <h3>Discussion</h3>
@@ -245,6 +283,7 @@ function render(){
   var who = $('assignee').value;
 
   var shown = tasks.filter(function(t){
+    if (view === 'board' && t.parent_task_id) return false;
     if (who && t.assignee_id !== who) return false;
     if (f === 'mine') return t.assignee_id === me.id;
     if (f === 'unassigned') return !t.assignee_id;
@@ -257,6 +296,10 @@ function render(){
   $('fcount').textContent = hidden > 0
     ? shown.length + ' of ' + tasks.length + ' tasks shown \u00b7 ' + hidden + ' hidden by filters'
     : '';
+
+  document.getElementById('board').style.display = view === 'board' ? 'grid' : 'none';
+  document.getElementById('list').style.display  = view === 'list'  ? 'block' : 'none';
+  if (view === 'list') { renderList(shown); return; }
 
   $('board').innerHTML = COLS.map(function(c){
     var inCol = shown.filter(function(t){ return t.status === c[0]; })
@@ -286,6 +329,64 @@ function render(){
   }).join('');
 
   wire();
+  if (view === 'list') renderList(shown);
+}
+
+var view = 'board', expanded = {};
+
+function renderList(shown){
+  var byId = {};
+  tasks.forEach(function(t){ byId[t.id] = t; });
+  var tops = shown.filter(function(t){ return !t.parent_task_id; });
+  var kids = {};
+  shown.forEach(function(t){
+    if (!t.parent_task_id) return;
+    (kids[t.parent_task_id] = kids[t.parent_task_id] || []).push(t);
+  });
+
+  var L = {}; COLS.forEach(function(c){ L[c[0]] = c[1]; });
+
+  function rowHtml(t, isSub){
+    var who = people.filter(function(p){return p.id===t.assignee_id;})[0];
+    var n = (kids[t.id] || []).length;
+    var dc = dueClass(t.due_date, t.status);
+    return '<div class="lrow'+(isSub?' sub':'')+'">'+
+      '<span>'+(n ? '<button class="lcaret" data-x="'+t.id+'">'+(expanded[t.id]?'\u25BE':'\u25B8')+'</button>' : '')+'</span>'+
+      '<span><span class="ltitle" data-open="'+t.id+'">'+esc(t.title)+'</span>'+
+        (n ? '<div class="lsub">'+n+' subtask'+(n===1?'':'s')+'</div>' : '')+'</span>'+
+      '<span><select class="lsel lstat" data-id="'+t.id+'">'+
+        COLS.map(function(c){ return '<option value="'+c[0]+'"'+(c[0]===t.status?' selected':'')+'>'+esc(c[1])+'</option>'; }).join('')+
+      '</select></span>'+
+      '<span class="lsub">'+esc(who ? (who.full_name||who.email) : 'Unassigned')+'</span>'+
+      '<span class="lsub '+dc+'">'+(t.due_date ? dueText(t.due_date) : '\u2014')+'</span>'+
+      '<span>'+(cmCounts[t.id] ? '<span class="cmc">'+cmCounts[t.id]+'</span>' : '')+'</span>'+
+    '</div>';
+  }
+
+  var html = '<div class="lrow lhead"><span></span><span>Task</span><span>Status</span>'+
+             '<span>Assignee</span><span>Due</span><span></span></div>';
+  tops.forEach(function(t){
+    html += rowHtml(t, false);
+    if (expanded[t.id]) (kids[t.id]||[]).forEach(function(k){ html += rowHtml(k, true); });
+  });
+  document.getElementById('list').innerHTML = tops.length ? html
+    : '<div class="lrow"><span></span><span class="lsub">Nothing here.</span></div>';
+
+  document.querySelectorAll('.lcaret').forEach(function(b){
+    b.addEventListener('click', function(){ expanded[b.dataset.x] = !expanded[b.dataset.x]; render(); });
+  });
+  document.querySelectorAll('.ltitle').forEach(function(el){
+    el.addEventListener('click', function(){ open(el.dataset.open); });
+  });
+  document.querySelectorAll('.lstat').forEach(function(sel){
+    sel.addEventListener('change', async function(){
+      var patch = { status: sel.value };
+      if (DONE_KEYS.indexOf(sel.value) > -1) patch.completed_at = new Date().toISOString();
+      var r = await sb.from('tasks').update(patch).eq('id', sel.dataset.id);
+      if (r.error) return say(r.error.message, false);
+      load();
+    });
+  });
 }
 
 function wire(){
@@ -336,6 +437,7 @@ function open(id, status){
   toggleBlocked();
   $('msg').className = 'msg';
   if (current) { readView(); mode(false); } else { mode(true); }
+  loadSubtasks(current ? current.id : null);
   loadComments(current ? current.id : null);
   $('cmText').value = ''; $('cmVisible').checked = false;
   $('veil').classList.add('on'); $('sheet').classList.add('on');
@@ -391,6 +493,38 @@ function markMentions(text){
     }
   });
   return out;
+}
+
+async function loadSubtasks(taskId){
+  var w = $('stWrap');
+  if (!taskId) { w.style.display='none'; return; }
+  w.style.display = 'block';
+  var r = await sb.from('tasks').select('*').eq('parent_task_id', taskId).order('sort_order');
+  var d = r.data || [];
+  $('stList').innerHTML = d.length ? d.map(function(t){
+    var done = DONE_KEYS.indexOf(t.status) > -1;
+    return '<div class="stk"><input type="checkbox" class="stCk" data-id="'+t.id+'"'+(done?' checked':'')+'>'+
+      '<span class="'+(done?'done':'')+'">'+esc(t.title)+'</span>'+
+      (t.due_date ? '<em>'+dueText(t.due_date)+'</em>' : '')+
+      '<button class="btn btn-danger btn-sm stX" data-id="'+t.id+'">\u00d7</button></div>';
+  }).join('') : '<p style="font-size:12.5px;color:#9ca3af">None yet.</p>';
+
+  $('stList').querySelectorAll('.stCk').forEach(function(cb){
+    cb.addEventListener('change', async function(){
+      var next = cb.checked ? (DONE_KEYS[0] || 'done') : (COLS[0] ? COLS[0][0] : 'todo');
+      await sb.from('tasks').update({
+        status: next,
+        completed_at: cb.checked ? new Date().toISOString() : null
+      }).eq('id', cb.dataset.id);
+      loadSubtasks(taskId); load();
+    });
+  });
+  $('stList').querySelectorAll('.stX').forEach(function(b){
+    b.addEventListener('click', async function(){
+      await sb.from('tasks').delete().eq('id', b.dataset.id);
+      loadSubtasks(taskId); load();
+    });
+  });
 }
 
 async function loadComments(taskId){
@@ -552,6 +686,12 @@ window.vcInit = async function(){
   paintEngs();
 
   $('eng').addEventListener('change', function(){ engId = this.value; load(); });
+  $('vBoard').addEventListener('click', function(){
+    view='board'; $('vBoard').classList.add('on'); $('vList').classList.remove('on'); render();
+  });
+  $('vList').addEventListener('click', function(){
+    view='list'; $('vList').classList.add('on'); $('vBoard').classList.remove('on'); render();
+  });
   $('filt').addEventListener('change', render);
   $('assignee').addEventListener('change', render);
   $('clearF').addEventListener('click', function(){
@@ -559,6 +699,19 @@ window.vcInit = async function(){
     paintEngs();
   });
   $('tStatus').addEventListener('change', toggleBlocked);
+  $('stAdd').addEventListener('click', async function(){
+    if (!current) return;
+    var t = $('stNew').value.trim(); if (!t) return;
+    var r = await sb.from('tasks').insert({
+      engagement_id: engId, parent_task_id: current.id, title: t,
+      due_date: $('stDue').value || null, created_by: me.id,
+      status: COLS[0] ? COLS[0][0] : 'todo', priority: 'normal'
+    });
+    if (r.error) return say(r.error.message, false);
+    $('stNew').value=''; $('stDue').value='';
+    loadSubtasks(current.id); load();
+  });
+
   $('editBtn').addEventListener('click', function(){ mode(true); });
 
   $('linkBtn').addEventListener('click', function(){

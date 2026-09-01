@@ -179,6 +179,18 @@
 </div>
 </div>
 
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+window.__sb = createClient(
+  'https://otqrkxjtojqlpzzvqavp.supabase.co',
+  'sb_publishable_OBViGLggbcOKacti5iUonA_QCzw3kBv'
+);
+const { data:{ session } } = await window.__sb.auth.getSession();
+if (!session) { location.href = '/login.html'; }
+window.__token = session ? session.access_token : '';
+window.__user  = session ? session.user : null;
+window.dispatchEvent(new Event('vc-auth-ready'));
+</script>
 <script>
 var PW_KEY = 'vc_admin_pw';
 var current = null;
@@ -216,7 +228,7 @@ function pw(){ return localStorage.getItem(PW_KEY) || ''; }
 function money(n){ return '$' + (Number(n)||0).toFixed(2); }
 function api(path, opts){
   opts = opts || {};
-  opts.headers = Object.assign({ 'Content-Type':'application/json', 'x-admin-password': pw() }, opts.headers||{});
+  opts.headers = Object.assign({ 'Content-Type':'application/json', 'Authorization': 'Bearer ' + (window.__token || '') }, opts.headers||{});
   return fetch(path, opts);
 }
 function setStatus(el, msg, ok){
@@ -403,5 +415,6 @@ document.getElementById('purgeBtn').addEventListener('click', function(){
     .then(function(){ loadRecord(null); });
 });
 </script>
+<script>window.addEventListener('vc-auth-ready',function(){var b=document.getElementById('unlockBtn');if(b)b.click();});</script>
 </body>
 </html>

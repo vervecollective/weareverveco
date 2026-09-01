@@ -71,3 +71,8 @@
 [[edge_functions]]
   function = "stripe-webhook"
   path = "/api/stripe-webhook"
+
+[[redirects]]
+  from = "/project"
+  to = "/project.html"
+  status = 200

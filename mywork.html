@@ -93,14 +93,14 @@ function dueClass(d){
 
 function item(x){
   if (x.kind === 'job') {
-    return '<a class="plain" href="/jobs"><div class="it job">'+
+    return '<div class="plain" style="cursor:pointer" data-k="assignment" data-r="'+x.id+'"><div class="it job">'+
       '<div class="it-b"><div class="it-t">'+esc(x.title)+'</div>'+
         '<div class="it-m">'+esc(x.sub)+'</div></div>'+
       '<div class="it-r">'+(x.due?'<span class="due '+dueClass(x.due)+'">'+dueLabel(x.due)+'</span>':'')+
-        '<span class="pill '+x.status+'">'+esc(x.statusLabel)+'</span></div></div></a>';
+        '<span class="pill '+x.status+'">'+esc(x.statusLabel)+'</span></div></div></div>';
   }
   return '<div class="it p-'+x.priority+'">'+
-    '<div class="it-b"><div class="it-t">'+esc(x.title)+'</div>'+
+    '<div class="it-b" style="cursor:pointer" data-k="task" data-r="'+x.id+'"><div class="it-t">'+esc(x.title)+'</div>'+
       '<div class="it-m">'+esc(x.sub)+'</div></div>'+
     '<div class="it-r">'+(x.due?'<span class="due '+dueClass(x.due)+'">'+dueLabel(x.due)+'</span>':'')+
       '<select class="sel" data-id="'+x.id+'">'+
@@ -190,6 +190,13 @@ window.vcInit = async function(){
     group('Overdue', late) +
     group('Blocked', blocked) +
     group('Everything else', rest);
+
+  document.querySelectorAll('[data-k][data-r]').forEach(function(el){
+    if (el.__w) return; el.__w = true;
+    el.addEventListener('click', function(){
+      if (window.vcPeek) window.vcPeek(el.dataset.k, el.dataset.r);
+    });
+  });
 
   document.querySelectorAll('.sel').forEach(function(sel){
     sel.addEventListener('change', async function(){

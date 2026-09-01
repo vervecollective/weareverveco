@@ -280,6 +280,124 @@ if (role !== 'client') {
     .subscribe();
 }
 
+
+/* ── Peek drawer ───────────────────────────────────────────────────────────
+   One detail panel every page can open, so clicking a thing shows the thing
+   rather than navigating somewhere and losing your place. Call it with
+   window.vcPeek('task'|'assignment'|'milestone'|'engagement', id). */
+(function(){
+  const veil = document.createElement('div');
+  veil.className = 'vc-peek-veil';
+  const panel = document.createElement('div');
+  panel.className = 'vc-peek';
+  panel.innerHTML =
+    '<div class="vc-peek-h">' +
+      '<span class="vc-peek-k" id="vcPeekKind"></span>' +
+      '<div style="display:flex;gap:8px;align-items:center">' +
+        '<a class="vc-peek-open" id="vcPeekOpen" href="#">Open fully</a>' +
+        '<button class="vc-peek-x" id="vcPeekX" aria-label="Close">&times;</button>' +
+      '</div>' +
+    '</div><div class="vc-peek-b" id="vcPeekBody"></div>';
+  document.body.append(veil, panel);
+
+  function shut(){
+    panel.classList.remove('on'); veil.classList.remove('on');
+    document.body.classList.remove('vc-locked');
+  }
+  veil.addEventListener('click', shut);
+  document.getElementById('vcPeekX').addEventListener('click', shut);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') shut(); });
+
+  const esc = (v) => { const d = document.createElement('div'); d.textContent = v == null ? '' : v; return d.innerHTML; };
+  const money = (n) => '$' + (Number(n)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const date = (d) => d ? new Date(d + 'T12:00:00').toLocaleDateString('en-US',
+    { weekday:'short', month:'long', day:'numeric' }) : '\u2014';
+  const fld = (k, v) => '<div class="vc-peek-f"><span>' + esc(k) + '</span><b>' + esc(v) + '</b></div>';
+
+  window.vcPeek = async function(kind, id){
+    if (!id) return;
+    document.getElementById('vcPeekKind').textContent =
+      ({ task:'Task', assignment:'Shoot', milestone:'Milestone', engagement:'Engagement' })[kind] || 'Detail';
+    document.getElementById('vcPeekBody').innerHTML = '<p class="vc-peek-load">Loading\u2026</p>';
+    document.getElementById('vcPeekOpen').href =
+      ({ task:'/board?task=' + id, assignment:'/jobs', milestone:'/internal', engagement:'/internal' })[kind] || '#';
+
+    panel.classList.add('on'); veil.classList.add('on');
+    document.body.classList.add('vc-locked');
+
+    let html = '';
+    try {
+      if (kind === 'task') {
+        const { data: t } = await sb.from('tasks')
+          .select('*, engagements(title, clients(business_name)), profiles:assignee_id(full_name)')
+          .eq('id', id).single();
+        if (!t) throw new Error('Not found');
+        const { data: cm } = await sb.from('comments')
+          .select('body, created_at, profiles:author_id(full_name)')
+          .eq('task_id', id).order('created_at', { ascending:false }).limit(3);
+
+        html = '<h3>' + esc(t.title) + '</h3>' +
+          (t.detail ? '<p class="vc-peek-d">' + esc(t.detail) + '</p>' : '') +
+          fld('Account', (t.engagements && t.engagements.clients && t.engagements.clients.business_name) || '\u2014') +
+          fld('Status', String(t.status).replace('_',' ')) +
+          fld('Priority', t.priority) +
+          fld('Assignee', (t.profiles && t.profiles.full_name) || 'Unassigned') +
+          fld('Due', t.due_date ? date(t.due_date) : '\u2014') +
+          (t.blocked_reason ? fld('Blocked by', t.blocked_reason) : '') +
+          ((cm && cm.length)
+            ? '<div class="vc-peek-cm"><b>Latest discussion</b>' + cm.map((c) =>
+                '<div class="vc-peek-c"><em>' + esc((c.profiles && c.profiles.full_name) || 'Someone') + '</em>' +
+                esc(c.body) + '</div>').join('') + '</div>'
+            : '');
+
+      } else if (kind === 'assignment') {
+        const { data: a } = await sb.from('assignments')
+          .select('*, assignment_days(*), engagements(clients(business_name)), profiles:contractor_id(full_name)')
+          .eq('id', id).single();
+        if (!a) throw new Error('Not found');
+        const dayList = (a.assignment_days || [])
+          .sort((x,y) => (x.sort_order||0) - (y.sort_order||0))
+          .map((d) => '<div class="vc-peek-f"><span>' + esc(date(d.work_date)) + '</span><b>' +
+            (d.call_time ? d.call_time.slice(0,5) + (d.wrap_time ? '\u2013' + d.wrap_time.slice(0,5) : '') : 'Time TBC') +
+            '</b></div>').join('');
+
+        html = '<h3>' + esc(a.role_on_job) + '</h3>' +
+          '<p class="vc-peek-d">' + esc(a.scope || '') + '</p>' +
+          fld('Account', (a.engagements && a.engagements.clients && a.engagements.clients.business_name) || '\u2014') +
+          fld('Crew', (a.profiles && a.profiles.full_name) || 'Unassigned') +
+          fld('Status', a.status) +
+          (a.location ? fld('Location', a.location) : '') +
+          (a.performer === 'internal' ? fld('Doing it', 'In-house') : fld('Their pay', money(a.pay_amount))) +
+          (dayList ? '<div class="vc-peek-cm"><b>Schedule</b>' + dayList + '</div>' : '');
+
+      } else if (kind === 'milestone') {
+        const { data: m } = await sb.from('milestones')
+          .select('*, engagements(title, clients(business_name))').eq('id', id).single();
+        if (!m) throw new Error('Not found');
+        html = '<h3>' + esc(m.label) + '</h3>' +
+          fld('Account', (m.engagements && m.engagements.clients && m.engagements.clients.business_name) || '\u2014') +
+          fld('Status', String(m.status).replace(/_/g,' ')) +
+          fld('Due', m.due_date ? date(m.due_date) : '\u2014');
+
+      } else if (kind === 'engagement') {
+        const { data: e } = await sb.from('engagements')
+          .select('*, clients(business_name, contact_name), line_items(*)').eq('id', id).single();
+        if (!e) throw new Error('Not found');
+        const total = (e.line_items || []).reduce((s,l) => s + (Number(l.qty)||1) * (Number(l.unit_price)||0), 0);
+        html = '<h3>' + esc((e.clients && e.clients.business_name) || e.title || 'Engagement') + '</h3>' +
+          fld('Stage', String(e.stage).replace(/_/g,' ')) +
+          fld('Starts', e.start_date ? date(e.start_date) : '\u2014') +
+          fld('Value', money(total)) +
+          fld('Paid', money(e.amount_paid)) +
+          fld('Hours a week', (Number(e.weekly_hours)||0) + 'h');
+      }
+    } catch (err) {
+      html = '<p class="vc-peek-load">Could not load that.</p>';
+    }
+    document.getElementById('vcPeekBody').innerHTML = html;
+  };
+})();
+
 window.dispatchEvent(new Event('vc-auth-ready'));
 
 /* Pages define window.vcInit and expect it to run once auth resolves. Calling it

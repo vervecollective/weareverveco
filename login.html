@@ -62,6 +62,15 @@ const SUPABASE_URL = 'https://otqrkxjtojqlpzzvqavp.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_OBViGLggbcOKacti5iUonA_QCzw3kBv';
 
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+/* Deep links: an email button points at /jobs, we bounce through login, then
+   send them where they were actually going. Only same-origin paths are allowed,
+   so a crafted ?next= can't redirect someone off-site. */
+function nextPath(){
+  var n = new URLSearchParams(location.search).get('next') || '/hub';
+  if (!n.startsWith('/') || n.startsWith('//')) return '/hub';
+  return n;
+}
 const $ = id => document.getElementById(id);
 let mode = 'signin';
 
@@ -73,7 +82,7 @@ function say(t, ok){
 
 // Already signed in? Go straight through.
 const { data:{ session } } = await sb.auth.getSession();
-if (session) location.href = '/hub';
+if (session) location.href = nextPath();
 
 $('toggleReset').addEventListener('click', () => {
   mode = mode === 'signin' ? 'reset' : 'signin';
@@ -96,7 +105,7 @@ async function submit(){
   try {
     if (mode === 'reset') {
       const { error } = await sb.auth.resetPasswordForEmail(email, {
-        redirectTo: location.origin + '/login.html'
+        redirectTo: location.origin + '/login.html?next=' + encodeURIComponent(nextPath())
       });
       if (error) throw error;
       say('Check your email for the reset link.', true);
@@ -106,7 +115,7 @@ async function submit(){
 
     const { error } = await sb.auth.signInWithPassword({ email, password });
     if (error) throw error;
-    location.href = '/hub';
+    location.href = nextPath();
   } catch (e) {
     say(e.message || 'Could not sign in.');
     $('go').disabled = false;

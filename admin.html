@@ -133,6 +133,18 @@
   </div>
 </div>
 
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+window.__sb = createClient(
+  'https://otqrkxjtojqlpzzvqavp.supabase.co',
+  'sb_publishable_OBViGLggbcOKacti5iUonA_QCzw3kBv'
+);
+const { data:{ session } } = await window.__sb.auth.getSession();
+if (!session) { location.href = '/login.html'; }
+window.__token = session ? session.access_token : '';
+window.__user  = session ? session.user : null;
+window.dispatchEvent(new Event('vc-auth-ready'));
+</script>
 <script>
   var PASSWORD_KEY = 'vc_admin_pw';
   var FIELDS = [
@@ -315,7 +327,7 @@
   function loadContent(){
     var pw = localStorage.getItem(PASSWORD_KEY) || '';
     Promise.all([
-      fetch('/api/content?mode=draft', { headers: { 'x-admin-password': pw } }).then(function(r){ return r.ok ? r.json() : null; }),
+      fetch('/api/content?mode=draft', { headers: { 'Authorization': 'Bearer ' + (window.__token || '') } }).then(function(r){ return r.ok ? r.json() : null; }),
       fetch('/api/content').then(function(r){ return r.json(); })
     ]).then(function(results){
       var draft = results[0];
@@ -410,7 +422,7 @@
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-admin-password': localStorage.getItem(PASSWORD_KEY) || ''
+        'Authorization': 'Bearer ' + (window.__token || '')
       },
       body: JSON.stringify(payload)
     }).then(function(res){
@@ -446,12 +458,12 @@
       var payload = currentFormValues();
       fetch('/api/content', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-admin-password': localStorage.getItem(PASSWORD_KEY) || '' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (window.__token || '') },
         body: JSON.stringify(payload)
       }).then(function(){
         return fetch('/api/content', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-admin-password': localStorage.getItem(PASSWORD_KEY) || '' },
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (window.__token || '') },
           body: JSON.stringify({ _publish: true })
         });
       }).then(function(res){
@@ -522,7 +534,7 @@
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-admin-password': localStorage.getItem(PASSWORD_KEY) || ''
+        'Authorization': 'Bearer ' + (window.__token || '')
       },
       body: JSON.stringify({ _newPassword: newPw })
     }).then(function(res){
@@ -549,5 +561,6 @@
   });
 </script>
 
+<script>window.addEventListener('vc-auth-ready',function(){var b=document.getElementById('unlockBtn');if(b)b.click();});</script>
 </body>
 </html>

@@ -203,6 +203,27 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       <div class="sec-ft"><span class="msg" id="splitMsg"></span><button class="btn" id="saveSplits">Save splits</button></div>
     </div>
     <div class="sec">
+      <div class="sec-hd"><h2>Board columns</h2><p>Rename them, recolour them, reorder them. Applies to every board.</p></div>
+      <div class="sec-bd">
+        <div id="statusRows"><p class="empty">Loading…</p></div>
+        <div class="row" style="margin-top:14px">
+          <div class="fld"><label for="newStatus">Add a column</label>
+            <input type="text" id="newStatus" placeholder="Waiting on client"></div>
+          <div class="fld"><label for="newColour">Colour</label>
+            <input type="color" id="newColour" value="#94a3b8" style="height:42px;padding:4px"></div>
+        </div>
+        <button class="btn btn-2" id="addStatus">Add column</button>
+      </div>
+      <div class="sec-ft"><span class="msg" id="statusMsg"></span><button class="btn" id="saveStatuses">Save columns</button></div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-hd"><h2>Organization colours</h2><p>Used on the calendar and capacity views so accounts are recognisable at a glance.</p></div>
+      <div class="sec-bd"><div id="orgRows"><p class="empty">Loading…</p></div></div>
+      <div class="sec-ft"><span class="msg" id="orgMsg"></span><button class="btn" id="saveOrgs">Save colours</button></div>
+    </div>
+
+    <div class="sec">
       <div class="sec-hd"><h2>Business details</h2><p>Used on contracts and invoices.</p></div>
       <div class="sec-bd">
         <div class="row">
@@ -352,6 +373,136 @@ function vcInit(){
     }
     paintDays();
   })();
+
+  // ── Board columns ───────────────────────────────────────────────────────
+  var statuses = [];
+
+  async function loadStatuses(){
+    if (window.__role !== 'owner') return;
+    var r = await sb.from('board_statuses').select('*').order('sort_order');
+    statuses = r.data || [];
+    $('statusRows').innerHTML = statuses.map(function(st, i){
+      return '<div style="display:grid;grid-template-columns:44px 1fr 92px auto;gap:10px;align-items:center;'+
+        'padding:8px 0;border-bottom:1px solid #f3f4f6">'+
+        '<input type="color" class="stC" data-i="'+i+'" value="'+st.colour+'" style="height:34px;padding:3px;width:100%">'+
+        '<input type="text" class="stL" data-i="'+i+'" value="'+st.label.replace(/"/g,'&quot;')+'">'+
+        '<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#6b7280">'+
+          '<input type="checkbox" class="stD" data-i="'+i+'" style="width:auto"'+(st.is_done?' checked':'')+'>Done</label>'+
+        '<button class="btn btn-2" style="padding:6px 10px;font-size:12px" data-up="'+i+'">\u2191</button>'+
+      '</div>';
+    }).join('');
+
+    $('statusRows').querySelectorAll('[data-up]').forEach(function(b){
+      b.addEventListener('click', function(){
+        var i = Number(b.dataset.up);
+        if (i === 0) return;
+        var t = statuses[i-1]; statuses[i-1] = statuses[i]; statuses[i] = t;
+        statuses.forEach(function(x,n){ x.sort_order = n; });
+        renderFromMemory();
+      });
+    });
+    $('statusRows').querySelectorAll('input').forEach(function(el){
+      el.addEventListener('input', function(){
+        var i = Number(el.dataset.i);
+        if (el.classList.contains('stC')) statuses[i].colour = el.value;
+        if (el.classList.contains('stL')) statuses[i].label  = el.value;
+        if (el.classList.contains('stD')) statuses[i].is_done = el.checked;
+      });
+    });
+  }
+
+  function renderFromMemory(){
+    var keep = statuses.slice();
+    $('statusRows').innerHTML = '';
+    statuses = keep;
+    loadStatusesFromArray();
+  }
+  function loadStatusesFromArray(){
+    $('statusRows').innerHTML = statuses.map(function(st, i){
+      return '<div style="display:grid;grid-template-columns:44px 1fr 92px auto;gap:10px;align-items:center;'+
+        'padding:8px 0;border-bottom:1px solid #f3f4f6">'+
+        '<input type="color" class="stC" data-i="'+i+'" value="'+st.colour+'" style="height:34px;padding:3px;width:100%">'+
+        '<input type="text" class="stL" data-i="'+i+'" value="'+String(st.label).replace(/"/g,'&quot;')+'">'+
+        '<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#6b7280">'+
+          '<input type="checkbox" class="stD" data-i="'+i+'" style="width:auto"'+(st.is_done?' checked':'')+'>Done</label>'+
+        '<button class="btn btn-2" style="padding:6px 10px;font-size:12px" data-up="'+i+'">\u2191</button>'+
+      '</div>';
+    }).join('');
+    $('statusRows').querySelectorAll('[data-up]').forEach(function(b){
+      b.addEventListener('click', function(){
+        var i = Number(b.dataset.up); if (i === 0) return;
+        var t = statuses[i-1]; statuses[i-1] = statuses[i]; statuses[i] = t;
+        statuses.forEach(function(x,n){ x.sort_order = n; });
+        loadStatusesFromArray();
+      });
+    });
+    $('statusRows').querySelectorAll('input').forEach(function(el){
+      el.addEventListener('input', function(){
+        var i = Number(el.dataset.i);
+        if (el.classList.contains('stC')) statuses[i].colour = el.value;
+        if (el.classList.contains('stL')) statuses[i].label  = el.value;
+        if (el.classList.contains('stD')) statuses[i].is_done = el.checked;
+      });
+    });
+  }
+
+  if ($('addStatus')) {
+    $('addStatus').addEventListener('click', function(){
+      var label = $('newStatus').value.trim();
+      if (!label) return;
+      statuses.push({
+        key: label.toLowerCase().replace(/[^a-z0-9]+/g,'_').slice(0,30),
+        label: label, colour: $('newColour').value,
+        sort_order: statuses.length, is_done:false, active:true
+      });
+      $('newStatus').value = '';
+      loadStatusesFromArray();
+    });
+
+    $('saveStatuses').addEventListener('click', async function(){
+      for (var i = 0; i < statuses.length; i++) {
+        var st = statuses[i];
+        st.sort_order = i;
+        var r = await sb.from('board_statuses').upsert({
+          key: st.key, label: st.label, colour: st.colour,
+          sort_order: i, is_done: st.is_done, active: true
+        }, { onConflict: 'key' });
+        if (r.error) return msg('statusMsg', r.error.message, false);
+      }
+      msg('statusMsg','Saved. Reload the Board to see them.', true);
+    });
+  }
+
+  // ── Organization colours ────────────────────────────────────────────────
+  var orgList = [];
+  async function loadOrgs(){
+    if (window.__role !== 'owner') return;
+    var r = await sb.from('organizations').select('id, name, colour').order('name');
+    orgList = r.data || [];
+    $('orgRows').innerHTML = orgList.length ? orgList.map(function(o,i){
+      return '<div style="display:grid;grid-template-columns:44px 1fr;gap:10px;align-items:center;'+
+        'padding:8px 0;border-bottom:1px solid #f3f4f6">'+
+        '<input type="color" class="ogC" data-i="'+i+'" value="'+(o.colour||'#D9531E')+'" style="height:34px;padding:3px;width:100%">'+
+        '<span style="font-size:13.5px;font-weight:600">'+String(o.name).replace(/</g,'&lt;')+'</span></div>';
+    }).join('') : '<p class="empty">No organizations yet. Create one from an engagement.</p>';
+
+    $('orgRows').querySelectorAll('.ogC').forEach(function(el){
+      el.addEventListener('input', function(){ orgList[Number(el.dataset.i)].colour = el.value; });
+    });
+  }
+
+  if ($('saveOrgs')) {
+    $('saveOrgs').addEventListener('click', async function(){
+      for (var i = 0; i < orgList.length; i++) {
+        var r = await sb.from('organizations').update({ colour: orgList[i].colour }).eq('id', orgList[i].id);
+        if (r.error) return msg('orgMsg', r.error.message, false);
+      }
+      msg('orgMsg','Saved.', true);
+    });
+  }
+
+  loadStatuses();
+  loadOrgs();
 
   $('saveProfile').addEventListener('click', async function(){
     $('saveProfile').disabled = true;

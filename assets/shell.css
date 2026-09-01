@@ -92,12 +92,7 @@ body.vc-shelled{
   background:var(--vc-bg); color:var(--vc-text); border:1px solid var(--vc-line);
   border-radius:6px; width:36px; height:36px; font-size:15px; cursor:pointer;
 }
-@media(max-width:860px){
-  .vc-sidebar{transform:translateX(-100%); transition:transform .18s; box-shadow:0 0 40px rgba(0,0,0,.1);}
-  .vc-sidebar.open{transform:translateX(0);}
-  body.vc-shelled{margin-left:0 !important; padding-top:54px; height:100vh; overflow-y:auto;}
-  .vc-toggle{display:block;}
-}
+
 
 /* ---------- light theme override ----------
    The tool pages were built dark. Rather than rewrite each one, remap the
@@ -400,3 +395,108 @@ body.vc-shelled .st.invoiced,
 body.vc-shelled .tag.manual{ background:#fffbeb !important; color:#b45309 !important; }
 body.vc-shelled .st.draft,
 body.vc-shelled .tag.soon{ background:#f1f5f9 !important; color:#475569 !important; }
+
+
+/* ================= mobile app shell ================= */
+.vc-topbar{display:none;}
+.vc-scrim{display:none;}
+
+@media(max-width:860px){
+  /* Drawer */
+  .vc-sidebar{
+    width:min(84vw,300px); z-index:1200;
+    transform:translateX(-100%);
+    transition:transform .24s cubic-bezier(.32,.72,0,1);
+    box-shadow:2px 0 24px rgba(16,24,40,.14);
+  }
+  .vc-sidebar.open{transform:translateX(0);}
+
+  /* Fixed top bar — lives on body, unaffected by the drawer transform */
+  .vc-topbar{
+    display:flex; align-items:center; gap:12px;
+    position:fixed; top:0; left:0; right:0; height:56px; z-index:1100;
+    background:rgba(255,255,255,.92); backdrop-filter:saturate(180%) blur(12px);
+    border-bottom:1px solid var(--vc-line); padding:0 14px;
+  }
+  .vc-topbar-title{
+    font-size:15px; font-weight:700; color:var(--vc-text);
+    letter-spacing:-.01em; flex:1;
+  }
+  .vc-topbar-me{
+    width:30px; height:30px; border-radius:50%; background:var(--vc-text); color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    font-size:11px; font-weight:700; text-decoration:none; flex-shrink:0;
+  }
+
+  /* Hamburger with a proper 44px hit area */
+  .vc-toggle{
+    display:flex !important; flex-direction:column; justify-content:center; gap:4px;
+    width:40px; height:40px; padding:0 9px; margin-left:-8px;
+    background:none; border:none; border-radius:8px; cursor:pointer;
+    position:static !important;
+  }
+  .vc-toggle span{
+    display:block; height:2px; width:20px; background:var(--vc-text);
+    border-radius:2px; transition:transform .2s, opacity .2s;
+  }
+  .vc-toggle:active{background:var(--vc-surface-2);}
+
+  /* Scrim behind the drawer */
+  .vc-scrim{
+    display:block; position:fixed; inset:0; z-index:1150;
+    background:rgba(16,24,40,.42);
+    opacity:0; pointer-events:none; transition:opacity .24s;
+  }
+  body.vc-locked .vc-scrim{opacity:1; pointer-events:auto;}
+  body.vc-locked{overflow:hidden;}
+
+  body.vc-shelled{margin-left:0 !important; padding-top:56px !important;}
+  .wrap,.page{padding:18px 16px 90px !important;}
+
+  /* Touch targets */
+  .vc-navitem{padding:13px 12px !important; font-size:15.5px !important;}
+  .vc-navitem svg{width:20px;height:20px;}
+  .vc-signout-txt{display:inline;}
+  .vc-user{padding:14px 16px;}
+
+  body.vc-shelled .btn,
+  body.vc-shelled .btn-2,
+  body.vc-shelled .btn-sec{padding:13px 18px !important; font-size:15px !important; width:100%; justify-content:center;}
+  body.vc-shelled .acts .btn{width:auto; flex:1;}
+  body.vc-shelled input,
+  body.vc-shelled select,
+  body.vc-shelled textarea{font-size:16px !important; padding:12px 13px !important;}
+  body.vc-shelled .card,
+  body.vc-shelled .panel{padding:16px !important; border-radius:10px !important;}
+  body.vc-shelled h1{font-size:20px !important;}
+
+  body.vc-shelled table{display:block; overflow-x:auto; -webkit-overflow-scrolling:touch;}
+  body.vc-shelled .cols,
+  body.vc-shelled .grid2,
+  body.vc-shelled .grid,
+  body.vc-shelled .layout,
+  body.vc-shelled .row,
+  body.vc-shelled .row3,
+  body.vc-shelled .row4,
+  body.vc-shelled .dayrow,
+  body.vc-shelled .flow,
+  body.vc-shelled .contact-grid{grid-template-columns:1fr !important;}
+
+  body.vc-shelled .script{position:static !important;}
+  body.vc-shelled .stages,
+  body.vc-shelled .tabs,
+  body.vc-shelled .subnav,
+  body.vc-shelled .toc{
+    position:static !important; display:flex; gap:7px;
+    overflow-x:auto; -webkit-overflow-scrolling:touch;
+    flex-wrap:nowrap !important; padding-bottom:8px;
+    scrollbar-width:none;
+  }
+  body.vc-shelled .stages::-webkit-scrollbar,
+  body.vc-shelled .tabs::-webkit-scrollbar,
+  body.vc-shelled .toc::-webkit-scrollbar{display:none;}
+  body.vc-shelled .stage-btn,
+  body.vc-shelled .tabs a,
+  body.vc-shelled .toc a,
+  body.vc-shelled .subnav a{flex:0 0 auto; white-space:nowrap;}
+}

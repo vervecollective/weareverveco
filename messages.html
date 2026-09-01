@@ -108,6 +108,14 @@
   .att img{display:block;width:100%;height:auto;}
   .att-f{display:flex;align-items:center;gap:9px;padding:11px 13px;background:#F6F7F9;
     font-size:13px;font-weight:600;text-decoration:none;color:#111827;}
+  .qbar{position:absolute;top:-13px;right:10px;background:#fff;border:1px solid #E4E6EA;
+    border-radius:999px;padding:3px 5px;display:none;gap:1px;
+    box-shadow:0 4px 14px rgba(16,24,40,.14);z-index:5;}
+  .m{position:relative;}
+  .m:hover .qbar{display:flex;}
+  .qbar button{border:none;background:none;font-size:17px;cursor:pointer;padding:3px 5px;
+    border-radius:999px;line-height:1;transition:transform .1s;}
+  .qbar button:hover{background:#F3F4F6;transform:scale(1.25);}
   .rx{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px;}
   .rx button{border:1px solid #E4E6EA;background:#fff;border-radius:999px;padding:2px 9px;
     font-size:12.5px;cursor:pointer;font-family:inherit;line-height:1.6;}
@@ -335,7 +343,11 @@ async function paint(){
         e+' '+rx[e].n+'</button>';
     }).join('') + '<button class="add" data-m="'+m.id+'" data-e="add">+</button></div>';
 
-    html += '<div class="m'+(cont?' cont':'')+'">'+
+    var qb = '<span class="qbar">' + QUICK.map(function(q){
+      return '<button data-m="'+m.id+'" data-e="'+q+'">'+q+'</button>';
+    }).join('') + '<button data-m="'+m.id+'" data-e="add">+</button></span>';
+
+    html += '<div class="m'+(cont?' cont':'')+'">'+ qb +
       '<span class="av">'+ini(nm)+'</span><span class="bd">'+
       '<span class="hd"><b>'+esc(nm)+'</b><em>'+when(m.created_at)+'</em></span>'+
       '<div class="tx">'+esc(m.body)+'</div>'+att+rxHtml+'</span>'+quick+'</div>';
@@ -355,23 +367,18 @@ async function paint(){
         $('emo').querySelectorAll('.emo-tabs button').forEach(function(x){ x.classList.remove('on'); });
         $('emo').querySelector('[data-tab=emoji]').classList.add('on');
         paintEmoji();
+  $('feed').querySelectorAll('.rx button, .qbar button').forEach(function(b){
+    b.addEventListener('click', async function(ev){
+      ev.stopPropagation();
+      var mid = b.dataset.m, e = b.dataset.e;
+      if (e === 'add') {
+        var box = $('emo');
         box.dataset.target = mid;
         box.classList.add('on');
         return;
       }
-      var ex = (rxMap[mid]||{})[e];
-      if (ex && ex.mine) {
-        await sb.from('reactions').delete().eq('message_id',mid).eq('profile_id',me.id).eq('emoji',e);
-      } else {
-        await sb.from('reactions').insert({ message_id:mid, profile_id:me.id, emoji:e })
-          .then(function(){}, function(){});
-      }
-      paint();
-    });
-  });
-
-  $('feed').querySelectorAll('.rx button').forEach(function(b){
-    b.addEventListener('click', async function(){
+      await react(mid, e);
+      return;
       var mid = b.dataset.m, e = b.dataset.e;
       if (e === 'add') {
         // Show the picker anchored to this message rather than guessing an emoji.
@@ -404,6 +411,19 @@ async function showTyping(){
   $('typing').innerHTML = who.length
     ? '<span class="dots"><i></i><i></i><i></i></span> '+esc(who.join(' and '))+(who.length>1?' are':' is')+' typing'
     : '';
+}
+
+/* One place that adds or removes a reaction, used by the chips under a
+   message and by the hover bar above it. */
+async function react(mid, e){
+  var existing = (rxMap[mid] || {})[e];
+  if (existing && existing.mine) {
+    await sb.from('reactions').delete()
+      .eq('message_id', mid).eq('profile_id', me.id).eq('emoji', e);
+  } else {
+    await sb.from('reactions').insert({ message_id: mid, profile_id: me.id, emoji: e });
+  }
+  paint();
 }
 
 window.vcInit = async function(){
@@ -579,8 +599,18 @@ window.vcInit = async function(){
     });
   });
 
-  $('feed').querySelectorAll('.rx button').forEach(function(b){
-    b.addEventListener('click', async function(){
+  $('feed').querySelectorAll('.rx button, .qbar button').forEach(function(b){
+    b.addEventListener('click', async function(ev){
+      ev.stopPropagation();
+      var mid = b.dataset.m, e = b.dataset.e;
+      if (e === 'add') {
+        var box = $('emo');
+        box.dataset.target = mid;
+        box.classList.add('on');
+        return;
+      }
+      await react(mid, e);
+      return;
       var mid = b.dataset.m, e = b.dataset.e;
       if (e === 'add') {
         // Show the picker anchored to this message rather than guessing an emoji.
@@ -613,6 +643,19 @@ async function showTyping(){
   $('typing').innerHTML = who.length
     ? '<span class="dots"><i></i><i></i><i></i></span> '+esc(who.join(' and '))+(who.length>1?' are':' is')+' typing'
     : '';
+}
+
+/* One place that adds or removes a reaction, used by the chips under a
+   message and by the hover bar above it. */
+async function react(mid, e){
+  var existing = (rxMap[mid] || {})[e];
+  if (existing && existing.mine) {
+    await sb.from('reactions').delete()
+      .eq('message_id', mid).eq('profile_id', me.id).eq('emoji', e);
+  } else {
+    await sb.from('reactions').insert({ message_id: mid, profile_id: me.id, emoji: e });
+  }
+  paint();
 }
 
 window.vcInit = async function(){
@@ -777,6 +820,12 @@ window.vcInit = async function(){
     e.stopPropagation();
     var target = $('emo').dataset.target;
     if (target) {
+      $('emo').dataset.target = '';
+      $('emo').classList.remove('on');
+      await react(target, b.dataset.e);
+      return;
+    }
+    if (false) {
       await sb.from('reactions')
         .insert({ message_id: target, profile_id: me.id, emoji: b.dataset.e })
         .then(function(){}, function(){});

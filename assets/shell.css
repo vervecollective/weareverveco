@@ -546,3 +546,74 @@ body.vc-shelled .tag.soon{ background:#f1f5f9 !important; color:#475569 !importa
 .vc-nt-b em{font-size:11.5px;font-style:normal;color:var(--vc-text-3);line-height:1.4;
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
 .vc-nt-t{font-size:10.5px;color:var(--vc-text-4);flex-shrink:0;margin-top:2px;}
+
+
+/* ================= AAA contrast =================
+   Measured, not guessed. #D9531E on white is 4.03:1 — it fails AA for text.
+   It stays as the brand accent on dots, borders and tinted backgrounds, but a
+   button carrying white text uses a darker shade that clears 7:1.
+     #9A3412 on white  7.31:1  AAA
+     #065F46 on white  7.68:1  AAA
+     #991B1B on white  8.31:1  AAA
+     #4b5563 on white  7.56:1  AAA  (secondary text) */
+
+body.vc-shelled .btn,
+body.vc-shelled button.btn,
+body.vc-shelled a.btn,
+body.vc-shelled .vcp-btn,
+body.vc-shelled .cta{
+  background:#9A3412 !important; color:#ffffff !important; border-color:#9A3412 !important;
+}
+body.vc-shelled .btn:hover,
+body.vc-shelled .vcp-btn:hover,
+body.vc-shelled .cta:hover{ background:#7C2D12 !important; border-color:#7C2D12 !important; }
+
+body.vc-shelled .btn-go,
+body.vc-shelled .btn-publish{ background:#065F46 !important; border-color:#065F46 !important; color:#fff !important; }
+body.vc-shelled .btn-go:hover{ background:#054C38 !important; border-color:#054C38 !important; }
+
+body.vc-shelled .btn-danger{ color:#991B1B !important; border-color:#f0a9a9 !important; }
+body.vc-shelled .btn-danger:hover{ background:#fef2f2 !important; color:#7f1d1d !important; }
+
+/* Secondary buttons keep dark text on white — already 17.7:1 */
+body.vc-shelled .btn-2,
+body.vc-shelled .btn-sec,
+body.vc-shelled .btn.btn-2,
+body.vc-shelled .btn.btn-sec,
+body.vc-shelled .vcp-btn.sec{
+  background:#ffffff !important; color:#111827 !important; border:1px solid #9ca3af !important;
+}
+body.vc-shelled .btn-2:hover,
+body.vc-shelled .btn-sec:hover,
+body.vc-shelled .vcp-btn.sec:hover{ background:#f3f4f6 !important; color:#111827 !important; }
+
+/* Any text small enough to matter moves off the 4.8:1 grey */
+body.vc-shelled .hint,
+body.vc-shelled .lede,
+body.vc-shelled .rs,
+body.vc-shelled .s,
+body.vc-shelled .l,
+body.vc-shelled label,
+body.vc-shelled .cap,
+body.vc-shelled .due,
+body.vc-shelled .it-m{ color:#4b5563 !important; }
+
+/* Active nav: accent tint with DARK text, never white on orange */
+body.vc-shelled .vc-navitem.on,
+.vc-navitem.on{ background:#fdf0eb !important; color:#7C2D12 !important; }
+.vc-navitem.on svg{ color:#9A3412 !important; }
+
+/* Status pills: darker foregrounds so small bold text still clears AAA */
+body.vc-shelled .pill.owner,   body.vc-shelled .st.paid,
+body.vc-shelled .tag.live,     body.vc-shelled .perk{ background:#ecfdf5 !important; color:#065F46 !important; }
+body.vc-shelled .st.invoiced,  body.vc-shelled .tag.manual,
+body.vc-shelled .pill.submitted{ background:#fffbeb !important; color:#854D0E !important; }
+body.vc-shelled .st.draft,     body.vc-shelled .tag.soon,
+body.vc-shelled .pill.contractor{ background:#f1f5f9 !important; color:#334155 !important; }
+body.vc-shelled .pill.account_owner{ background:#eff6ff !important; color:#1E3A8A !important; }
+
+/* Links inside content */
+body.vc-shelled a:not(.btn):not(.vc-navitem):not(.tile):not(.r):not(.card){ color:#9A3412; }
+
+/* Focus ring visible against every background */
+body.vc-shelled :focus-visible{ outline:3px solid #9A3412 !important; outline-offset:2px !important; }

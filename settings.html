@@ -12,7 +12,7 @@
   *{box-sizing:border-box;margin:0;padding:0;}
   body{font-family:'Inter',system-ui,sans-serif;background:var(--vc-bg);color:var(--vc-text);
     line-height:1.55;-webkit-font-smoothing:antialiased;}
-  .wrap{max-width:840px;padding:36px 32px 90px;}
+  .wrap{max-width:1160px; margin:0; padding:32px 36px 90px;}
   @media(max-width:700px){.wrap{padding:24px 18px 70px;}}
   h1{font-size:22px;font-weight:700;letter-spacing:-.02em;}
   .lede{color:var(--vc-text-3);font-size:14px;margin-bottom:26px;}
@@ -286,7 +286,37 @@ function vcInit(){
   $('sendInvite').addEventListener('click', async function(){
     var em=$('inv_email').value.trim(), nm=$('inv_name').value.trim(), rl=$('inv_role').value;
     if (!em || !nm) return msg('invMsg','Name and email are both required.', false);
-    msg('invMsg','Invites need a server-side function — ask Claude to wire it up. Nothing was sent.', false);
+
+    var btn = $('sendInvite');
+    btn.disabled = true;
+    msg('invMsg','Sending\u2026', true);
+
+    try {
+      var { data:{ session } } = await sb.auth.getSession();
+      var res = await fetch('https://otqrkxjtojqlpzzvqavp.supabase.co/functions/v1/invite-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + session.access_token
+        },
+        body: JSON.stringify({
+          email: em,
+          full_name: nm,
+          role: rl,
+          redirect_to: location.origin + '/hub'
+        })
+      });
+      var out = await res.json();
+      if (!res.ok) throw new Error(out.error || 'Invite failed.');
+
+      msg('invMsg', 'Invite sent to ' + em + '. They set their own password from the email.', true);
+      $('inv_email').value = ''; $('inv_name').value = '';
+      if (typeof loadTeam === 'function') setTimeout(loadTeam, 1200);
+    } catch (err) {
+      msg('invMsg', err.message || 'Invite failed.', false);
+    } finally {
+      btn.disabled = false;
+    }
   });
 
   async function loadSplits(){

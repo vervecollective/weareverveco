@@ -149,7 +149,7 @@
 <script>
 var PW='vc_admin_pw', current=null, engagements=[], stage='discovery';
 
-function pw(){return sessionStorage.getItem(PW)||'';}
+function pw(){return localStorage.getItem(PW)||'';}
 function api(p,o){o=o||{};o.headers=Object.assign({'Content-Type':'application/json','x-admin-password':pw()},o.headers||{});return fetch(p,o);}
 function money(n){return '$'+(Number(n)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function esc(s){var d=document.createElement('div');d.textContent=s||'';return d.innerHTML;}
@@ -340,7 +340,7 @@ function loadEngagements(){
 
 document.getElementById('unlockBtn').addEventListener('click',function(){
   var v=document.getElementById('pw').value; if(!v)return;
-  sessionStorage.setItem(PW,v);
+  localStorage.setItem(PW,v);
   loadEngagements().then(function(){
     document.getElementById('gate').style.display='none';
     document.getElementById('app').style.display='block';

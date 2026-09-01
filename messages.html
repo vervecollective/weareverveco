@@ -65,6 +65,60 @@
   .blank{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;padding:40px;}
   .blank b{display:block;font-size:16px;font-weight:700;margin-bottom:6px;}
   .blank span{font-size:14px;color:#5C6470;max-width:320px;display:block;}
+  /* people picker */
+  .veil{position:fixed;inset:0;background:rgba(16,24,40,.45);z-index:80;display:none;}
+  .veil.on{display:block;}
+  .modal{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.96);
+    width:min(430px,94vw);background:#fff;border-radius:16px;z-index:90;display:none;
+    box-shadow:0 24px 64px rgba(16,24,40,.28);overflow:hidden;opacity:0;
+    transition:opacity .18s,transform .18s;}
+  .modal.on{display:block;opacity:1;transform:translate(-50%,-50%) scale(1);}
+  .modal-h{padding:20px 22px 16px;border-bottom:1px solid #EBECEF;}
+  .modal-h b{font-size:17px;font-weight:700;letter-spacing:-.02em;}
+  .modal-h p{font-size:13.5px;color:#5C6470;margin-top:3px;}
+  .people{max-height:320px;overflow-y:auto;padding:8px;}
+  .pr{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer;}
+  .pr:hover{background:#F6F7F9;}
+  .pr.sel{background:#FDF0EB;}
+  .pr .pav{width:38px;height:38px;border-radius:50%;background:#111827;color:#fff;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;
+    background-size:cover;position:relative;}
+  .pr .pav i{position:absolute;right:0;bottom:0;width:11px;height:11px;border-radius:50%;
+    background:#00A870;border:2px solid #fff;}
+  .pr .pb{flex:1;min-width:0;}
+  .pr .pb b{font-size:14.5px;font-weight:600;display:block;}
+  .pr .pb span{font-size:12.5px;color:#5C6470;}
+  .pr .tick{width:22px;height:22px;border-radius:50%;border:2px solid #D8DAE0;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;}
+  .pr.sel .tick{background:#9A3412;border-color:#9A3412;}
+  .modal-f{padding:16px 22px;border-top:1px solid #EBECEF;display:flex;gap:10px;align-items:center;}
+  .modal-f input{flex:1;border:1px solid #D8DAE0;border-radius:9px;padding:10px 13px;font:400 14px/1 'Inter',sans-serif;}
+  .gbtn{background:#9A3412;color:#fff;border:none;border-radius:9px;padding:11px 18px;
+    font:600 14px/1 'Inter',sans-serif;cursor:pointer;}
+  .gbtn:disabled{opacity:.4;cursor:default;}
+
+  /* attachments + reactions */
+  .att{margin-top:7px;border-radius:12px;overflow:hidden;max-width:340px;border:1px solid #EBECEF;}
+  .att img{display:block;width:100%;height:auto;}
+  .att-f{display:flex;align-items:center;gap:9px;padding:11px 13px;background:#F6F7F9;
+    font-size:13px;font-weight:600;text-decoration:none;color:#111827;}
+  .rx{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px;}
+  .rx button{border:1px solid #E4E6EA;background:#fff;border-radius:999px;padding:2px 9px;
+    font-size:12.5px;cursor:pointer;font-family:inherit;line-height:1.6;}
+  .rx button.mine{background:#FDF0EB;border-color:#9A3412;}
+  .rx .add{color:#9CA3AF;font-size:13px;}
+  .m:hover .rx .add{opacity:1;}
+  .rx .add{opacity:0;transition:opacity .12s;}
+  .tools{display:flex;gap:6px;align-items:center;}
+  .tool{background:none;border:none;font-size:18px;cursor:pointer;padding:8px;border-radius:9px;line-height:1;}
+  .tool:hover{background:#F3F4F6;}
+  .emo{position:absolute;bottom:74px;right:22px;background:#fff;border:1px solid #EBECEF;
+    border-radius:12px;padding:10px;box-shadow:0 12px 32px rgba(16,24,40,.16);display:none;
+    grid-template-columns:repeat(8,1fr);gap:3px;z-index:20;}
+  .emo.on{display:grid;}
+  .emo button{border:none;background:none;font-size:19px;cursor:pointer;padding:5px;border-radius:7px;}
+  .emo button:hover{background:#F3F4F6;}
+  .compose{position:relative;}
   @media(max-width:820px){ .list{width:100%;} .pane{display:none;} .pane.open{display:flex;position:fixed;inset:0;background:#fff;z-index:60;} }
 </style>
 </head>
@@ -83,10 +137,28 @@
       <div class="feed" id="feed"></div>
       <div class="typing" id="typing"></div>
       <div class="compose">
+        <div class="emo" id="emo"></div>
+        <div class="tools">
+          <button class="tool" id="emoBtn" title="Emoji">\u263A</button>
+          <button class="tool" id="fileBtn" title="Attach">\uD83D\uDCCE</button>
+          <input type="file" id="file" style="display:none"
+            accept="image/*,video/*,application/pdf,.doc,.docx">
+        </div>
         <textarea id="box" rows="1" placeholder="Write a message"></textarea>
         <button class="send" id="send">Send</button>
       </div>
     </div>
+  </div>
+</div>
+
+<div class="veil" id="veil"></div>
+<div class="modal" id="modal">
+  <div class="modal-h"><b>New message</b>
+    <p>Pick one person for a direct message, or several for a group.</p></div>
+  <div class="people" id="people"></div>
+  <div class="modal-f">
+    <input type="text" id="gname" placeholder="Group name (optional)" style="display:none">
+    <button class="gbtn" id="startBtn" disabled>Start</button>
   </div>
 </div>
 
@@ -170,10 +242,23 @@ async function openCh(id){
     .subscribe();
 }
 
+var rxMap = {};
+
 async function paint(){
   if (!cur) return;
   var r = await sb.from('messages').select('*').eq('channel_id',cur.id).order('created_at').limit(200);
   var ms = r.data||[];
+
+  rxMap = {};
+  if (ms.length) {
+    var rr = await sb.from('reactions').select('*')
+      .in('message_id', ms.map(function(m){ return m.id; }));
+    (rr.data||[]).forEach(function(x){
+      rxMap[x.message_id] = rxMap[x.message_id] || {};
+      var e = rxMap[x.message_id][x.emoji] = rxMap[x.message_id][x.emoji] || { n:0, mine:false };
+      e.n++; if (x.profile_id === me.id) e.mine = true;
+    });
+  }
   var html='', lastDay='', lastAuthor='', lastAt=0;
   ms.forEach(function(m){
     var d = dayLabel(m.created_at);
@@ -182,14 +267,53 @@ async function paint(){
     var nm = p.full_name||p.email||'Someone';
     // Group consecutive messages from the same person within 5 minutes.
     var cont = m.author_id===lastAuthor && (new Date(m.created_at)-lastAt) < 300000;
+    var att = '';
+    if (m.attachment_url) {
+      var isImg = (m.attachment_type||'').indexOf('image') === 0;
+      att = isImg
+        ? '<div class="att"><a href="'+esc(m.attachment_url)+'" target="_blank" rel="noopener">'+
+          '<img src="'+esc(m.attachment_url)+'" alt="'+esc(m.attachment_name||'')+'"></a></div>'
+        : '<div class="att"><a class="att-f" href="'+esc(m.attachment_url)+'" target="_blank" rel="noopener">'+
+          '\uD83D\uDCC4 '+esc(m.attachment_name||'File')+'</a></div>';
+    }
+    var rx = (rxMap[m.id] || {});
+    var rxHtml = '<div class="rx">' + Object.keys(rx).map(function(e){
+      return '<button class="'+(rx[e].mine?'mine':'')+'" data-m="'+m.id+'" data-e="'+e+'">'+
+        e+' '+rx[e].n+'</button>';
+    }).join('') + '<button class="add" data-m="'+m.id+'" data-e="add">+</button></div>';
+
     html += '<div class="m'+(cont?' cont':'')+'">'+
       '<span class="av">'+ini(nm)+'</span><span class="bd">'+
       '<span class="hd"><b>'+esc(nm)+'</b><em>'+when(m.created_at)+'</em></span>'+
-      '<div class="tx">'+esc(m.body)+'</div></span></div>';
+      '<div class="tx">'+esc(m.body)+'</div>'+att+rxHtml+'</span></div>';
     lastAuthor=m.author_id; lastAt=new Date(m.created_at);
   });
   $('feed').innerHTML = html || '<p style="font-size:13.5px;color:#9CA3AF;text-align:center;padding:30px">Say something.</p>';
   $('feed').scrollTop = $('feed').scrollHeight;
+
+  $('feed').querySelectorAll('.rx button').forEach(function(b){
+    b.addEventListener('click', async function(){
+      var mid = b.dataset.m, e = b.dataset.e;
+      if (e === 'add') {
+        // Show the picker anchored to this message rather than guessing an emoji.
+        var box = $('emo');
+        box.classList.add('on');
+        box.style.bottom = 'auto';
+        var r0 = b.getBoundingClientRect(), f0 = $('feed').getBoundingClientRect();
+        box.style.top = (r0.top - f0.top + $('feed').scrollTop + 26) + 'px';
+        box.style.right = '30px';
+        box.dataset.target = mid;
+        return;
+      }
+      var existing = (rxMap[mid]||{})[e];
+      if (existing && existing.mine) {
+        await sb.from('reactions').delete().eq('message_id',mid).eq('profile_id',me.id).eq('emoji',e);
+      } else {
+        await sb.from('reactions').insert({ message_id:mid, profile_id:me.id, emoji:e });
+      }
+      paint();
+    });
+  });
 }
 
 async function showTyping(){
@@ -206,7 +330,7 @@ async function showTyping(){
 window.vcInit = async function(){
   sb = window.__sb; me = window.__user;
 
-  var pq = await sb.from('profiles').select('id, full_name, email, role').eq('is_active',true);
+  var pq = await sb.from('profiles').select('id, full_name, email, role, avatar_url').eq('is_active',true);
   (pq.data||[]).forEach(function(p){ people[p.id]=p; });
 
   async function pres(){
@@ -221,17 +345,110 @@ window.vcInit = async function(){
   var want = new URLSearchParams(location.search).get('c');
   if (want) openCh(want);
 
-  $('newBtn').addEventListener('click', async function(){
+  var picked = [];
+
+  function paintPeople(){
     var opts = Object.values(people).filter(function(p){ return p.id!==me.id; });
-    if (!opts.length) return alert('Nobody else has an account yet. Invite someone in People.');
-    var pick = window.prompt('Message who?\n\n' +
-      opts.map(function(p,i){ return (i+1)+'. '+(p.full_name||p.email); }).join('\n'));
-    var i = Number(pick)-1;
-    if (isNaN(i) || !opts[i]) return;
-    var r = await sb.rpc('open_dm', { other: opts[i].id });
+    if (!opts.length) {
+      $('people').innerHTML = '<p style="font-size:13.5px;color:#5C6470;padding:20px;text-align:center">'+
+        'Nobody else has an account yet. Invite someone in People.</p>';
+      return;
+    }
+    $('people').innerHTML = opts.map(function(p){
+      var on = picked.indexOf(p.id) > -1;
+      var av = p.avatar_url
+        ? '<span class="pav" style="background-image:url('+esc(p.avatar_url)+')">'+(online[p.id]?'<i></i>':'')+'</span>'
+        : '<span class="pav">'+ini(p.full_name||p.email)+(online[p.id]?'<i></i>':'')+'</span>';
+      var ROLE = { owner:'Owner', account_owner:'Account owner', contractor:'Contractor', client:'Client' };
+      return '<div class="pr'+(on?' sel':'')+'" data-id="'+p.id+'">'+av+
+        '<span class="pb"><b>'+esc(p.full_name||p.email)+'</b>'+
+        '<span>'+(ROLE[p.role]||p.role)+(online[p.id]?' \u00b7 Active now':'')+'</span></span>'+
+        '<span class="tick">'+(on?'\u2713':'')+'</span></div>';
+    }).join('');
+
+    $('people').querySelectorAll('.pr').forEach(function(el){
+      el.addEventListener('click', function(){
+        var id = el.dataset.id, i = picked.indexOf(id);
+        if (i > -1) picked.splice(i,1); else picked.push(id);
+        paintPeople();
+        $('gname').style.display = picked.length > 1 ? 'block' : 'none';
+        $('startBtn').disabled = !picked.length;
+        $('startBtn').textContent = picked.length > 1 ? 'Start group' : 'Start';
+      });
+    });
+  }
+
+  function shutModal(){ $('veil').classList.remove('on'); $('modal').classList.remove('on'); }
+  $('veil').addEventListener('click', shutModal);
+
+  $('newBtn').addEventListener('click', function(){
+    picked = []; $('gname').value=''; $('gname').style.display='none';
+    $('startBtn').disabled = true; $('startBtn').textContent = 'Start';
+    paintPeople();
+    $('veil').classList.add('on'); $('modal').classList.add('on');
+  });
+
+  $('startBtn').addEventListener('click', async function(){
+    if (!picked.length) return;
+    var r = picked.length === 1
+      ? await sb.rpc('open_dm', { other: picked[0] })
+      : await sb.rpc('open_group', { member_ids: picked, group_name: $('gname').value.trim() || null });
     if (r.error) return alert(r.error.message);
+    shutModal();
     await loadChans();
     openCh(r.data);
+  });
+
+  /* emoji */
+  var EMO = ['\uD83D\uDC4D','\uD83D\uDD25','\uD83D\uDE02','\uD83C\uDF89','\u2705','\u2764\uFE0F',
+             '\uD83D\uDC40','\uD83D\uDE4C','\uD83D\uDCAF','\uD83E\uDD14','\uD83D\uDE05','\uD83D\uDE4F',
+             '\u26A1','\uD83C\uDFAC','\uD83D\uDCF8','\uD83D\uDE80'];
+  $('emo').innerHTML = EMO.map(function(e){ return '<button data-e="'+e+'">'+e+'</button>'; }).join('');
+  $('emoBtn').addEventListener('click', function(e){
+    e.stopPropagation();
+    $('emo').dataset.target = '';
+    $('emo').style.top = 'auto'; $('emo').style.bottom = '74px';
+    $('emo').classList.toggle('on');
+  });
+  document.addEventListener('click', function(){ $('emo').classList.remove('on'); });
+  $('emo').addEventListener('click', async function(e){
+    var b = e.target.closest('button'); if (!b) return;
+    e.stopPropagation();
+    var target = $('emo').dataset.target;
+    if (target) {
+      await sb.from('reactions')
+        .insert({ message_id: target, profile_id: me.id, emoji: b.dataset.e })
+        .then(function(){}, function(){});
+      $('emo').dataset.target = '';
+      $('emo').classList.remove('on');
+      $('emo').style.top = 'auto'; $('emo').style.bottom = '74px';
+      paint();
+      return;
+    }
+    $('box').value += b.dataset.e;
+    $('box').focus();
+  });
+
+  /* attachments */
+  $('fileBtn').addEventListener('click', function(){ $('file').click(); });
+  $('file').addEventListener('change', async function(){
+    var f = this.files && this.files[0];
+    if (!f || !cur) return;
+    if (f.size > 10*1024*1024) { alert('Files must be under 10MB.'); this.value=''; return; }
+    $('send').disabled = true; $('box').placeholder = 'Uploading\u2026';
+    var path = cur.id + '/' + Date.now() + '-' + f.name.replace(/[^\w.\-]/g,'_');
+    var up = await sb.storage.from('chat').upload(path, f, { contentType: f.type });
+    $('send').disabled = false; $('box').placeholder = 'Write a message';
+    this.value = '';
+    if (up.error) return alert(up.error.message);
+    var url = sb.storage.from('chat').getPublicUrl(path).data.publicUrl;
+    await sb.from('messages').insert({
+      channel_id: cur.id, author_id: me.id,
+      body: $('box').value.trim() || f.name,
+      attachment_url: url, attachment_name: f.name, attachment_type: f.type
+    });
+    $('box').value = '';
+    paint(); loadChans();
   });
 
   $('box').addEventListener('input', function(){

@@ -79,18 +79,12 @@
   .linkout:hover{color:var(--orange-light);}
   .invoice-link{display:block; margin-top:14px; padding:13px; background:rgba(127,217,154,.1);
     border:1px solid rgba(127,217,154,.3); border-radius:8px; color:var(--green); text-decoration:none; font-weight:700; font-size:13.5px; word-break:break-all;}
-  #app{display:none;}
+  #app{display:block;}
 </style>
+<link rel="stylesheet" href="/assets/shell.css">
+<script type="module" src="/assets/shell.js"></script>
 </head>
 <body>
-
-<div class="gate" id="gate">
-  <h1>Verve Platform</h1>
-  <p class="sub">Internal — enter admin password</p>
-  <input type="password" id="pw" placeholder="Password" autofocus>
-  <button class="btn full" id="unlockBtn">Unlock</button>
-  <p class="status err" id="gateErr">Wrong password — try again.</p>
-</div>
 
 <div id="app">
 <div class="wrap">
@@ -179,18 +173,6 @@
 </div>
 </div>
 
-<script type="module">
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-window.__sb = createClient(
-  'https://otqrkxjtojqlpzzvqavp.supabase.co',
-  'sb_publishable_OBViGLggbcOKacti5iUonA_QCzw3kBv'
-);
-const { data:{ session } } = await window.__sb.auth.getSession();
-if (!session) { location.href = '/login.html'; }
-window.__token = session ? session.access_token : '';
-window.__user  = session ? session.user : null;
-window.dispatchEvent(new Event('vc-auth-ready'));
-</script>
 <script>
 var PW_KEY = 'vc_admin_pw';
 var current = null;
@@ -343,18 +325,11 @@ function refresh(){
 }
 
 // ---- actions ----
-document.getElementById('unlockBtn').addEventListener('click', function(){
-  var v = document.getElementById('pw').value; if (!v) return;
-  localStorage.setItem(PW_KEY, v);
-  refresh().then(function(){
-    document.getElementById('gate').style.display='none';
-    document.getElementById('app').style.display='block';
-    loadRecord(null);
-  }).catch(function(){ document.getElementById('gateErr').classList.add('show'); });
-});
-document.getElementById('pw').addEventListener('keydown', function(e){
-  if (e.key === 'Enter') document.getElementById('unlockBtn').click();
-});
+function vcInit(){
+  refresh().then(function(){ loadRecord(null); })
+           .catch(function(){ loadRecord(null); });
+}
+window.vcInit = vcInit;
 
 document.getElementById('newBtn').addEventListener('click', function(){ loadRecord(null); });
 document.getElementById('addRowBtn').addEventListener('click', function(){ addRow(); });
@@ -415,6 +390,6 @@ document.getElementById('purgeBtn').addEventListener('click', function(){
     .then(function(){ loadRecord(null); });
 });
 </script>
-<script>window.addEventListener('vc-auth-ready',function(){var b=document.getElementById('unlockBtn');if(b)b.click();});</script>
+<script>window.addEventListener('vc-auth-ready',function(){ if (typeof vcInit==='function') vcInit(); });</script>
 </body>
 </html>

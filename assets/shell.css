@@ -79,7 +79,13 @@
 .vc-signout svg{width:16px; height:16px;}
 .vc-signout:hover{background:var(--vc-surface-2); color:var(--vc-text);}
 
-body.vc-shelled{margin-left:var(--vc-w) !important;}
+/* Sidebar is fixed; the content column scrolls on its own. This is what stops
+   the page jumping vertically when you move between screens. */
+html.vc-fixed, body.vc-shelled{height:100%; overflow:hidden;}
+body.vc-shelled{
+  margin-left:var(--vc-w) !important;
+  height:100vh; overflow-y:auto; overscroll-behavior:contain;
+}
 
 .vc-toggle{
   display:none; position:fixed; top:10px; left:10px; z-index:1001;
@@ -89,7 +95,7 @@ body.vc-shelled{margin-left:var(--vc-w) !important;}
 @media(max-width:860px){
   .vc-sidebar{transform:translateX(-100%); transition:transform .18s; box-shadow:0 0 40px rgba(0,0,0,.1);}
   .vc-sidebar.open{transform:translateX(0);}
-  body.vc-shelled{margin-left:0 !important; padding-top:54px;}
+  body.vc-shelled{margin-left:0 !important; padding-top:54px; height:100vh; overflow-y:auto;}
   .vc-toggle{display:block;}
 }
 

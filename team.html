@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>People — Verve Collective</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/shell.css">
+<script type="module" src="/assets/shell.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',system-ui,sans-serif;background:#fff;color:#111827;line-height:1.55;
+    -webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1160px; margin:0; padding:32px 36px 90px;}
+  h1{font-size:22px;font-weight:700;letter-spacing:-.02em;}
+  .lede{color:#6b7280;font-size:14px;margin-bottom:24px;}
+  .card{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:22px;margin-bottom:18px;}
+  .card h2{font-size:15px;font-weight:600;margin-bottom:3px;}
+  .card .hint{font-size:13px;color:#6b7280;margin-bottom:16px;}
+
+  .tabs{display:flex;gap:6px;margin-bottom:20px;border-bottom:1px solid #e5e7eb;}
+  .tabs a{padding:9px 14px;font-size:13.5px;font-weight:600;color:#6b7280;text-decoration:none;
+    cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;}
+  .tabs a:hover{color:#111827;}
+  .tabs a.on{color:#D9531E;border-bottom-color:#D9531E;}
+  section{display:none;} section.on{display:block;}
+
+  table{width:100%;border-collapse:collapse;}
+  th{text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;
+    color:#6b7280;padding:8px 10px;border-bottom:1px solid #e5e7eb;}
+  td{padding:11px 10px;border-bottom:1px solid #f3f4f6;font-size:13.5px;vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+  .av{width:28px;height:28px;border-radius:50%;background:#111827;color:#fff;display:inline-flex;
+    align-items:center;justify-content:center;font-size:10.5px;font-weight:700;margin-right:9px;
+    vertical-align:middle;background-size:cover;}
+  .pill{display:inline-block;font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;}
+  .pill.owner{background:#fdf0eb;color:#D9531E;}
+  .pill.account_owner{background:#eff6ff;color:#1d4ed8;}
+  .pill.contractor{background:#f3f4f6;color:#4b5563;}
+  .pill.client{background:#ecfdf5;color:#047857;}
+  .pill.off{background:#fef2f2;color:#b91c1c;}
+
+  /* Empty states that teach, rather than showing nothing */
+  .empty{text-align:center;padding:34px 20px;}
+  .empty .ico{width:44px;height:44px;border-radius:10px;background:#f3f4f6;margin:0 auto 14px;
+    display:flex;align-items:center;justify-content:center;}
+  .empty .ico svg{width:22px;height:22px;color:#9ca3af;}
+  .empty h3{font-size:15px;font-weight:600;margin-bottom:5px;}
+  .empty p{font-size:13.5px;color:#6b7280;max-width:420px;margin:0 auto 16px;}
+  .btn{background:#D9531E;color:#fff;border:none;border-radius:6px;padding:9px 16px;
+    font-size:13.5px;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:none;
+    display:inline-block;}
+  .btn:hover{background:#c2461a;}
+  .btn-2{background:#fff;color:#111827;border:1px solid #d1d5db;}
+  .btn-2:hover{background:#f9fafb;}
+  .msg{font-size:13px;margin-top:10px;display:none;}
+  .msg.show{display:block;} .msg.ok{color:#047857;} .msg.err{color:#b91c1c;}
+  .muted{color:#9ca3af;font-size:12.5px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1 id="hd">People</h1>
+  <p class="lede" id="ld">Everyone with access to the system, and who does the work.</p>
+
+  <div class="tabs">
+    <a data-t="team" class="on">Team</a>
+    <a data-t="contractors">Contractors</a>
+    <a data-t="clients">Client logins</a>
+  </div>
+
+  <section id="s-team" class="on">
+    <div class="card">
+      <h2>Team</h2>
+      <p class="hint">Owners and account owners — people who run client accounts.</p>
+      <div id="teamBody"></div>
+    </div>
+  </section>
+
+  <section id="s-contractors">
+    <div class="card">
+      <h2>Contractors</h2>
+      <p class="hint">Videographers, photographers, drone pilots, editors, and social creators.</p>
+      <div id="conBody"></div>
+    </div>
+  </section>
+
+  <section id="s-clients">
+    <div class="card">
+      <h2>Client logins</h2>
+      <p class="hint">Clients who can sign in to see their own project status.</p>
+      <div id="cliBody"></div>
+    </div>
+  </section>
+</div>
+
+<script>
+function $(i){return document.getElementById(i);}
+function esc(s){var d=document.createElement('div');d.textContent=s==null?'':s;return d.innerHTML;}
+function initials(n){return (n||'?').split(' ').map(function(p){return p[0];}).filter(Boolean).join('').slice(0,2).toUpperCase();}
+
+var ICO = {
+  team:'M16 19v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 17.5V19M10 10.5a3.25 3.25 0 1 0 0-6.5 3.25 3.25 0 0 0 0 6.5M20 19v-1.5a3.5 3.5 0 0 0-2.6-3.4',
+  cam:'M3 8h3.5L8 6h8l1.5 2H21v11H3zM12 16.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7',
+  cli:'M4 20V10M10 20V4M16 20v-7M22 20H2'
+};
+
+function emptyState(icon, title, body, cta){
+  return '<div class="empty"><div class="ico">'+
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="'+ICO[icon]+'"/></svg>'+
+    '</div><h3>'+title+'</h3><p>'+body+'</p>'+(cta||'')+'</div>';
+}
+
+document.querySelector('.tabs').addEventListener('click', function(e){
+  var a = e.target.closest('a'); if(!a) return;
+  document.querySelectorAll('.tabs a').forEach(function(x){x.classList.remove('on');});
+  document.querySelectorAll('section').forEach(function(x){x.classList.remove('on');});
+  a.classList.add('on');
+  $('s-'+a.dataset.t).classList.add('on');
+});
+
+function peopleTable(rows, extraCol){
+  return '<table><thead><tr><th>Name</th><th>Role</th>'+
+    (extraCol?'<th>'+extraCol+'</th>':'')+'<th>Status</th></tr></thead><tbody>'+
+    rows.map(function(u){
+      var av = u.avatar_url
+        ? '<span class="av" style="background-image:url('+u.avatar_url+')"></span>'
+        : '<span class="av">'+initials(u.full_name)+'</span>';
+      return '<tr><td>'+av+'<b>'+esc(u.full_name||'—')+'</b>'+
+        '<div class="muted" style="margin-left:37px">'+esc(u.email)+'</div></td>'+
+        '<td><span class="pill '+u.role+'">'+u.role.replace('_',' ')+'</span></td>'+
+        (extraCol?'<td>'+(u._extra||'<span class="muted">—</span>')+'</td>':'')+
+        '<td>'+(u.is_active?'<span class="pill client">Active</span>':'<span class="pill off">Disabled</span>')+'</td></tr>';
+    }).join('')+'</tbody></table>';
+}
+
+window.vcInit = async function(){
+  var sb = window.__sb, role = window.__role;
+
+  if (role !== 'owner' && role !== 'account_owner') {
+    $('hd').textContent = 'People';
+    $('ld').textContent = 'You do not have access to this page.';
+    document.querySelectorAll('.tabs, section').forEach(function(e){ e.remove(); });
+    return;
+  }
+
+  var r = await sb.from('profiles')
+    .select('id, full_name, email, role, is_active, avatar_url')
+    .order('created_at');
+  var all = r.data || [];
+
+  var team = all.filter(function(u){ return u.role==='owner' || u.role==='account_owner'; });
+  var cons = all.filter(function(u){ return u.role==='contractor'; });
+  var clis = all.filter(function(u){ return u.role==='client'; });
+
+  var inviteBtn = '<a class="btn" href="/settings">Invite someone</a>';
+
+  $('teamBody').innerHTML = team.length
+    ? peopleTable(team)
+    : emptyState('team','No team members yet',
+        'Right now it is just you. Account owners run their own client accounts inside your system, and your split with them is set in Settings.',
+        inviteBtn);
+
+  if (cons.length) {
+    var cd = await sb.from('contractor_details').select('*');
+    var byId = {}; (cd.data||[]).forEach(function(d){ byId[d.profile_id]=d; });
+    cons.forEach(function(u){
+      var d = byId[u.id];
+      u._extra = d && d.crafts && d.crafts.length
+        ? esc(d.crafts.join(', ')) + (d.part_107 ? ' <span class="muted">· Part 107</span>' : '')
+        : '<span class="muted">No craft set</span>';
+    });
+    $('conBody').innerHTML = peopleTable(cons, 'Craft');
+  } else {
+    $('conBody').innerHTML = emptyState('cam','No contractors yet',
+      'Invite a videographer, photographer, drone pilot, or editor. They get their own login and see only the jobs you offer them — never client pricing or your margin.',
+      inviteBtn);
+  }
+
+  $('cliBody').innerHTML = clis.length
+    ? peopleTable(clis)
+    : emptyState('cli','No client logins yet',
+        'Give a client a login and they can see their own project status, timeline, and outstanding balance — and message you without email. They cannot see pricing internals or any other client.',
+        inviteBtn);
+};
+</script>
+</body>
+</html>

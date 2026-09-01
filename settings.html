@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Settings — Verve Collective</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/shell.css">
+<script type="module" src="/assets/shell.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',system-ui,sans-serif;background:var(--vc-bg);color:var(--vc-text);
+    line-height:1.55;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:840px;padding:36px 32px 90px;}
+  @media(max-width:700px){.wrap{padding:24px 18px 70px;}}
+  h1{font-size:22px;font-weight:700;letter-spacing:-.02em;}
+  .lede{color:var(--vc-text-3);font-size:14px;margin-bottom:26px;}
+
+  .tabs{display:flex;gap:2px;border-bottom:1px solid var(--vc-line);margin-bottom:28px;overflow-x:auto;}
+  .tab{padding:9px 14px;font-size:13.5px;font-weight:500;color:var(--vc-text-3);
+    background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;
+    font-family:inherit;white-space:nowrap;margin-bottom:-1px;}
+  .tab:hover{color:var(--vc-text);}
+  .tab.on{color:var(--vc-accent);border-bottom-color:var(--vc-accent);font-weight:600;}
+
+  .pane{display:none;}
+  .pane.on{display:block;}
+
+  .sec{border:1px solid var(--vc-line);border-radius:10px;margin-bottom:20px;background:var(--vc-bg);}
+  .sec-hd{padding:16px 20px;border-bottom:1px solid var(--vc-line);}
+  .sec-hd h2{font-size:15px;font-weight:600;}
+  .sec-hd p{font-size:13px;color:var(--vc-text-3);margin-top:2px;}
+  .sec-bd{padding:20px;}
+  .sec-ft{padding:12px 20px;border-top:1px solid var(--vc-line);background:var(--vc-surface);
+    display:flex;justify-content:space-between;align-items:center;gap:12px;
+    border-radius:0 0 10px 10px;}
+  .sec-ft .hint{font-size:12.5px;color:var(--vc-text-3);}
+
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  @media(max-width:620px){.row{grid-template-columns:1fr;}}
+  .fld{margin-bottom:16px;}
+  .fld:last-child{margin-bottom:0;}
+  label{display:block;font-size:12.5px;font-weight:600;color:var(--vc-text-2);margin-bottom:6px;}
+  input,select,textarea{width:100%;padding:9px 12px;border:1px solid var(--vc-line);
+    border-radius:6px;font-size:14px;font-family:inherit;color:var(--vc-text);background:var(--vc-bg);}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--vc-accent);
+    box-shadow:0 0 0 3px var(--vc-accent-soft);}
+  input:disabled{background:var(--vc-surface);color:var(--vc-text-3);}
+  .help{font-size:12px;color:var(--vc-text-3);margin-top:5px;}
+
+  .btn{background:var(--vc-accent);color:#fff;border:none;border-radius:6px;
+    padding:9px 16px;font-size:13.5px;font-weight:600;cursor:pointer;font-family:inherit;}
+  .btn:hover{filter:brightness(.94);}
+  .btn:disabled{opacity:.5;cursor:default;}
+  .btn-ghost{background:var(--vc-bg);color:var(--vc-text);border:1px solid var(--vc-line);}
+  .btn-ghost:hover{background:var(--vc-surface);filter:none;}
+  .btn-sm{padding:6px 12px;font-size:12.5px;}
+
+  .avatar-row{display:flex;align-items:center;gap:16px;}
+  .av{width:56px;height:56px;border-radius:50%;background:var(--vc-text);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:700;
+    flex-shrink:0;background-size:cover;background-position:center;}
+
+  table{width:100%;border-collapse:collapse;}
+  th{text-align:left;font-size:11.5px;font-weight:600;text-transform:uppercase;
+    letter-spacing:.04em;color:var(--vc-text-4);padding:0 10px 9px;border-bottom:1px solid var(--vc-line);}
+  td{padding:11px 10px;border-bottom:1px solid var(--vc-line-soft);font-size:13.5px;vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+  .pill{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;}
+  .pill.owner{background:var(--vc-accent-soft);color:var(--vc-accent);}
+  .pill.account_owner{background:#eef2ff;color:#4338ca;}
+  .pill.contractor{background:var(--vc-surface-2);color:var(--vc-text-2);}
+  .pill.client{background:var(--vc-ok-soft);color:var(--vc-ok);}
+
+  .msg{font-size:13px;display:none;}
+  .msg.show{display:block;}
+  .msg.ok{color:var(--vc-ok);} .msg.err{color:var(--vc-err);}
+  .empty{color:var(--vc-text-3);font-size:13.5px;padding:8px 0;}
+  .danger{border-color:#fecaca;}
+  .danger .sec-hd{border-bottom-color:#fecaca;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Settings</h1>
+  <p class="lede">Your account, your team, and how the business is configured.</p>
+
+  <div class="tabs" id="tabs"></div>
+
+  <!-- PROFILE -->
+  <div class="pane on" id="pane-profile">
+    <div class="sec">
+      <div class="sec-hd"><h2>Profile</h2><p>How you appear across the platform.</p></div>
+      <div class="sec-bd">
+        <div class="fld avatar-row">
+          <div class="av" id="av"></div>
+          <div style="flex:1">
+            <label for="avatar_url">Profile photo URL</label>
+            <input type="url" id="avatar_url" placeholder="https://...">
+            <p class="help">Paste a link to an image. Initials are used if left empty.</p>
+          </div>
+        </div>
+        <div class="row">
+          <div class="fld"><label for="full_name">Full name</label><input type="text" id="full_name"></div>
+          <div class="fld"><label for="title">Title</label><input type="text" id="title" placeholder="Founder"></div>
+        </div>
+        <div class="row">
+          <div class="fld"><label for="phone">Phone</label><input type="tel" id="phone"></div>
+          <div class="fld"><label for="role_display">Role</label><input type="text" id="role_display" disabled>
+            <p class="help">Only an owner can change roles.</p></div>
+        </div>
+        <div class="fld"><label for="bio">Short bio</label><textarea id="bio" rows="2"></textarea></div>
+      </div>
+      <div class="sec-ft"><span class="msg" id="profileMsg"></span><button class="btn" id="saveProfile">Save changes</button></div>
+    </div>
+  </div>
+
+  <!-- ACCOUNT -->
+  <div class="pane" id="pane-account">
+    <div class="sec">
+      <div class="sec-hd"><h2>Email</h2><p>Used to sign in and receive notifications.</p></div>
+      <div class="sec-bd"><div class="fld"><label for="email">Email address</label><input type="email" id="email" disabled></div></div>
+    </div>
+    <div class="sec">
+      <div class="sec-hd"><h2>Password</h2><p>Choose something you don't use anywhere else.</p></div>
+      <div class="sec-bd">
+        <div class="row">
+          <div class="fld"><label for="pw1">New password</label><input type="password" id="pw1" autocomplete="new-password"></div>
+          <div class="fld"><label for="pw2">Confirm password</label><input type="password" id="pw2" autocomplete="new-password"></div>
+        </div>
+        <p class="help">Minimum 8 characters.</p>
+      </div>
+      <div class="sec-ft"><span class="msg" id="pwMsg"></span><button class="btn" id="savePw">Update password</button></div>
+    </div>
+    <div class="sec danger">
+      <div class="sec-hd"><h2>Sign out everywhere</h2><p>Ends your session on every device.</p></div>
+      <div class="sec-ft"><span class="hint">You will need to sign in again.</span><button class="btn btn-ghost" id="signOutAll">Sign out everywhere</button></div>
+    </div>
+  </div>
+
+  <!-- TEAM -->
+  <div class="pane" id="pane-team">
+    <div class="sec">
+      <div class="sec-hd"><h2>People</h2><p>Everyone with access. Roles decide what they can see.</p></div>
+      <div class="sec-bd"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th></tr></thead>
+        <tbody id="teamRows"><tr><td colspan="4" class="empty">Loading…</td></tr></tbody></table></div>
+    </div>
+    <div class="sec">
+      <div class="sec-hd"><h2>Add someone</h2><p>They receive an email invite to set their own password.</p></div>
+      <div class="sec-bd">
+        <div class="row">
+          <div class="fld"><label for="inv_name">Full name</label><input type="text" id="inv_name"></div>
+          <div class="fld"><label for="inv_email">Email</label><input type="email" id="inv_email"></div>
+        </div>
+        <div class="fld" style="max-width:280px"><label for="inv_role">Role</label>
+          <select id="inv_role">
+            <option value="contractor">Contractor — sees only their own jobs</option>
+            <option value="account_owner">Account Owner — runs their own clients</option>
+            <option value="client">Client — sees only their project</option>
+            <option value="owner">Owner — full access</option>
+          </select>
+        </div>
+      </div>
+      <div class="sec-ft"><span class="msg" id="invMsg"></span><button class="btn" id="sendInvite">Send invite</button></div>
+    </div>
+  </div>
+
+  <!-- BUSINESS -->
+  <div class="pane" id="pane-business">
+    <div class="sec">
+      <div class="sec-hd"><h2>Account owner splits</h2><p>Applied to new engagements. Existing ones keep the rate agreed at the time.</p></div>
+      <div class="sec-bd"><table><thead><tr><th>Lead source</th><th style="width:110px">Verve</th><th style="width:110px">Owner</th></tr></thead>
+        <tbody id="splitRows"><tr><td colspan="3" class="empty">Loading…</td></tr></tbody></table></div>
+      <div class="sec-ft"><span class="msg" id="splitMsg"></span><button class="btn" id="saveSplits">Save splits</button></div>
+    </div>
+    <div class="sec">
+      <div class="sec-hd"><h2>Business details</h2><p>Used on contracts and invoices.</p></div>
+      <div class="sec-bd">
+        <div class="row">
+          <div class="fld"><label>Legal name</label><input type="text" value="Verve Collective LLC" disabled></div>
+          <div class="fld"><label>EIN</label><input type="text" value="42-4451247" disabled></div>
+        </div>
+        <div class="row">
+          <div class="fld"><label>Address</label><input type="text" value="2547 S Providence Rd, Columbia, MO 65203" disabled></div>
+          <div class="fld"><label>Contractor markup</label><input type="text" value="33% — contractor keeps 67%" disabled></div>
+        </div>
+        <p class="help">These come from your IRS CP&nbsp;575 and the Pricing &amp; Splits document. Ask to change them.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+var TABS = [
+  {id:'profile',  label:'Profile',  roles:['owner','account_owner','contractor','client']},
+  {id:'account',  label:'Account',  roles:['owner','account_owner','contractor','client']},
+  {id:'team',     label:'Team',     roles:['owner']},
+  {id:'business', label:'Business', roles:['owner']}
+];
+
+function $(id){ return document.getElementById(id); }
+function msg(el, t, ok){ var e=$(el); e.textContent=t; e.className='msg show '+(ok?'ok':'err'); }
+function initials(n){ return (n||'').split(' ').map(function(p){return p[0];}).filter(Boolean).join('').slice(0,2).toUpperCase(); }
+
+function vcInit(){
+  var sb = window.__sb, me = window.__profile || {}, role = window.__role || 'contractor';
+
+  // tabs by role
+  var allowed = TABS.filter(function(t){ return t.roles.indexOf(role) !== -1; });
+  $('tabs').innerHTML = allowed.map(function(t,i){
+    return '<button class="tab'+(i===0?' on':'')+'" data-t="'+t.id+'">'+t.label+'</button>';
+  }).join('');
+  document.querySelectorAll('.pane').forEach(function(p){ p.classList.remove('on'); });
+  if (allowed.length) $('pane-'+allowed[0].id).classList.add('on');
+  document.querySelectorAll('.tab').forEach(function(b){
+    b.addEventListener('click', function(){
+      document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('on');});
+      document.querySelectorAll('.pane').forEach(function(x){x.classList.remove('on');});
+      b.classList.add('on');
+      $('pane-'+b.dataset.t).classList.add('on');
+    });
+  });
+
+  // profile
+  $('full_name').value  = me.full_name || '';
+  $('title').value      = me.title || '';
+  $('phone').value      = me.phone || '';
+  $('bio').value        = me.bio || '';
+  $('avatar_url').value = me.avatar_url || '';
+  $('role_display').value = ({owner:'Owner',account_owner:'Account Owner',contractor:'Contractor',client:'Client'})[role] || role;
+  $('email').value = (window.__user && window.__user.email) || '';
+  paintAvatar();
+  $('avatar_url').addEventListener('input', paintAvatar);
+
+  function paintAvatar(){
+    var u = $('avatar_url').value.trim(), a = $('av');
+    if (u) { a.style.backgroundImage='url('+u+')'; a.textContent=''; }
+    else { a.style.backgroundImage='none'; a.textContent = initials($('full_name').value || me.full_name); }
+  }
+
+  $('saveProfile').addEventListener('click', async function(){
+    $('saveProfile').disabled = true;
+    var { error } = await sb.from('profiles').update({
+      full_name: $('full_name').value.trim(),
+      title: $('title').value.trim(),
+      phone: $('phone').value.trim(),
+      bio: $('bio').value.trim(),
+      avatar_url: $('avatar_url').value.trim() || null
+    }).eq('id', window.__user.id);
+    $('saveProfile').disabled = false;
+    if (error) return msg('profileMsg', error.message, false);
+    msg('profileMsg','Saved. Reload to update the sidebar.', true);
+  });
+
+  $('savePw').addEventListener('click', async function(){
+    var a=$('pw1').value, b=$('pw2').value;
+    if (a.length < 8) return msg('pwMsg','Password must be at least 8 characters.', false);
+    if (a !== b)      return msg('pwMsg','Passwords do not match.', false);
+    $('savePw').disabled = true;
+    var { error } = await sb.auth.updateUser({ password: a });
+    $('savePw').disabled = false;
+    if (error) return msg('pwMsg', error.message, false);
+    $('pw1').value=''; $('pw2').value='';
+    msg('pwMsg','Password updated.', true);
+  });
+
+  $('signOutAll').addEventListener('click', async function(){
+    await sb.auth.signOut({ scope:'global' });
+    location.href = '/login.html';
+  });
+
+  if (role === 'owner') { loadTeam(); loadSplits(); }
+
+  async function loadTeam(){
+    var { data, error } = await sb.from('profiles')
+      .select('full_name,email,role,is_active').order('created_at');
+    if (error || !data) { $('teamRows').innerHTML='<tr><td colspan="4" class="empty">Could not load.</td></tr>'; return; }
+    $('teamRows').innerHTML = data.map(function(p){
+      return '<tr><td><b>'+(p.full_name||'—')+'</b></td><td>'+p.email+'</td>'+
+             '<td><span class="pill '+p.role+'">'+p.role.replace('_',' ')+'</span></td>'+
+             '<td>'+(p.is_active?'Active':'Inactive')+'</td></tr>';
+    }).join('');
+  }
+
+  $('sendInvite').addEventListener('click', async function(){
+    var em=$('inv_email').value.trim(), nm=$('inv_name').value.trim(), rl=$('inv_role').value;
+    if (!em || !nm) return msg('invMsg','Name and email are both required.', false);
+    msg('invMsg','Invites need a server-side function — ask Claude to wire it up. Nothing was sent.', false);
+  });
+
+  async function loadSplits(){
+    var { data } = await sb.from('split_defaults').select('*');
+    if (!data) { $('splitRows').innerHTML='<tr><td colspan="3" class="empty">Could not load.</td></tr>'; return; }
+    var order = ['verve_sourced','owner_sourced','owner_sourced_own_brand'];
+    data.sort(function(a,b){ return order.indexOf(a.basis)-order.indexOf(b.basis); });
+    $('splitRows').innerHTML = data.map(function(s){
+      return '<tr><td>'+s.label+'</td>'+
+        '<td><input type="number" min="0" max="100" value="'+Number(s.verve_pct)+'" data-basis="'+s.basis+'" class="vpct"></td>'+
+        '<td><input type="number" value="'+Number(s.owner_pct)+'" disabled class="opct" data-for="'+s.basis+'"></td></tr>';
+    }).join('');
+    document.querySelectorAll('.vpct').forEach(function(i){
+      i.addEventListener('input', function(){
+        var o = document.querySelector('.opct[data-for="'+i.dataset.basis+'"]');
+        o.value = 100 - (Number(i.value)||0);
+      });
+    });
+  }
+
+  $('saveSplits').addEventListener('click', async function(){
+    var rows = document.querySelectorAll('.vpct');
+    $('saveSplits').disabled = true;
+    for (var i=0;i<rows.length;i++){
+      var v = Number(rows[i].value)||0;
+      var { error } = await sb.from('split_defaults')
+        .update({ verve_pct: v, owner_pct: 100-v })
+        .eq('basis', rows[i].dataset.basis);
+      if (error) { $('saveSplits').disabled=false; return msg('splitMsg', error.message, false); }
+    }
+    $('saveSplits').disabled = false;
+    msg('splitMsg','Splits updated. New engagements use these.', true);
+  });
+}
+window.addEventListener('vc-auth-ready', vcInit);
+</script>
+</body>
+</html>

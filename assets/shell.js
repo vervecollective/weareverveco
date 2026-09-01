@@ -188,6 +188,88 @@ if (role === 'contractor' || role === 'client') {
   document.querySelectorAll('[data-staff-only]').forEach(el => el.remove());
 }
 
+
+/* ── Presence ──────────────────────────────────────────────────────────────
+   A heartbeat row per person. Anything not touched in five minutes is treated
+   as away, so a closed laptop stops showing as online without needing a
+   reliable disconnect event. Clients are excluded — this is a team view. */
+if (role !== 'client') {
+  const PAGE_LABEL = {
+    '/hub':'Home', '/board':'Board', '/console':'Call console',
+    '/internal':'Engagements', '/jobs':'Jobs', '/audit':'Audits',
+    '/documents':'Documents', '/team':'People', '/settings':'Settings',
+    '/help':'Help', '/project':'Project'
+  };
+
+  function pageLabel(){
+    const p = location.pathname.replace(/\.html$/, '').replace(/\/$/, '') || '/hub';
+    return PAGE_LABEL[p] || 'Working';
+  }
+
+  async function beat(){
+    try {
+      await sb.from('presence').upsert({
+        profile_id: session.user.id,
+        last_seen_at: new Date().toISOString(),
+        current_page: pageLabel(),
+        engagement_id: window.__engagementContext || null
+      }, { onConflict: 'profile_id' });
+    } catch (e) { /* presence is a nicety, never block the page for it */ }
+  }
+
+  beat();
+  let beatTimer = setInterval(beat, 60000);
+
+  // Stop pinging when the tab is hidden; resume on return.
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) { clearInterval(beatTimer); }
+    else { beat(); clearInterval(beatTimer); beatTimer = setInterval(beat, 60000); }
+  });
+
+  const panel = document.createElement('div');
+  panel.className = 'vc-presence';
+  panel.innerHTML = '<div class="vc-pres-h">Who\u2019s around</div><div id="vcPresList"></div>';
+  shell.querySelector('.vc-user').before(panel);
+
+  async function paintPresence(){
+    const since = new Date(Date.now() - 5 * 60000).toISOString();
+    const { data } = await sb
+      .from('presence')
+      .select('profile_id, current_page, last_seen_at, profiles(full_name, avatar_url, role)')
+      .gte('last_seen_at', since)
+      .order('last_seen_at', { ascending: false });
+
+    const rows = (data || []).filter(r => r.profile_id !== session.user.id);
+    const list = document.getElementById('vcPresList');
+    if (!list) return;
+
+    if (!rows.length) {
+      list.innerHTML = '<div class="vc-pres-none">No one else right now</div>';
+      return;
+    }
+    list.innerHTML = rows.slice(0, 6).map(r => {
+      const p = r.profiles || {};
+      const nm = p.full_name || 'Someone';
+      const init = nm.split(' ').map(x => x[0]).filter(Boolean).join('').slice(0,2).toUpperCase();
+      const av = p.avatar_url
+        ? `<span class="vc-pres-av" style="background-image:url(${p.avatar_url});background-size:cover"></span>`
+        : `<span class="vc-pres-av">${init}</span>`;
+      return `<div class="vc-pres-row" title="${nm} \u00b7 ${r.current_page || ''}">
+          ${av}<span class="vc-pres-dot"></span>
+          <span class="vc-pres-t"><b>${nm.split(' ')[0]}</b><em>${r.current_page || 'Working'}</em></span>
+        </div>`;
+    }).join('');
+  }
+
+  paintPresence();
+  setInterval(paintPresence, 45000);
+
+  // Live updates rather than waiting for the next poll.
+  sb.channel('presence-feed')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'presence' }, paintPresence)
+    .subscribe();
+}
+
 window.dispatchEvent(new Event('vc-auth-ready'));
 
 /* Pages define window.vcInit and expect it to run once auth resolves. Calling it

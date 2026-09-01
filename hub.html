@@ -80,13 +80,7 @@
 </head>
 <body>
 
-<div class="gate" id="gate">
-  <h1>Verve Hub</h1>
-  <p>Internal tools</p>
-  <input type="password" id="pw" placeholder="Password" autofocus>
-  <button class="btn" id="unlock">Sign in</button>
-  <p class="err" id="err">Wrong password.</p>
-</div>
+
 
 <div id="app">
   <div class="topbar"><div class="topbar-in">
@@ -98,7 +92,7 @@
       <a href="/admin.html">Site</a>
       <a href="/" target="_blank">View site ↗</a>
     </nav>
-    <div class="whoami"><span class="avatar">TM</span><span>Trae Miller · Owner</span></div>
+    <div class="whoami"><span class="avatar" id="whoAvatar"></span><span id="whoName">…</span><a href="#" id="signout" style="color:var(--ink-3);text-decoration:none;margin-left:6px;">Sign out</a></div>
   </div></div>
 
   <div class="wrap">
@@ -119,8 +113,8 @@
     <div class="sec">Tools</div>
     <div class="grid">
       <a class="card" href="/console"><h3>Call Console</h3><p>Stage-by-stage scripts, capture fields, timeline builder, deposit calculator. Open this during any call.</p></a>
-      <a class="card" href="/internal"><h3>Platform</h3><p>Build engagements, add line items, create and send Stripe invoices. Saved engagements live here.</p></a>
-      <a class="card" href="/admin.html"><h3>Site Content</h3><p>Edit homepage copy and the logo. Draft, preview, then publish.</p></a>
+      <a class="card" href="/internal" data-staff-only><h3>Platform</h3><p>Build engagements, add line items, create and send Stripe invoices. Saved engagements live here.</p></a>
+      <a class="card" href="/admin.html" data-staff-only><h3>Site Content</h3><p>Edit homepage copy and the logo. Draft, preview, then publish.</p></a>
     </div>
 
     <div class="sec">External</div>
@@ -139,40 +133,48 @@
   </div>
 </div>
 
-<script>
-// localStorage, not sessionStorage — this is why the login kept dropping.
-var KEY='vc_admin_pw';
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-function tryUnlock(v){
-  return fetch('/api/engagements',{headers:{'x-admin-password':v}}).then(function(r){
-    if(r.status===401) throw new Error('bad');
-    return true;
-  });
-}
-function showApp(){
-  document.getElementById('gate').style.display='none';
-  document.getElementById('app').style.display='block';
+const sb = createClient(
+  'https://otqrkxjtojqlpzzvqavp.supabase.co',
+  'sb_publishable_OBViGLggbcOKacti5iUonA_QCzw3kBv'
+);
+
+const { data:{ session } } = await sb.auth.getSession();
+if (!session) { location.href = '/login.html'; }
+
+const { data: profile } = await sb
+  .from('profiles')
+  .select('full_name, role, title, avatar_url')
+  .eq('id', session.user.id)
+  .single();
+
+const name = (profile && profile.full_name) || session.user.email;
+const role = (profile && profile.role) || 'contractor';
+const ROLE_LABEL = { owner:'Owner', account_owner:'Account Owner', contractor:'Contractor', client:'Client' };
+const initials = name.split(' ').map(function(p){return p[0];}).join('').slice(0,2).toUpperCase();
+
+document.getElementById('whoName').textContent = name + ' \u00b7 ' + (ROLE_LABEL[role] || role);
+document.getElementById('whoAvatar').textContent = initials;
+if (profile && profile.avatar_url) {
+  const a = document.getElementById('whoAvatar');
+  a.style.backgroundImage = 'url(' + profile.avatar_url + ')';
+  a.style.backgroundSize = 'cover';
+  a.textContent = '';
 }
 
-var saved = localStorage.getItem(KEY) || sessionStorage.getItem(KEY);
-if(saved){
-  tryUnlock(saved).then(function(){
-    localStorage.setItem(KEY,saved);
-    showApp();
-  }).catch(function(){ localStorage.removeItem(KEY); });
+if (role === 'contractor') {
+  document.querySelectorAll('[data-staff-only]').forEach(function(el){ el.remove(); });
 }
 
-document.getElementById('unlock').addEventListener('click',function(){
-  var v=document.getElementById('pw').value; if(!v)return;
-  tryUnlock(v).then(function(){
-    localStorage.setItem(KEY,v);
-    sessionStorage.setItem(KEY,v); // keep older tools working
-    showApp();
-  }).catch(function(){ document.getElementById('err').classList.add('show'); });
+document.getElementById('signout').addEventListener('click', async function(e){
+  e.preventDefault();
+  await sb.auth.signOut();
+  location.href = '/login.html';
 });
-document.getElementById('pw').addEventListener('keydown',function(e){
-  if(e.key==='Enter') document.getElementById('unlock').click();
-});
+
+document.getElementById('app').style.display = 'block';
 </script>
 </body>
 </html>

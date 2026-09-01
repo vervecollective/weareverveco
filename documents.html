@@ -64,7 +64,7 @@
 
   <div class="card">
     <h2>Send for signature</h2>
-    <p class="hint">Sends from a Dropbox Sign template and records it against the engagement.</p>
+    <p class="hint">Sends from a SignWell template and records it against the engagement. Fields are filled in during signing — SOW autofill is not wired yet.</p>
     <div class="row">
       <div class="field"><label for="kind">Document</label>
         <select id="kind">
@@ -91,10 +91,10 @@
     <div class="setup" id="setup">
       <b>One-time setup required before this works.</b>
       <ol>
-        <li>Upload each of the five documents to Dropbox Sign as a <b>template</b>, adding signature, name, and date fields where the blanks are.</li>
+        <li>Upload each of the five documents to SignWell as a <b>template</b>, adding signature, name, and date fields where the blanks are.</li>
         <li>Name the signer role <b>Signer</b> on every template.</li>
         <li>Copy each template ID and send them to me — I set them as function secrets.</li>
-        <li>Add the callback URL in Dropbox Sign → API settings so signatures report back automatically.</li>
+        <li>Add the callback URL in SignWell → API settings so signatures report back automatically.</li>
       </ol>
     </div>
   </div>

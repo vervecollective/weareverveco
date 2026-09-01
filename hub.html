@@ -35,6 +35,7 @@
     text-decoration:none;color:inherit;}
   .r:last-child{border-bottom:none;}
   .r:hover .rt{color:#D9531E;}
+  div.r{cursor:pointer;}
   .dot{width:8px;height:8px;border-radius:50%;margin-top:6px;flex-shrink:0;}
   .rb{flex:1;min-width:0;}
   .rt{font-size:13.5px;font-weight:600;line-height:1.35;}
@@ -111,11 +112,23 @@ function rel(d){ var n=days(d); if(n===null) return '';
   return new Date(d+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
 function relClass(d){ var n=days(d); return n===null?'':(n<0?'late':(n<=2?'soon':'')); }
 
-function row(href, colour, title, sub, right, rcls){
-  return '<a class="r" href="'+href+'"><span class="dot" style="background:'+colour+'"></span>'+
+function row(href, colour, title, sub, right, rcls, kind, ref){
+  var peek = (kind && ref) ? ' data-k="'+kind+'" data-r="'+ref+'"' : '';
+  var tag = peek ? 'div' : 'a';
+  return '<'+tag+' class="r"'+(peek ? ' style="cursor:pointer"'+peek : ' href="'+href+'"')+
+    '><span class="dot" style="background:'+colour+'"></span>'+
     '<span class="rb"><span class="rt">'+esc(title)+'</span>'+
     (sub?'<div class="rs">'+esc(sub)+'</div>':'')+'</span>'+
-    (right?'<span class="rr '+(rcls||'')+'">'+esc(right)+'</span>':'')+'</a>';
+    (right?'<span class="rr '+(rcls||'')+'">'+esc(right)+'</span>':'')+'</'+tag+'>';
+}
+
+function wirePeeks(){
+  document.querySelectorAll('[data-k][data-r]').forEach(function(el){
+    if (el.__w) return; el.__w = true;
+    el.addEventListener('click', function(){
+      if (window.vcPeek) window.vcPeek(el.dataset.k, el.dataset.r);
+    });
+  });
 }
 
 window.vcInit = async function(){
@@ -208,9 +221,9 @@ window.vcInit = async function(){
   stalls.forEach(function(st){
     var cfg = STALL[st.reason]; if (!cfg) return;
     var msg = cfg[2].replace('%d', st.days_quiet).replace('%v', st.proposal_views || 0);
-    att.push(row('/internal', cfg[0],
+    att.push(row('#', cfg[0],
       (st.business_name || 'A client') + ' ' + cfg[1], msg,
-      st.days_quiet + 'd', st.days_quiet > 14 ? 'late' : 'soon'));
+      st.days_quiet + 'd', st.days_quiet > 14 ? 'late' : 'soon', 'engagement', st.id));
   });
   bills.forEach(function(b){
     att.push(row('/pay','#b91c1c','Approve invoice from '+((b.profiles&&b.profiles.full_name)||'a contractor'),
@@ -223,19 +236,20 @@ window.vcInit = async function(){
   });
   offers.forEach(function(o){
     var biz=(o.engagements&&o.engagements.clients&&o.engagements.clients.business_name)||'Job';
-    att.push(row('/jobs','#b45309', o.role_on_job+' offer unanswered', biz, rel(o.work_date), relClass(o.work_date)));
+    att.push(row('/jobs','#b45309', o.role_on_job+' offer unanswered', biz, rel(o.work_date), relClass(o.work_date), 'assignment', o.id));
   });
   blocked.forEach(function(t){
-    att.push(row('/board?task='+t.id,'#b91c1c', t.title+' is blocked',
-      t.blocked_reason || 'No reason given', 'Unblock'));
+    att.push(row('#','#b91c1c', t.title+' is blocked',
+      t.blocked_reason || 'No reason given', 'Unblock', '', 'task', t.id));
   });
   lateTasks.slice(0,4).forEach(function(t){
-    att.push(row('/board?task='+t.id,'#b45309', t.title,
+    att.push(row('#','#b45309', t.title,
       (t.engagements&&t.engagements.clients&&t.engagements.clients.business_name)||'',
-      rel(t.due_date), 'late'));
+      rel(t.due_date), 'late', 'task', t.id));
   });
   $('attention').innerHTML = att.length ? att.join('')
     : '<div class="none">Nothing needs you right now.</div>';
+  wirePeeks();
 
   // This week
   var wk = [];
@@ -247,19 +261,21 @@ window.vcInit = async function(){
     var a = d.assignments || {};
     if (a.status === 'declined' || a.status === 'cancelled') return;
     var biz=(a.engagements&&a.engagements.clients&&a.engagements.clients.business_name)||'Shoot';
-    wk.push({ d:d.work_date, html: row('/jobs','#7c3aed', biz+' \u2014 '+(a.role_on_job||'Shoot'),
-      d.call_time?('Call '+d.call_time.slice(0,5)):'Time TBC', rel(d.work_date), relClass(d.work_date)) });
+    wk.push({ d:d.work_date, html: row('#','#7c3aed', biz+' \u2014 '+(a.role_on_job||'Shoot'),
+      d.call_time?('Call '+d.call_time.slice(0,5)):'Time TBC', rel(d.work_date), relClass(d.work_date),
+      'assignment', d.assignment_id) });
   });
   ms.forEach(function(m){
     var n = days(m.due_date);
     if (n === null || n < 0 || n > 7) return;
-    wk.push({ d:m.due_date, html: row('/internal','#047857', m.label,
+    wk.push({ d:m.due_date, html: row('#','#047857', m.label,
       (m.engagements&&m.engagements.clients&&m.engagements.clients.business_name)||'',
-      rel(m.due_date), relClass(m.due_date)) });
+      rel(m.due_date), relClass(m.due_date), 'milestone', m.id) });
   });
   wk.sort(function(a,b){ return a.d < b.d ? -1 : 1; });
   $('week').innerHTML = wk.length ? wk.map(function(x){return x.html;}).join('')
     : '<div class="none">Nothing scheduled in the next seven days.</div>';
+  wirePeeks();
 
   // Team load
   var cq = await sb.from('team_capacity').select('*').order('load_pct',{ascending:false});

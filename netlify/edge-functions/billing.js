@@ -71,8 +71,21 @@ export default async (req) => {
       if (customer.error) throw new Error(customer.error.message);
     }
 
-    // 2) Line items. Ad spend is deliberately excluded — it is billed by the
-    //    platform directly to the client and never runs through Verve's books.
+    // 2) Create the draft invoice FIRST, so line items can be attached to it
+    //    explicitly. Relying on Stripe to auto-pull pending invoice items is not
+    //    dependable on current API versions — it silently produced $0 invoices.
+    const invoice = await stripe('invoices', key, {
+      customer: customer.id,
+      collection_method: 'send_invoice',
+      days_until_due: String(eng.daysUntilDue || 15),
+      description: eng.invoiceNote || 'Verve Collective LLC — services as scoped.',
+      'metadata[engagement_id]': eng.id,
+    });
+    if (invoice.error) throw new Error(invoice.error.message);
+
+    // 3) Line items, each attached to that invoice by id. Ad spend is deliberately
+    //    excluded — the client pays the platform directly, it never runs through
+    //    Verve's books.
     for (const li of items) {
       const qty = Number(li.qty) || 1;
       const unit = Number(li.unitPrice) || 0;
@@ -85,6 +98,7 @@ export default async (req) => {
         : li.description;
       const r = await stripe('invoiceitems', key, {
         customer: customer.id,
+        invoice: invoice.id,
         currency: 'usd',
         amount: String(lineTotalCents),
         description: label,
@@ -92,17 +106,13 @@ export default async (req) => {
       if (r.error) throw new Error(r.error.message);
     }
 
-    // 3) Invoice
-    const invoice = await stripe('invoices', key, {
-      customer: customer.id,
-      collection_method: 'send_invoice',
-      days_until_due: String(eng.daysUntilDue || 15),
-      description: eng.invoiceNote || 'Verve Collective LLC — services as scoped.',
-      'metadata[engagement_id]': eng.id,
-    });
-    if (invoice.error) throw new Error(invoice.error.message);
-
     // 4) Finalize to get the payable hosted URL
+    // Guard against ever finalizing a $0 invoice again.
+    const check = await stripe('invoices/' + invoice.id, key, null, 'GET');
+    if (!check.total || check.total <= 0) {
+      throw new Error('Invoice built with no billable lines — nothing was sent. Check the line items and try again.');
+    }
+
     const finalized = await stripe('invoices/' + invoice.id + '/finalize', key, {});
     if (finalized.error) throw new Error(finalized.error.message);
 

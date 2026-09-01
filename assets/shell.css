@@ -237,3 +237,68 @@ body.vc-shelled input[type=number]{-moz-appearance:textfield;}
 /* Table inputs sit flush — no double borders inside a bordered row */
 body.vc-shelled td input{background:#fff !important;}
 body.vc-shelled td input:not(:focus){border-color:#e5e7eb !important;}
+
+
+/* ---------- surface depth ----------
+   Pure white everywhere reads as unfinished and gives the eye nothing to
+   anchor on. A very light canvas with white cards on top creates separation
+   without introducing colour. This is what Linear, Stripe and Notion do. */
+body.vc-shelled{ background:#f7f8f9 !important; }
+body.vc-shelled .card,
+body.vc-shelled .panel,
+body.vc-shelled table,
+body.vc-shelled .preview-panel{
+  background:#ffffff !important;
+  border:1px solid #e5e7eb !important;
+  box-shadow:0 1px 2px rgba(16,24,40,.04) !important;
+}
+
+/* ---------- secondary buttons ----------
+   These were white text on white on hover — invisible. Explicit colours on
+   every state so a label can never disappear. */
+body.vc-shelled .btn-2,
+body.vc-shelled .btn-sec,
+body.vc-shelled .btn-secondary,
+body.vc-shelled .btn-outline{
+  background:#ffffff !important;
+  color:#111827 !important;
+  border:1px solid #d1d5db !important;
+  font-weight:600 !important;
+}
+body.vc-shelled .btn-2:hover,
+body.vc-shelled .btn-sec:hover,
+body.vc-shelled .btn-secondary:hover,
+body.vc-shelled .btn-outline:hover{
+  background:#f3f4f6 !important;
+  color:#111827 !important;
+  border-color:#9ca3af !important;
+}
+body.vc-shelled .btn-2:active,
+body.vc-shelled .btn-sec:active,
+body.vc-shelled .btn-secondary:active,
+body.vc-shelled .btn-outline:active{ background:#e5e7eb !important; }
+
+/* Primary stays orange on every state — never inherits a white hover */
+body.vc-shelled .btn{
+  background:#D9531E !important; color:#ffffff !important; border:1px solid #D9531E !important;
+}
+body.vc-shelled .btn:hover{ background:#c2461a !important; border-color:#c2461a !important; color:#fff !important; }
+body.vc-shelled .btn.btn-2,
+body.vc-shelled .btn.btn-sec,
+body.vc-shelled .btn.btn-secondary,
+body.vc-shelled .btn.btn-outline{
+  background:#ffffff !important; color:#111827 !important; border-color:#d1d5db !important;
+}
+body.vc-shelled .btn.btn-2:hover,
+body.vc-shelled .btn.btn-sec:hover,
+body.vc-shelled .btn.btn-secondary:hover,
+body.vc-shelled .btn.btn-outline:hover{ background:#f3f4f6 !important; color:#111827 !important; }
+
+body.vc-shelled .btn-go{ background:#047857 !important; border-color:#047857 !important; color:#fff !important; }
+body.vc-shelled .btn-go:hover{ background:#036847 !important; border-color:#036847 !important; }
+body.vc-shelled .btn-danger{ background:#fff !important; color:#b91c1c !important; border:1px solid #fecaca !important; }
+body.vc-shelled .btn-danger:hover{ background:#fef2f2 !important; border-color:#fca5a5 !important; }
+
+/* Table headers get a tint so rows read as data, not floating text */
+body.vc-shelled thead th{ background:#f9fafb !important; }
+body.vc-shelled tbody tr:hover td{ background:#fafbfc !important; }

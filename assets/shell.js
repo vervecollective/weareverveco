@@ -540,6 +540,122 @@ if (role !== 'client') {
     .subscribe();
 })();
 
+
+/* ── Identity bar ──────────────────────────────────────────────────────────
+   Your avatar top-right, and a profile card for anyone whose avatar is
+   clicked. Identity should be reachable from every screen, not buried. */
+(function(){
+  const escv = (v) => { const d = document.createElement('div'); d.textContent = v == null ? '' : v; return d.innerHTML; };
+  const initialsOf = (n) => (n || '?').split(' ').map(x => x[0]).filter(Boolean).join('').slice(0,2).toUpperCase();
+  const avatarHtml = (p, cls) => (p && p.avatar_url)
+    ? `<span class="${cls}" style="background-image:url(${escv(p.avatar_url)})"></span>`
+    : `<span class="${cls}">${initialsOf(p && (p.full_name || p.email))}</span>`;
+
+  const ROLE = { owner:'Owner', account_owner:'Account owner', contractor:'Contractor', client:'Client' };
+
+  // ---- top-right identity ----
+  const bar = document.createElement('div');
+  bar.className = 'vc-idbar';
+  bar.innerHTML = `<button class="vc-id" id="vcId" aria-label="Your account">
+      ${avatarHtml(profile || { full_name: name }, 'vc-id-av')}
+      <span class="vc-id-t"><b>${escv(name)}</b><em>${ROLE[role] || role}</em></span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>
+    </button>
+    <div class="vc-idmenu" id="vcIdMenu">
+      <a href="/settings">Your profile</a>
+      <a href="/settings">Settings</a>
+      <a href="/help">Help</a>
+      <button id="vcIdOut">Sign out</button>
+    </div>`;
+  document.body.appendChild(bar);
+
+  document.getElementById('vcId').addEventListener('click', (e) => {
+    e.stopPropagation();
+    document.getElementById('vcIdMenu').classList.toggle('on');
+  });
+  document.addEventListener('click', () => {
+    document.getElementById('vcIdMenu').classList.remove('on');
+  });
+  document.getElementById('vcIdOut').addEventListener('click', async () => {
+    await sb.auth.signOut();
+    location.href = '/login.html';
+  });
+
+  // ---- profile card for anyone ----
+  const card = document.createElement('div');
+  card.className = 'vc-pcard';
+  card.innerHTML = '<div id="vcPcBody"></div>';
+  const cardVeil = document.createElement('div');
+  cardVeil.className = 'vc-pcard-veil';
+  cardVeil.addEventListener('click', () => {
+    card.classList.remove('on'); cardVeil.classList.remove('on');
+  });
+  document.body.append(cardVeil, card);
+
+  window.vcProfile = async function(profileId){
+    if (!profileId) return;
+    card.classList.add('on'); cardVeil.classList.add('on');
+    document.getElementById('vcPcBody').innerHTML = '<p class="vc-pc-load">Loading\u2026</p>';
+
+    const { data: p } = await sb.from('profiles')
+      .select('*, contractor_details(crafts, part_107, gear, home_city)')
+      .eq('id', profileId).single();
+    if (!p) {
+      document.getElementById('vcPcBody').innerHTML = '<p class="vc-pc-load">Could not load that profile.</p>';
+      return;
+    }
+
+    const since = new Date(Date.now() - 5 * 60000).toISOString();
+    const { data: pr } = await sb.from('presence')
+      .select('current_page,last_seen_at').eq('profile_id', profileId).gte('last_seen_at', since).maybeSingle();
+
+    const cd = (p.contractor_details && p.contractor_details[0]) || p.contractor_details || {};
+    const crafts = (cd.crafts || []).join(' \u00b7 ');
+    const days = (p.available_days || []).join(', ');
+
+    const row = (k, v) => v ? `<div class="vc-pc-f"><span>${escv(k)}</span><b>${escv(v)}</b></div>` : '';
+
+    document.getElementById('vcPcBody').innerHTML =
+      `<div class="vc-pc-top">
+        ${avatarHtml(p, 'vc-pc-av')}
+        <div class="vc-pc-who">
+          <b>${escv(p.full_name || p.email)}</b>
+          <em>${ROLE[p.role] || p.role}${p.title ? ' \u00b7 ' + escv(p.title) : ''}</em>
+          ${pr ? `<span class="vc-pc-on">Active now${pr.current_page ? ' \u00b7 ' + escv(pr.current_page) : ''}</span>` : ''}
+        </div>
+      </div>
+      ${p.bio ? `<p class="vc-pc-bio">${escv(p.bio)}</p>` : ''}
+      ${row('Does', crafts)}
+      ${row('Part 107', cd.part_107 ? 'Certified' : '')}
+      ${row('Gear', cd.gear)}
+      ${row('Usually works', days)}
+      ${row('Note', p.availability_note)}
+      ${row('Email', p.email)}
+      ${row('Phone', p.phone)}
+      ${p.accepting_work === false ? '<div class="vc-pc-off">Not taking new work right now</div>' : ''}
+      ${profileId !== session.user.id
+        ? `<button class="vc-pc-msg" id="vcPcMsg">Message ${escv((p.full_name || '').split(' ')[0] || 'them')}</button>`
+        : '<a class="vc-pc-msg" href="/settings">Edit your profile</a>'}`;
+
+    const msgBtn = document.getElementById('vcPcMsg');
+    if (msgBtn) msgBtn.addEventListener('click', async () => {
+      const r = await sb.rpc('open_dm', { other: profileId });
+      if (r.error) return alert(r.error.message);
+      location.href = '/messages?c=' + r.data;
+    });
+  };
+
+  /* Any avatar carrying data-profile becomes clickable, including ones added
+     to the page later. */
+  document.addEventListener('click', (e) => {
+    const t = e.target.closest('[data-profile]');
+    if (!t) return;
+    e.stopPropagation();
+    window.vcProfile(t.dataset.profile);
+  });
+})();
+
 window.dispatchEvent(new Event('vc-auth-ready'));
 
 /* Pages define window.vcInit and expect it to run once auth resolves. Calling it

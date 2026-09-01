@@ -90,19 +90,30 @@
     <div id="gateNote"></div>
     <div class="row">
       <div class="field"><label for="eng">Engagement</label><select id="eng"></select></div>
-      <div class="field"><label for="con">Contractor</label><select id="con"></select></div>
+      <div class="field"><label for="perf">Who is doing this</label>
+        <select id="perf">
+          <option value="contractor">An outside contractor</option>
+          <option value="internal">Us — in-house</option>
+        </select></div>
+    </div>
+    <div class="row">
+      <div class="field"><label for="con"><span id="conLabel">Contractor</span></label><select id="con"></select></div>
+      <div class="field"></div>
     </div>
     <div class="field"><label for="lineItem">Bill this against a line item</label>
       <select id="lineItem"><option value="">— pick an engagement first —</option></select>
       <p style="font-size:12px;color:#6b7280;margin-top:5px" id="marginNote"></p>
     </div>
     <div class="row">
-      <div class="field"><label for="role">Role on this job</label>
-        <select id="role">
-          <option>Videographer</option><option>Photographer</option>
+      <div class="field"><label for="role">Roles on this job</label>
+        <select id="role" multiple size="5" style="height:auto;padding:8px">
+          <option selected>Videographer</option><option>Photographer</option>
           <option>Drone pilot</option><option>Editor</option><option>Social creator</option>
-        </select></div>
-      <div class="field"><label for="pay">Their pay ($)</label><input type="number" id="pay" step="0.01"></div>
+        </select>
+        <p style="font-size:12px;color:#6b7280;margin-top:5px">Hold Cmd or Ctrl for more than one — one person often shoots photo and video.</p></div>
+      <div class="field"><label for="pay"><span id="payLabel">Their pay ($)</span></label>
+        <input type="number" id="pay" step="0.01">
+        <p style="font-size:12px;color:#6b7280;margin-top:5px" id="payHint"></p></div>
     </div>
     <label style="margin-bottom:7px">Schedule</label>
     <div id="dayRows"></div>
@@ -323,13 +334,12 @@ window.vcInit = async function(){
     .eq('role','contractor').eq('is_active', true);
   contractors = cq.data || [];
 
-  $('con').innerHTML = contractors.length
-    ? contractors.map(function(c){
-        var d = (c.contractor_details && c.contractor_details[0]) || c.contractor_details || {};
-        var ok = d.ica_signed_at && d.ip_assignment_signed_at;
-        return '<option value="'+c.id+'">'+esc(c.full_name||c.email)+(ok?'':'  \u2014 paperwork incomplete')+'</option>';
-      }).join('')
-    : '<option value="">No contractors yet — invite one in People</option>';
+  var pq = await sb.from('profiles')
+    .select('id, full_name, email, role')
+    .in('role', ['owner','account_owner']).eq('is_active', true);
+  allPeople = pq.data || [];
+
+  refreshPeople();
 
   /* Straight from the rate card, so a job offer and an invoice describe the
      same work in the same words. */
@@ -483,7 +493,43 @@ window.vcInit = async function(){
     note.textContent = msg;
   }
 
+  var allPeople = [];
+
+  function refreshPeople(){
+    var kind = $('perf').value;
+    var pool = kind === 'internal'
+      ? allPeople.filter(function(p){ return p.role === 'owner' || p.role === 'account_owner'; })
+      : contractors;
+
+    $('conLabel').textContent = kind === 'internal' ? 'Who on the team' : 'Contractor';
+    $('payLabel').textContent = kind === 'internal' ? 'What this would cost to hire out ($)' : 'Their pay ($)';
+    $('payHint').textContent = kind === 'internal'
+      ? 'Nobody is paid this. It is recorded so in-house work can be compared against hiring it out, instead of looking free.'
+      : '';
+
+    $('con').innerHTML = pool.length
+      ? pool.map(function(p){
+          var d = (p.contractor_details && p.contractor_details[0]) || p.contractor_details || {};
+          var ok = kind === 'internal' || (d.ica_signed_at && d.ip_assignment_signed_at);
+          return '<option value="'+p.id+'">'+esc(p.full_name||p.email)+(ok?'':'  \u2014 paperwork incomplete')+'</option>';
+        }).join('')
+      : '<option value="">'+(kind === 'internal' ? 'No team members yet' : 'No contractors yet \u2014 invite one in People')+'</option>';
+
+    checkGate(); checkMargin(); totalComp();
+  }
+
   function checkGate(){
+    if ($('perf').value === 'internal') {
+      document.getElementById('gateNote').innerHTML =
+        '<div class="gate" style="background:#eff6ff;border-color:#bfdbfe;color:#1e40af">' +
+        '<b>In-house.</b> No contractor agreement needed, no payment leaves the business, ' +
+        'and nothing is 1099-reportable. The margin stays with Verve.</div>';
+      return true;
+    }
+    return checkContractorGate();
+  }
+
+  function checkContractorGate(){
     var c = contractors.filter(function(x){return x.id===$('con').value;})[0];
     var el = $('gateNote');
     if (!c) { el.innerHTML=''; return true; }
@@ -504,6 +550,7 @@ window.vcInit = async function(){
         : 'Send the remaining documents from Documents.')+'</div>';
     return !hard;
   }
+  $('perf').addEventListener('change', refreshPeople);
   $('con').addEventListener('change', checkGate);
   $('eng').addEventListener('change', loadLineItems);
   document.getElementById('lineItem').addEventListener('change', function(){
@@ -588,12 +635,15 @@ window.vcInit = async function(){
     var r = await sb.from('assignments').insert({
       engagement_id: $('eng').value,
       contractor_id: $('con').value,
-      role_on_job: $('role').value,
+      role_on_job: Array.from($('role').selectedOptions).map(function(o){return o.value;}).join(' / ') || 'Crew',
+      roles: Array.from($('role').selectedOptions).map(function(o){return o.value;}),
+      performer: $('perf').value,
+      notional_cost: $('perf').value === 'internal' ? (Number($('pay').value) || 0) : 0,
       scope: $('scope').value.trim(),
       deliverables: $('deliv').value.trim() || null,
       work_date: d,
       location: collectLocs().join(' \u00b7 ') || null,
-      pay_amount: Number($('pay').value),
+      pay_amount: $('perf').value === 'internal' ? 0 : Number($('pay').value),
       travel_miles: Number($('miles').value) || 0,
       mileage_rate: Number($('mrate').value) || 0,
       mileage_paid: $('mpaid').checked,
@@ -625,8 +675,9 @@ window.vcInit = async function(){
         .update({ contractor_cost: Number($('pay').value) })
         .eq('id', liId);
     }
-    // Email the contractor. The link deep-links to /jobs and survives login.
+    // Email the contractor. In-house work needs no offer email.
     try {
+      if ($('perf').value === 'internal') throw new Error('skip');
       var c = contractors.filter(function(x){return x.id===$('con').value;})[0];
       var e = (await sb.from('engagements').select('clients(business_name)').eq('id', $('eng').value).single()).data;
       var whenTxt = d ? new Date(d+'T12:00:00').toLocaleDateString('en-US',

@@ -69,7 +69,7 @@
   .status.show{display:block;}
   .status.ok{color:#7fd99a;}
   .status.err{color:#e08a8a;}
-  #app{display:none;}
+  #app{display:block;}
   .pw-box{background:var(--black-2); border:1px solid var(--line); border-radius:12px; padding:24px; margin-top:56px;}
   .pw-box h3{font-size:15px; font-weight:700; margin-bottom:6px;}
   .pw-box p{font-size:13px; color:var(--muted); margin-bottom:16px;}
@@ -77,16 +77,10 @@
   .pw-row input{flex:1;}
   .pw-row button{width:auto; padding:12px 20px; flex-shrink:0;}
 </style>
+<link rel="stylesheet" href="/assets/shell.css">
+<script type="module" src="/assets/shell.js"></script>
 </head>
 <body>
-
-<div class="gate" id="gate">
-  <h1>Site Admin</h1>
-  <p class="sub">Verve Collective — enter the admin password</p>
-  <input type="password" id="pw" placeholder="Password" autofocus>
-  <button class="btn" id="unlockBtn">Unlock</button>
-  <p class="status err" id="gateError">Wrong password — try again.</p>
-</div>
 
 <div id="app">
   <div class="wrap wide">
@@ -133,18 +127,6 @@
   </div>
 </div>
 
-<script type="module">
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-window.__sb = createClient(
-  'https://otqrkxjtojqlpzzvqavp.supabase.co',
-  'sb_publishable_OBViGLggbcOKacti5iUonA_QCzw3kBv'
-);
-const { data:{ session } } = await window.__sb.auth.getSession();
-if (!session) { location.href = '/login.html'; }
-window.__token = session ? session.access_token : '';
-window.__user  = session ? session.user : null;
-window.dispatchEvent(new Event('vc-auth-ready'));
-</script>
 <script>
   var PASSWORD_KEY = 'vc_admin_pw';
   var FIELDS = [
@@ -217,7 +199,7 @@ window.dispatchEvent(new Event('vc-auth-ready'));
   var gate = document.getElementById('gate');
   var app = document.getElementById('app');
   var form = document.getElementById('cmsForm');
-  var pwInput = document.getElementById('pw');
+  var pwInput = null; // gate removed; auth handled by shell.js
   var liveSnapshot = {};
   var logoDataUri = null;  // set when a new logo file is chosen; null = unchanged
   var previewFrame = document.getElementById('previewFrame');
@@ -340,8 +322,7 @@ window.dispatchEvent(new Event('vc-auth-ready'));
       var formValues = Object.assign({}, DEFAULT_CONTENT, live, draft || {});
 
       if (draft === null){
-        document.getElementById('gateError').textContent = 'Wrong password — try again.';
-        document.getElementById('gateError').classList.add('show');
+        console.warn('Draft fetch unauthorised.');
         return;
       }
 
@@ -397,17 +378,7 @@ window.dispatchEvent(new Event('vc-auth-ready'));
     }
   }
 
-  document.getElementById('unlockBtn').addEventListener('click', function(){
-    var pw = pwInput.value;
-    if (!pw) return;
-    localStorage.setItem(PASSWORD_KEY, pw);
-    document.getElementById('gateError').classList.remove('show');
-    loadContent();
-  });
-
-  pwInput.addEventListener('keydown', function(e){
-    if (e.key === 'Enter') document.getElementById('unlockBtn').click();
-  });
+  window.vcInit = function(){ loadContent(); };
 
   form.addEventListener('input', function(){
     checkDiff();
@@ -561,6 +532,6 @@ window.dispatchEvent(new Event('vc-auth-ready'));
   });
 </script>
 
-<script>window.addEventListener('vc-auth-ready',function(){var b=document.getElementById('unlockBtn');if(b)b.click();});</script>
+<script>window.addEventListener('vc-auth-ready',function(){ if (typeof vcInit==='function') vcInit(); });</script>
 </body>
 </html>

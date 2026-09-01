@@ -246,8 +246,22 @@
   .cookie-actions .btn, .cookie-actions .btn-outline{padding:11px 20px; font-size:13px;}
 
   .sr-only{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0);}
+
+.creative-note{ margin-top:28px; padding:24px 26px; border-left:3px solid #D9531E; background:rgba(255,255,255,0.05); border-radius:0 8px 8px 0; }
+.creative-note .creative-kicker{ display:block; font-size:11px; letter-spacing:1.2px; text-transform:uppercase; color:#D9531E; margin-bottom:8px; font-weight:700; }
+.creative-note h3{ margin:0 0 10px; font-size:20px; }
+.creative-note p{ margin:0 0 14px; max-width:62ch; opacity:0.9; }
+.creative-note .creative-link{ font-size:14px; font-weight:600; color:#D9531E; text-decoration:none; border-bottom:1px solid rgba(217,83,30,0.4); padding-bottom:2px; }
+.creative-note .creative-link:hover{ border-bottom-color:#D9531E; }
+@media (max-width:640px){ .creative-note{ padding:18px 18px; } }
 </style>
-</head>
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-M43X6GPH');</script>
+<!-- End Google Tag Manager --></head>
 <body>
 
 <header>
@@ -261,6 +275,7 @@
       <a href="#process">Process</a>
       <a href="#pricing">Pricing</a>
       <a href="#about">About</a>
+      <a href="/work">Work</a>
       <a href="#blog">Blog</a>
     </div>
     <a class="btn" href="https://calendar.app.google/rGSiZA6tFBPPVoN67" target="_blank" rel="noopener">Book a free review</a>
@@ -277,7 +292,7 @@
       <a class="btn btn-outline" href="#services">See what we do</a>
     </div>
     <div class="honesty" data-cms-html="honesty_text">
-      <strong>You get our full, direct attention on every account</strong> — no hand-off, no junior manager, no queue. Certified Google &amp; Meta Ads expertise, transparent reporting on every dollar, and pricing built for a business your size, not a big-agency retainer minimum.
+      <strong>You get our full, direct attention on every account</strong> — no hand-off, no junior manager, no queue. Direct Google &amp; Meta Ads management, transparent reporting on every dollar, and pricing built for a business your size, not a big-agency retainer minimum.
     </div>
   </div>
 </section>
@@ -313,6 +328,14 @@
         <p data-cms="pillar2_desc">Positioning, messaging, and go-to-market strategy — the reason someone converts once an ad gets them to look.</p>
       </div>
     </div>
+
+    <div class="creative-note">
+      <span class="creative-kicker" data-cms="creative_kicker">And the creative that feeds them</span>
+      <h3 data-cms="creative_heading">Creative that feeds the ads.</h3>
+      <p data-cms="creative_desc">On Meta, an ad stops working in two to four weeks — not because the targeting broke, but because the audience has already seen it. Most agencies hand that problem to an editor who has never opened the account. We shoot and cut it ourselves, from the same data we're optimizing against. Creative add-ons start at $450/mo alongside a paid media retainer.</p>
+      <a class="creative-link" href="/work">See the creative work →</a>
+    </div>
+
     <div class="cta-row">
       <a class="btn btn-outline" href="#process">See our process →</a>
     </div>
@@ -426,8 +449,8 @@
     <div class="section-label"><span class="bar"></span><span data-cms="about_label">About</span></div>
     <h2 data-cms="about_heading">We're built on strategy first — that's exactly the point.</h2>
     <div class="about-body">
-      <p data-cms="about_p1">Most paid-media agencies are good at spending a budget. They're rarely as good at the positioning and messaging that makes that spend worth it in the first place. We built Verve Collective to close that exact gap — real strategic marketing thinking, paired with disciplined, certified paid-media execution.</p>
-      <p data-cms-html="about_p2"><strong>Nothing here runs on instinct.</strong> Every account starts certified and tested before any real budget moves — Google and Meta Ads managed the right way from day one, with the positioning work most agencies skip entirely.</p>
+      <p data-cms="about_p1">Most paid-media agencies are good at spending a budget. They're rarely as good at the positioning and messaging that makes that spend worth it in the first place. We built Verve Collective to close that exact gap — real strategic marketing thinking, paired with disciplined, tested paid-media execution.</p>
+      <p data-cms-html="about_p2"><strong>Nothing here runs on instinct.</strong> Every account starts with a defined test phase before any real budget moves — Google and Meta Ads built and measured against a real target from day one, with the positioning work most agencies skip entirely.</p>
     </div>
     <div class="cta-row">
       <a class="btn" href="#book">Book a free account review</a>
@@ -445,11 +468,11 @@
         <p>Book a free 15-minute discovery call directly on the calendar — no back-and-forth needed.</p>
         <a class="big-link" href="https://calendar.app.google/rGSiZA6tFBPPVoN67" target="_blank" rel="noopener">Book your free review →</a>
         <p style="margin-top:36px;">Prefer to just ask a question first? Send it here and we'll reply directly.</p>
-        <a class="big-link" href="mailto:hello@weareverveco.com">hello@weareverveco.com</a>
+        <a class="big-link" href="mailto:trae@weareverveco.com">trae@weareverveco.com</a>
         <a class="big-link" href="tel:5732035389">573.203.5389</a>
       </div>
       <div>
-        <form name="contact" method="POST" data-netlify="true" netlify-honeypot="bot-field" id="contactForm">
+        <form id='contactForm' method='POST' name='contact'>
           <input type="hidden" name="form-name" value="contact">
           <p style="display:none;"><label>Don't fill this out: <input name="bot-field"></label></p> <input type="hidden" name="utm_source" id="utm_source">
 <input type="hidden" name="utm_medium" id="utm_medium">
@@ -486,7 +509,7 @@
     <h2>One email a week. Real ad breakdowns, no fluff.</h2>
     <p class="section-sub">Every Monday: a real ad teardown, a positioning lesson, or a straight answer to something most agencies won't tell you. No spam, unsubscribe anytime.</p>
     <div class="cta-row">
-      <form name="newsletter-signup" method="POST" data-netlify="true" netlify-honeypot="bot-field" id="newsletterForm" style="display:flex; gap:12px; flex-wrap:wrap; max-width:480px;">
+      <form id='newsletterForm' method='POST' name='newsletter-signup' style='display:flex; gap:12px; flex-wrap:wrap; max-width:480px;'>
         <input type="hidden" name="form-name" value="newsletter-signup">
         <p style="display:none;"><label>Don't fill this out: <input name="bot-field"></label></p>
         <input type="email" name="email" id="newsletterEmail" required placeholder="you@yourbusiness.com" style="flex:1; min-width:220px; padding:14px 16px; border:1px solid var(--line-dark); border-radius:8px; font-family:inherit; font-size:15px; color:#111111; background:#fff;">
@@ -539,14 +562,14 @@
     <div class="foot-row">
       <div>© <span id="year"></span> Verve Collective LLC · Columbia, MO</div>
       <div class="foot-links">
-        <a href="mailto:hello@weareverveco.com">hello@weareverveco.com</a>
+        <a href="mailto:trae@weareverveco.com">trae@weareverveco.com</a>
         <a href="tel:5732035389">573.203.5389</a>
       </div>
     </div>
     <div class="foot-row" style="margin-top:16px;">
       <div class="foot-links">
-        <a href="privacy.html">Privacy Policy</a>
-        <a href="terms.html">Terms of Service</a>
+        <a href='/privacy'>Privacy Policy</a>
+        <a href='/terms'>Terms of Service</a>
         <button type="button" class="linklike" id="cookiePrefsLink">Cookie Preferences</button>
       </div>
     </div>
@@ -555,7 +578,7 @@
 
 <div class="cookie-banner" id="cookieBanner" hidden>
   <div class="cookie-inner">
-    <p>We use cookies to run this site and, only with your OK, to understand how it's used. Necessary cookies are always on. See our <a href="privacy.html">Privacy Policy</a> for details.</p>
+    <p>We use cookies to run this site and, only with your OK, to understand how it's used. Necessary cookies are always on. See our <a href='/privacy'>Privacy Policy</a> for details.</p>
     <div class="cookie-actions">
       <button type="button" class="btn-outline" id="cookieNecessary" style="border-radius:8px; border:1.5px solid rgba(242,239,233,0.32); background:transparent; color:var(--cream); font-weight:700; cursor:pointer;">Necessary only</button>
       <button type="button" class="btn" id="cookieAccept">Accept all</button>
@@ -595,7 +618,7 @@
       status.classList.add('show');
       form.reset();
     }).catch(() => {
-      status.textContent = "Something went wrong — email hello@weareverveco.com directly.";
+      status.textContent = "Something went wrong — email trae@weareverveco.com directly.";
       status.classList.add('show');
     });
   });
@@ -614,7 +637,7 @@
       newsletterStatus.classList.add('show');
       newsletterForm.reset();
     }).catch(() => {
-      newsletterStatus.textContent = "Something went wrong — email hello@weareverveco.com directly.";
+      newsletterStatus.textContent = "Something went wrong — email trae@weareverveco.com directly.";
       newsletterStatus.classList.add('show');
     });
   });
@@ -762,5 +785,8 @@
   })();
 </script>
 
-</body>
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-M43X6GPH"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) --></body>
 </html>

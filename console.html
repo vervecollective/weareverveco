@@ -299,7 +299,7 @@ function renderScript(){
   document.getElementById('scriptPanel').innerHTML='<h2>'+s.title+'</h2>'+s.html;
 }
 function renderCapture(){
-  var f=CAPTURE[stage]||[], saved=(current&&current.consoleNotes)||{};
+  var f=CAPTURE[stage]||[], saved=(current&&current.console_notes)||{};
   document.getElementById('captureFields').innerHTML=f.map(function(x){
     var v=saved[x.k]||'';
     if(x.type==='select') return '<div class="field"><label>'+x.label+'</label><select id="'+x.k+'"><option value="">—</option>'+x.opts.map(function(o){return '<option'+(o===v?' selected':'')+'>'+esc(o)+'</option>';}).join('')+'</select></div>';
@@ -324,14 +324,22 @@ function renderDeposit(){
 }
 
 function loadEngagements(){
-  return api('/api/engagements').then(function(r){
-    if(r.status===401) throw new Error('unauth');
-    return r.json();
-  }).then(function(d){
-    engagements=d.engagements||[];
-    document.getElementById('engSel').innerHTML='<option value="">— new / unsaved —</option>'+
-      engagements.map(function(e){return '<option value="'+e.id+'">'+esc(e.businessName||e.clientName||'Untitled')+'</option>';}).join('');
-  });
+  var sb = window.__sb;
+  return sb.from('engagements')
+    .select('*, clients(business_name,contact_name,contact_email), line_items(*)')
+    .order('updated_at',{ascending:false})
+    .then(function(r){
+      engagements = r.data || [];
+      var sel = document.getElementById('engSel');
+      sel.innerHTML = '<option value="">— pick an engagement —</option>' +
+        engagements.map(function(e){
+          var name = (e.clients && e.clients.business_name) || e.title || 'Untitled';
+          return '<option value="'+e.id+'">'+esc(name)+'</option>';
+        }).join('');
+      if (!engagements.length) {
+        sel.innerHTML = '<option value="">No engagements yet — create one in Engagements</option>';
+      }
+    });
 }
 
 function vcInit(){
@@ -345,9 +353,13 @@ window.vcInit = vcInit;
 
 document.getElementById('engSel').addEventListener('change',function(e){
   current=engagements.filter(function(x){return x.id===e.target.value;})[0]||null;
-  if(current&&current.lineItems){
-    var t=current.lineItems.reduce(function(s,li){return s+(Number(li.qty)||1)*(Number(li.unitPrice)||0);},0);
-    document.getElementById('projTotal').value=t; renderDeposit();
+  if(current){
+    var lis = current.line_items || [];
+    var t = lis.reduce(function(s,li){return s+(Number(li.qty)||1)*(Number(li.unit_price)||0);},0);
+    document.getElementById('projTotal').value = t || '';
+    if (current.start_date) document.getElementById('startDate').value = current.start_date;
+    if (current.track) document.getElementById('track').value = current.track;
+    renderDeposit(); renderTimeline();
   }
   renderCapture();
 });
@@ -357,17 +369,32 @@ document.getElementById('projTotal').addEventListener('input',renderDeposit);
 document.getElementById('structure').addEventListener('change',renderDeposit);
 
 document.getElementById('saveBtn').addEventListener('click',function(){
-  if(!current){document.getElementById('saveStatus').textContent='Pick an engagement first (create it in /internal).';document.getElementById('saveStatus').className='status show err';return;}
-  var notes=Object.assign({},current.consoleNotes||{});
+  if(!current){
+    document.getElementById('saveStatus').textContent='Pick an engagement first.';
+    document.getElementById('saveStatus').className='status show err';
+    return;
+  }
+  var notes=Object.assign({},current.console_notes||{});
   (CAPTURE[stage]||[]).forEach(function(x){var el=document.getElementById(x.k); if(el) notes[x.k]=el.value;});
   var sd=document.getElementById('startDate').value;
-  var payload=Object.assign({},current,{consoleNotes:notes,startDate:sd||current.startDate,track:document.getElementById('track').value,lastStage:stage});
-  api('/api/engagements',{method:'POST',body:JSON.stringify(payload)}).then(function(r){return r.json();}).then(function(d){
-    if(d.error){document.getElementById('saveStatus').textContent=d.error;document.getElementById('saveStatus').className='status show err';return;}
-    current=d.engagement;
-    document.getElementById('saveStatus').textContent='Saved.';document.getElementById('saveStatus').className='status show ok';
-    return loadEngagements().then(function(){document.getElementById('engSel').value=current.id;});
-  }).catch(function(){document.getElementById('saveStatus').textContent='Save failed.';document.getElementById('saveStatus').className='status show err';});
+
+  window.__sb.from('engagements').update({
+    console_notes: notes,
+    start_date: sd || current.start_date,
+    track: document.getElementById('track').value
+  }).eq('id', current.id).then(function(r){
+    if(r.error){
+      document.getElementById('saveStatus').textContent=r.error.message;
+      document.getElementById('saveStatus').className='status show err';
+      return;
+    }
+    document.getElementById('saveStatus').textContent='Saved to this engagement.';
+    document.getElementById('saveStatus').className='status show ok';
+    return loadEngagements().then(function(){
+      current = engagements.filter(function(x){return x.id===current.id;})[0] || current;
+      document.getElementById('engSel').value = current.id;
+    });
+  });
 });
 </script>
 <script>window.addEventListener('vc-auth-ready',function(){ if (typeof vcInit==='function') vcInit(); });</script>

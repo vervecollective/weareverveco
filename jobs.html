@@ -165,6 +165,27 @@
     <p class="msg" id="offerMsg"></p>
   </div>
 
+  <div class="card" id="handCard" style="display:none">
+    <h2>Hand over your work</h2>
+    <p class="hint">Drop the link — Frame.io, Drive, Dropbox, wherever it lives. It stays private until Verve reviews it.</p>
+    <div class="row">
+      <div class="field"><label for="hvJob">Which job</label><select id="hvJob"></select></div>
+      <div class="field"><label for="hvKind">Type</label>
+        <select id="hvKind"><option value="video">Video</option><option value="photo">Photos</option>
+          <option value="document">Document</option><option value="link">Link</option>
+          <option value="other">Other</option></select></div>
+    </div>
+    <div class="field"><label for="hvTitle">What is it</label>
+      <input type="text" id="hvTitle" placeholder="Hero cut v1, or Full gallery — 142 images"></div>
+    <div class="field"><label for="hvUrl">Link</label>
+      <input type="text" id="hvUrl" placeholder="https://f.io/…"></div>
+    <div class="field"><label for="hvNote">Anything Verve should know</label>
+      <input type="text" id="hvNote" placeholder="Raw files are in the same folder. Colour is unfinished."></div>
+    <button class="btn" id="hvSend">Send it over</button>
+    <p class="msg" id="hvMsg"></p>
+    <div id="hvList" style="margin-top:16px"></div>
+  </div>
+
   <div class="card">
     <h2 id="listTitle">Jobs</h2>
     <div id="list"><div class="empty">Loading…</div></div>
@@ -310,9 +331,60 @@ window.vcInit = async function(){
   }
 
   if (role === 'contractor') {
+    var accepted = [];
+    async function loadHandover(){
+      var aq = await sb.from('assignments')
+        .select('id, role_on_job, work_date, engagement_id, engagements(clients(business_name))')
+        .eq('contractor_id', me.id).in('status',['accepted','completed']);
+      accepted = aq.data || [];
+      if (!accepted.length) { $('handCard').style.display = 'none'; return; }
+      $('handCard').style.display = 'block';
+      $('hvJob').innerHTML = accepted.map(function(a){
+        var biz=(a.engagements&&a.engagements.clients&&a.engagements.clients.business_name)||'Job';
+        return '<option value="'+a.id+'" data-e="'+a.engagement_id+'">'+
+          esc(biz+' \u2014 '+a.role_on_job)+'</option>';
+      }).join('');
+
+      var dq = await sb.from('deliverables').select('*').eq('created_by', me.id)
+        .order('created_at',{ascending:false}).limit(12);
+      var d = dq.data || [];
+      var ST = { draft:['Waiting on Verve','#854D0E'], ready_for_review:['With the client','#B45309'],
+                 changes_requested:['Changes asked','#991B1B'], approved:['Approved','#065F46'],
+                 delivered:['Delivered','#065F46'] };
+      $('hvList').innerHTML = d.length ? d.map(function(x){
+        var st = ST[x.status] || ST.draft;
+        return '<div style="display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px solid #f3f4f6">'+
+          '<span style="flex:1;min-width:0"><b style="font-size:13.5px">'+esc(x.title)+'</b>'+
+          (x.url?'<div style="font-size:12px"><a href="'+esc(x.url)+'" target="_blank" rel="noopener">Open</a></div>':'')+
+          (x.client_feedback?'<div style="font-size:12px;color:#991B1B;margin-top:2px">\u201C'+esc(x.client_feedback)+'\u201D</div>':'')+
+          '</span><span style="font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:'+st[1]+'">'+st[0]+'</span></div>';
+      }).join('') : '<p class="s" style="padding:8px 0">Nothing handed over yet.</p>';
+    }
+
+    $('hvSend').addEventListener('click', async function(){
+      var o = $('hvJob').selectedOptions[0];
+      if (!o || !o.value) return say('hvMsg','Pick a job.', false);
+      if (!$('hvTitle').value.trim()) return say('hvMsg','Give it a name.', false);
+      var r = await sb.from('deliverables').insert({
+        engagement_id: o.dataset.e,
+        assignment_id: o.value,
+        title: $('hvTitle').value.trim(),
+        description: $('hvNote').value.trim() || null,
+        kind: $('hvKind').value,
+        url: $('hvUrl').value.trim() || null,
+        status: 'draft', client_visible: false,
+        created_by: me.id
+      });
+      if (r.error) return say('hvMsg', r.error.message, false);
+      say('hvMsg','Sent. Verve will review it before the client sees anything.', true);
+      $('hvTitle').value=''; $('hvUrl').value=''; $('hvNote').value='';
+      loadHandover();
+    });
+
     $('hd').textContent = 'My Jobs';
     $('ld').textContent = 'Work offered to you. Accept or decline \u2014 declining is fine.';
     $('listTitle').textContent = 'Your jobs';
+    await loadHandover();
     await loadJobs();
     return;
   }

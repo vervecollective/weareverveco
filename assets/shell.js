@@ -24,12 +24,17 @@ let profile = null;
 if (session) {
   const { data } = await sb
     .from('profiles')
-    .select('full_name, role, title, avatar_url')
+    .select('full_name, role, title, avatar_url, onboarded_at, phone')
     .eq('id', session.user.id)
     .single();
   profile = data;
 }
 const role = (profile && profile.role) || 'contractor';
+
+/* First run: send them through onboarding once, then never again. */
+if (profile && !profile.onboarded_at && !location.pathname.startsWith('/welcome')) {
+  location.replace('/welcome');
+}
 const name = (profile && profile.full_name) || (session && session.user.email) || '';
 window.__role = role;
 window.__profile = profile;

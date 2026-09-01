@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Call Console — Verve Collective</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --black:#111111; --black-2:#171717; --black-3:#1d1d1d;
+    --orange:#D9531E; --orange-light:#E8703F;
+    --cream:#F2EFE9; --muted:#ABABAB; --line:rgba(242,239,233,0.10);
+    --green:#7fd99a; --red:#e08a8a;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',system-ui,sans-serif;background:var(--black);color:var(--cream);line-height:1.55;}
+  .wrap{max-width:1240px;margin:0 auto;padding:28px 24px 90px;}
+  h1{font-size:22px;font-weight:800;}
+  .sub{color:var(--muted);font-size:13.5px;margin-bottom:22px;}
+  .gate{max-width:360px;margin:110px auto;text-align:center;}
+  .gate input{width:100%;padding:14px 16px;border:1px solid var(--line);border-radius:8px;background:var(--black-2);color:var(--cream);font-size:15px;margin-bottom:12px;}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--orange);color:#fff;border:none;border-radius:8px;padding:11px 20px;font-weight:700;font-size:13.5px;cursor:pointer;font-family:inherit;transition:background .15s;}
+  .btn:hover{background:var(--orange-light);}
+  .btn.full{width:100%;}
+  .btn-sec{background:transparent;border:1.5px solid rgba(242,239,233,.28);color:var(--cream);}
+  .btn-sec:hover{background:rgba(242,239,233,.06);}
+  .btn-sm{padding:7px 13px;font-size:12px;}
+
+  /* stage rail */
+  .stages{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px;}
+  .stage-btn{padding:9px 15px;border-radius:20px;border:1.5px solid var(--line);background:transparent;color:var(--muted);font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s;}
+  .stage-btn:hover{border-color:rgba(217,83,30,.5);color:var(--cream);}
+  .stage-btn.active{background:var(--orange);border-color:var(--orange);color:#fff;}
+
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start;}
+  @media(max-width:1000px){.cols{grid-template-columns:1fr;}}
+  .panel{background:var(--black-2);border:1px solid var(--line);border-radius:12px;padding:22px;}
+  .panel h2{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--orange);margin-bottom:14px;}
+
+  /* script */
+  .script{position:sticky;top:16px;}
+  .say{background:rgba(217,83,30,.07);border-left:3px solid var(--orange);border-radius:0 8px 8px 0;padding:13px 15px;margin-bottom:12px;font-size:14.5px;color:#E4DFD4;}
+  .say b{color:var(--cream);}
+  .do{font-size:13px;color:var(--muted);margin-bottom:12px;padding-left:15px;border-left:3px solid rgba(242,239,233,.14);}
+  .warn{background:rgba(224,138,138,.08);border-left:3px solid var(--red);padding:11px 14px;border-radius:0 8px 8px 0;font-size:13px;color:#E0C4C4;margin-bottom:12px;}
+  .qa{margin-bottom:14px;}
+  .qa .q{font-weight:700;font-size:14px;margin-bottom:5px;}
+  .qa .why{font-size:12.5px;color:var(--muted);}
+
+  label{display:block;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;}
+  input[type=text],input[type=email],input[type=number],input[type=date],select,textarea{
+    width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--black-3);
+    color:var(--cream);font-family:inherit;font-size:14px;}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--orange);}
+  .field{margin-bottom:14px;}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  @media(max-width:600px){.row2{grid-template-columns:1fr;}}
+
+  .milestone{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid rgba(242,239,233,.06);font-size:13.5px;}
+  .milestone .m{font-weight:600;}
+  .milestone .d{color:var(--orange-light);font-weight:700;white-space:nowrap;}
+  .money{display:flex;justify-content:space-between;font-size:14px;padding:6px 0;}
+  .money.tot{font-size:17px;font-weight:800;border-top:1px solid var(--line);margin-top:8px;padding-top:10px;}
+  .money .lbl{color:var(--muted);}
+  .hint{font-size:12px;color:var(--muted);margin-top:8px;}
+  .status{font-size:13px;margin-top:10px;display:none;}
+  .status.show{display:block;}
+  .status.ok{color:var(--green);} .status.err{color:var(--red);}
+  #app{display:none;}
+  .toplinks{display:flex;gap:14px;margin-bottom:18px;font-size:12.5px;}
+  .toplinks a{color:var(--muted);text-decoration:none;}
+  .toplinks a:hover{color:var(--orange-light);}
+</style>
+</head>
+<body>
+
+<div class="gate" id="gate">
+  <h1>Call Console</h1>
+  <p class="sub">Internal — enter admin password</p>
+  <input type="password" id="pw" placeholder="Password" autofocus>
+  <button class="btn full" id="unlockBtn">Unlock</button>
+  <p class="status err" id="gateErr">Wrong password.</p>
+</div>
+
+<div id="app"><div class="wrap">
+  <h1>Call Console</h1>
+  <p class="sub">Pick where you are. The script follows. Notes save to the engagement.</p>
+  <div class="toplinks">
+    <a href="/internal">→ Platform (scope &amp; invoice)</a>
+    <a href="https://app.hubspot.com/contacts/51849674/objects/0-3/views/all/board" target="_blank" rel="noopener">→ HubSpot board</a>
+    <a href="/admin.html">→ Site content</a>
+  </div>
+
+  <div class="field" style="max-width:420px;">
+    <label for="engSel">Engagement</label>
+    <select id="engSel"><option value="">— new / unsaved —</option></select>
+  </div>
+
+  <div class="stages" id="stages"></div>
+
+  <div class="cols">
+    <div class="panel script" id="scriptPanel"></div>
+
+    <div>
+      <div class="panel" style="margin-bottom:20px;">
+        <h2>Capture</h2>
+        <div id="captureFields"></div>
+        <button class="btn btn-sec btn-sm" id="saveBtn">Save to engagement</button>
+        <p class="status" id="saveStatus"></p>
+      </div>
+
+      <div class="panel" style="margin-bottom:20px;">
+        <h2>Timeline builder</h2>
+        <div class="row2">
+          <div class="field"><label for="startDate">Start date</label><input type="date" id="startDate"></div>
+          <div class="field"><label for="track">Track</label>
+            <select id="track">
+              <option value="paidmedia">Paid media retainer</option>
+              <option value="productmkt">Product marketing project</option>
+              <option value="video">Video / creative project</option>
+              <option value="social">Social management</option>
+            </select>
+          </div>
+        </div>
+        <div id="milestones"></div>
+        <p class="hint">Dates are working-day estimates from the start date. Adjust on the call — they're a starting point, not a promise.</p>
+      </div>
+
+      <div class="panel">
+        <h2>Deposit calculator</h2>
+        <div class="row2">
+          <div class="field"><label for="projTotal">Project total ($)</label><input type="number" id="projTotal" placeholder="0"></div>
+          <div class="field"><label for="structure">Structure</label>
+            <select id="structure">
+              <option value="5050">50% deposit / 50% delivery</option>
+              <option value="403030">40 / 30 / 30 (over $5,000)</option>
+              <option value="retainer">Monthly retainer, in advance</option>
+            </select>
+          </div>
+        </div>
+        <div id="depositOut"></div>
+        <p class="hint">Ad spend is never included here. Client pays Google and Meta directly.</p>
+      </div>
+    </div>
+  </div>
+</div></div>
+
+<script>
+var PW='vc_admin_pw', current=null, engagements=[], stage='discovery';
+
+function pw(){return sessionStorage.getItem(PW)||'';}
+function api(p,o){o=o||{};o.headers=Object.assign({'Content-Type':'application/json','x-admin-password':pw()},o.headers||{});return fetch(p,o);}
+function money(n){return '$'+(Number(n)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function esc(s){var d=document.createElement('div');d.textContent=s||'';return d.innerHTML;}
+
+var STAGES = [
+  {id:'discovery', label:'1 · Discovery call'},
+  {id:'scope',     label:'2 · Scope & proposal'},
+  {id:'contract',  label:'3 · Contract'},
+  {id:'kickoff',   label:'4 · Kickoff'},
+  {id:'checkin',   label:'5 · Check-in'},
+  {id:'pause',     label:'Pause / stall'},
+  {id:'close',     label:'Close / renew'}
+];
+
+var SCRIPTS = {
+discovery:{
+ title:'Discovery call — 15 minutes, no pitch deck',
+ html:
+  '<div class="say"><b>Open:</b> "Thanks for the time. This is fifteen minutes and I\'m not going to pitch you — I mostly want to understand what you\'re running and whether there\'s anything worth fixing. If there is, I\'ll tell you. If there isn\'t, I\'ll tell you that too."</div>'+
+  '<div class="qa"><div class="q">1. What\'s your website or main social page?</div><div class="why">Pull it up live. You\'re looking at whether the landing experience can even convert traffic.</div></div>'+
+  '<div class="qa"><div class="q">2. Are you running Google or Meta ads now? Roughly what monthly spend?</div><div class="why">This sets the pricing tier before price ever comes up. Under $2,500 → $750 flat. $2,500–10K → 18–20%. $10K+ → 10–15%.</div></div>'+
+  '<div class="qa"><div class="q">3. If it\'s working, how would you know?</div><div class="why">The real question. Most answers reveal there\'s no conversion tracking at all — that\'s usually the first engagement.</div></div>'+
+  '<div class="qa"><div class="q">4. Who handles it today — you, an agency, a nephew?</div><div class="why">Tells you who you\'re displacing and what the switching friction is.</div></div>'+
+  '<div class="qa"><div class="q">5. What happens in your business if this works?</div><div class="why">Capacity check. If they can\'t handle 30% more calls, ads aren\'t the problem yet — say so.</div></div>'+
+  '<div class="say"><b>The audit is live, right here.</b> Share screen. Open their account or the Ad Library. Say what you actually see — one specific thing you\'d change.</div>'+
+  '<div class="say"><b>Close:</b> "I\'ll put together a written proposal in the next three to five business days — scope, timeline, price, and what\'s explicitly not included. Nothing to decide today."</div>'+
+  '<div class="warn"><b>Do not quote a final price on this call.</b> Give the tier range if pushed, then move on. The proposal is where the number lives.</div>'
+},
+scope:{
+ title:'Scope & proposal — within 3–5 business days',
+ html:
+  '<div class="do">Build the line items in <b>/internal</b>, not here. This panel is for deciding what goes in them.</div>'+
+  '<div class="qa"><div class="q">Which tier did they land in?</div><div class="why">Local/Emerging $750/mo · Growing 18–20% of spend · Established 10–15%. Product marketing $1,500–$6,000/project.</div></div>'+
+  '<div class="qa"><div class="q">Does creative attach?</div><div class="why">Creative Refresh $450/mo is the default add-on — it solves creative fatigue without a production schedule and can start the same month.</div></div>'+
+  '<div class="qa"><div class="q">Is a contractor involved?</div><div class="why">If yes, log what you pay them and bill at 1.5×. Both lines show separately on the invoice.</div></div>'+
+  '<div class="say"><b>Proposal structure:</b> their situation in their words → what it\'s costing → the approach → timeline → the investment → the next step. Six parts, no filler.</div>'+
+  '<div class="warn"><b>Always state what is NOT included.</b> Talent, location fees, permits, set design, wardrobe, ad spend, website development. Scope creep starts with silence here.</div>'+
+  '<div class="say"><b>Send it, then say:</b> "Take a look and tell me what\'s off. If the scope\'s right I\'ll send the agreement and we can get a start date on the calendar."</div>'
+},
+contract:{
+ title:'Contract — before any invoice, before any work',
+ html:
+  '<div class="warn"><b>Order matters: contract first, then deposit invoice, then work starts.</b> Never touch a live ad account or book a shoot day before both are done.</div>'+
+  '<div class="do">Send the Client Services Agreement from DocuSign. Fill: scope, deliverables, explicit exclusions, timeline, price, revision rounds.</div>'+
+  '<div class="qa"><div class="q">Terms to confirm out loud</div><div class="why">50% deposit at signing (or 40/30/30 over $5K) · net-15 · 2 revision rounds included · deposit non-refundable once work begins · client owns deliverables on full payment · Missouri law.</div></div>'+
+  '<div class="say"><b>Say:</b> "The agreement\'s in your inbox. Once it\'s signed I\'ll send the deposit invoice, and we start the day it clears. Everything after that runs on the timeline we set."</div>'+
+  '<div class="do">Once signed → go to <b>/internal</b>, build the line items, create the deposit invoice. Move the HubSpot deal to <b>Contract Sent</b>.</div>'+
+  '<div class="warn"><b>If a contractor is on this job</b>, their ICA, IP assignment and NDA must be signed before they receive the scope. No exceptions — without IP assignment you cannot legally license their footage to this client.</div>'
+},
+kickoff:{
+ title:'Kickoff — after the deposit clears',
+ html:
+  '<div class="do">Confirm the deposit actually cleared before this call. Not "sent" — cleared.</div>'+
+  '<div class="qa"><div class="q">Access checklist</div><div class="why">Google Ads (standard access) · Meta Business Manager (partner access, never their personal login) · Analytics · domain/DNS if landing pages are in scope · brand assets and logo files.</div></div>'+
+  '<div class="qa"><div class="q">Set the check-in cadence</div><div class="why">Monthly reporting call for retainers. Named check-in dates for projects. Put them on the calendar on this call, not later.</div></div>'+
+  '<div class="qa"><div class="q">Who is the single decision-maker?</div><div class="why">Ask directly. Approval-by-committee is the top cause of blown timelines.</div></div>'+
+  '<div class="say"><b>Say:</b> "Here\'s the timeline and here\'s where I\'ll need something from you. Every date on it that has your name next to it is a date I need a decision by, or the whole thing shifts."</div>'+
+  '<div class="do">If contractors are involved: send them the scope, their rate, the shoot date, and the deliverable list. They should never learn scope from the client.</div>'
+},
+checkin:{
+ title:'Check-in / monthly report',
+ html:
+  '<div class="say"><b>Open with the number, not the activity:</b> "Cost per lead was $34 last month, down from $51. Here\'s what moved it."</div>'+
+  '<div class="qa"><div class="q">Report structure</div><div class="why">Spend · impressions · clicks · conversions · cost per conversion · what changed · what\'s next. Plain language, no platform jargon.</div></div>'+
+  '<div class="qa"><div class="q">Always separate the two numbers</div><div class="why">"You spent $2,000 with Google. You paid us $400 to manage it." Never one blended figure.</div></div>'+
+  '<div class="qa"><div class="q">Test before scale — say it out loud</div><div class="why">"This is working at $50/day. I want two more weeks at this level before we go to $150, so we\'re scaling something proven."</div></div>'+
+  '<div class="say"><b>End every check-in:</b> "Anything on your end I should know about — a promotion, a slow season, a new location?" Context you don\'t have is the thing that makes a campaign look broken.</div>'
+},
+pause:{
+ title:'Pause, stall, or gone quiet',
+ html:
+  '<div class="do"><b>Proposal sent, no response.</b> Follow-up cadence: day 3 light nudge → day 7 add value (something you noticed in their account) → day 14 direct → day 30 close the loop.</div>'+
+  '<div class="say"><b>Day 14:</b> "Wanted to check whether this is still something you\'re considering. Totally fine either way — I\'d just rather know than keep following up."</div>'+
+  '<div class="say"><b>Day 30 (the closer):</b> "I\'m going to assume the timing isn\'t right. I\'ll stop following up. If it changes, you know where to find me." — This gets more replies than any other message. Send it and mean it.</div>'+
+  '<div class="do"><b>Active client wants to pause.</b> Ask what changed before agreeing. Budget, season, or dissatisfaction are three different problems with three different answers.</div>'+
+  '<div class="qa"><div class="q">If pausing a retainer</div><div class="why">30 days written notice, current period non-refundable. Confirm who turns the campaigns off and whether they stay paused or fully archived.</div></div>'+
+  '<div class="do">Move the deal to <b>Follow-Up</b> or <b>Closed Lost</b>. Do not leave stalled deals sitting in Proposal Sent — it makes the pipeline lie to you.</div>'
+},
+close:{
+ title:'Close won, wrap, or renew',
+ html:
+  '<div class="qa"><div class="q">Project wrap checklist</div><div class="why">Final files delivered in both formats · raw footage archived (12 months) · final invoice sent · deal to Closed Won · calendar cleared.</div></div>'+
+  '<div class="say"><b>Ask for the testimonial while it\'s warm:</b> "If you\'re happy with how this went, would you be open to a couple sentences I could use? Happy to draft something you can edit."</div>'+
+  '<div class="qa"><div class="q">Retainer renewal</div><div class="why">Raise the conversation a month out, not at expiry. Lead with the trend line across the whole engagement, not last month alone.</div></div>'+
+  '<div class="warn"><b>Case study rule:</b> nothing gets published without written permission, and no invented numbers ever. Real results or no case study.</div>'+
+  '<div class="do">Log it same day: QuickBooks, HubSpot Closed Won, and archive the shared drive folder.</div>'
+}
+};
+
+var CAPTURE = {
+ discovery:[
+  {k:'c_site',label:'Website / social',type:'text'},
+  {k:'c_spend',label:'Current monthly ad spend',type:'select',opts:['Not running ads','Under $1,000','$1,000–2,500','$2,500–5,000','$5,000–10,000','$10,000+']},
+  {k:'c_who',label:'Who runs it today',type:'select',opts:['Owner themselves','In-house staff','Another agency','Freelancer','Nobody']},
+  {k:'c_success',label:'How they define success',type:'textarea'},
+  {k:'c_found',label:'What you saw in the audit',type:'textarea'}
+ ],
+ scope:[
+  {k:'s_tier',label:'Pricing tier',type:'select',opts:['Local / Emerging — $750/mo','Growing — 18–20% of spend','Established — 10–15% of spend','Product marketing project','Creative / video project']},
+  {k:'s_creative',label:'Creative attached',type:'select',opts:['None','Creative Refresh $450/mo','Creative Production $950/mo','Full Creative $1,800/mo','One-off project']},
+  {k:'s_excl',label:'Explicitly NOT included',type:'textarea'},
+  {k:'s_contractor',label:'Contractor needed',type:'select',opts:['No','Videographer','Photographer','Drone pilot','Editor','Social creator']}
+ ],
+ contract:[
+  {k:'k_sent',label:'Agreement sent on',type:'date'},
+  {k:'k_struct',label:'Payment structure',type:'select',opts:['50/50','40/30/30','Monthly retainer in advance']},
+  {k:'k_rev',label:'Revision rounds included',type:'select',opts:['2 (standard)','1','3','Unlimited — do not do this']}
+ ],
+ kickoff:[
+  {k:'ko_access',label:'Access received',type:'select',opts:['All received','Partial — waiting','None yet']},
+  {k:'ko_dm',label:'Decision maker',type:'text'},
+  {k:'ko_cadence',label:'Check-in cadence',type:'select',opts:['Monthly call','Bi-weekly call','Milestone-based only']}
+ ],
+ checkin:[
+  {k:'ci_cpl',label:'Cost per conversion this period',type:'text'},
+  {k:'ci_changed',label:'What changed',type:'textarea'},
+  {k:'ci_next',label:'What happens next period',type:'textarea'}
+ ],
+ pause:[
+  {k:'p_reason',label:'Reason',type:'select',opts:['No response','Budget','Seasonal','Went with someone else','Not ready','Dissatisfied']},
+  {k:'p_next',label:'Next touch date',type:'date'},
+  {k:'p_notes',label:'Notes',type:'textarea'}
+ ],
+ close:[
+  {k:'cl_outcome',label:'Outcome',type:'select',opts:['Closed Won','Closed Lost','Completed — project','Renewed']},
+  {k:'cl_testimonial',label:'Testimonial requested',type:'select',opts:['Not yet','Asked','Received','Declined']},
+  {k:'cl_notes',label:'Wrap notes',type:'textarea'}
+ ]
+};
+
+var TRACKS = {
+ paidmedia:[[0,'Kickoff call & access request'],[3,'Account access confirmed'],[5,'Tracking + conversion setup verified'],[7,'Campaigns built, test budget live'],[21,'Test phase review — scale decision'],[30,'First monthly report call']],
+ productmkt:[[0,'Kickoff & discovery deep-dive'],[7,'Research and interviews complete'],[14,'Positioning draft delivered'],[21,'Revision round 1 returned'],[28,'Messaging framework final'],[35,'Handoff + implementation guide']],
+ video:[[0,'Kickoff & creative brief approved'],[7,'Pre-production: shot list, locations, releases'],[14,'Shoot day'],[24,'First cut delivered'],[31,'Revision round 1 returned'],[38,'Final files + archive']],
+ social:[[0,'Kickoff & brand voice alignment'],[5,'Content calendar month 1 approved'],[10,'First posts live'],[30,'Month 1 report'],[60,'Month 2 report + cadence review']]
+};
+
+function addDays(d,n){var x=new Date(d);x.setDate(x.getDate()+n);return x;}
+function fmt(d){return d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});}
+
+function renderStages(){
+  document.getElementById('stages').innerHTML = STAGES.map(function(s){
+    return '<button class="stage-btn'+(s.id===stage?' active':'')+'" data-s="'+s.id+'">'+s.label+'</button>';
+  }).join('');
+  document.querySelectorAll('.stage-btn').forEach(function(b){
+    b.addEventListener('click',function(){stage=b.dataset.s;renderStages();renderScript();renderCapture();});
+  });
+}
+function renderScript(){
+  var s=SCRIPTS[stage];
+  document.getElementById('scriptPanel').innerHTML='<h2>'+s.title+'</h2>'+s.html;
+}
+function renderCapture(){
+  var f=CAPTURE[stage]||[], saved=(current&&current.consoleNotes)||{};
+  document.getElementById('captureFields').innerHTML=f.map(function(x){
+    var v=saved[x.k]||'';
+    if(x.type==='select') return '<div class="field"><label>'+x.label+'</label><select id="'+x.k+'"><option value="">—</option>'+x.opts.map(function(o){return '<option'+(o===v?' selected':'')+'>'+esc(o)+'</option>';}).join('')+'</select></div>';
+    if(x.type==='textarea') return '<div class="field"><label>'+x.label+'</label><textarea id="'+x.k+'" rows="2">'+esc(v)+'</textarea></div>';
+    return '<div class="field"><label>'+x.label+'</label><input type="'+x.type+'" id="'+x.k+'" value="'+esc(v).replace(/"/g,'&quot;')+'"></div>';
+  }).join('');
+}
+function renderTimeline(){
+  var sd=document.getElementById('startDate').value, tr=document.getElementById('track').value;
+  if(!sd){document.getElementById('milestones').innerHTML='<p class="hint">Pick a start date.</p>';return;}
+  var base=new Date(sd+'T12:00:00');
+  document.getElementById('milestones').innerHTML=TRACKS[tr].map(function(m){
+    return '<div class="milestone"><span class="m">'+m[1]+'</span><span class="d">'+fmt(addDays(base,m[0]))+'</span></div>';
+  }).join('');
+}
+function renderDeposit(){
+  var t=Number(document.getElementById('projTotal').value)||0, st=document.getElementById('structure').value, h='';
+  if(st==='5050') h='<div class="money"><span class="lbl">Deposit — due at signing</span><span>'+money(t*.5)+'</span></div><div class="money"><span class="lbl">Balance — due at delivery</span><span>'+money(t*.5)+'</span></div>';
+  else if(st==='403030') h='<div class="money"><span class="lbl">At signing (40%)</span><span>'+money(t*.4)+'</span></div><div class="money"><span class="lbl">Midpoint (30%)</span><span>'+money(t*.3)+'</span></div><div class="money"><span class="lbl">Delivery (30%)</span><span>'+money(t*.3)+'</span></div>';
+  else h='<div class="money"><span class="lbl">Billed monthly, in advance</span><span>'+money(t)+'</span></div><div class="money"><span class="lbl">Terms</span><span>Net-15</span></div>';
+  document.getElementById('depositOut').innerHTML=h+'<div class="money tot"><span>Project total</span><span>'+money(t)+'</span></div>';
+}
+
+function loadEngagements(){
+  return api('/api/engagements').then(function(r){
+    if(r.status===401) throw new Error('unauth');
+    return r.json();
+  }).then(function(d){
+    engagements=d.engagements||[];
+    document.getElementById('engSel').innerHTML='<option value="">— new / unsaved —</option>'+
+      engagements.map(function(e){return '<option value="'+e.id+'">'+esc(e.businessName||e.clientName||'Untitled')+'</option>';}).join('');
+  });
+}
+
+document.getElementById('unlockBtn').addEventListener('click',function(){
+  var v=document.getElementById('pw').value; if(!v)return;
+  sessionStorage.setItem(PW,v);
+  loadEngagements().then(function(){
+    document.getElementById('gate').style.display='none';
+    document.getElementById('app').style.display='block';
+    renderStages();renderScript();renderCapture();renderDeposit();
+  }).catch(function(){document.getElementById('gateErr').classList.add('show');});
+});
+document.getElementById('pw').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('unlockBtn').click();});
+
+document.getElementById('engSel').addEventListener('change',function(e){
+  current=engagements.filter(function(x){return x.id===e.target.value;})[0]||null;
+  if(current&&current.lineItems){
+    var t=current.lineItems.reduce(function(s,li){return s+(Number(li.qty)||1)*(Number(li.unitPrice)||0);},0);
+    document.getElementById('projTotal').value=t; renderDeposit();
+  }
+  renderCapture();
+});
+document.getElementById('startDate').addEventListener('change',renderTimeline);
+document.getElementById('track').addEventListener('change',renderTimeline);
+document.getElementById('projTotal').addEventListener('input',renderDeposit);
+document.getElementById('structure').addEventListener('change',renderDeposit);
+
+document.getElementById('saveBtn').addEventListener('click',function(){
+  if(!current){document.getElementById('saveStatus').textContent='Pick an engagement first (create it in /internal).';document.getElementById('saveStatus').className='status show err';return;}
+  var notes=Object.assign({},current.consoleNotes||{});
+  (CAPTURE[stage]||[]).forEach(function(x){var el=document.getElementById(x.k); if(el) notes[x.k]=el.value;});
+  var sd=document.getElementById('startDate').value;
+  var payload=Object.assign({},current,{consoleNotes:notes,startDate:sd||current.startDate,track:document.getElementById('track').value,lastStage:stage});
+  api('/api/engagements',{method:'POST',body:JSON.stringify(payload)}).then(function(r){return r.json();}).then(function(d){
+    if(d.error){document.getElementById('saveStatus').textContent=d.error;document.getElementById('saveStatus').className='status show err';return;}
+    current=d.engagement;
+    document.getElementById('saveStatus').textContent='Saved.';document.getElementById('saveStatus').className='status show ok';
+    return loadEngagements().then(function(){document.getElementById('engSel').value=current.id;});
+  }).catch(function(){document.getElementById('saveStatus').textContent='Save failed.';document.getElementById('saveStatus').className='status show err';});
+});
+</script>
+</body>
+</html>

@@ -73,3 +73,13 @@
   from = "/project"
   to = "/project.html"
   status = 200
+
+[[redirects]]
+  from = "/team"
+  to = "/team.html"
+  status = 200
+
+[[redirects]]
+  from = "/help"
+  to = "/help.html"
+  status = 200

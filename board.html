@@ -53,6 +53,8 @@
   .due.soon{color:#b45309;font-weight:600;}
   .eye{font-size:10px;font-weight:700;padding:2px 6px;border-radius:20px;background:#ecfdf5;color:#047857;}
   .blk{font-size:10px;font-weight:700;padding:2px 6px;border-radius:20px;background:#fef2f2;color:#b91c1c;}
+  .cmc{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;color:#6b7280;}
+  .cmc svg{width:12px;height:12px;}
   .add{width:100%;background:none;border:1px dashed #cbd5e1;border-radius:9px;padding:9px;
     font-size:12.5px;font-weight:600;color:#6b7280;cursor:pointer;font-family:inherit;}
   .add:hover{border-color:#D9531E;color:#D9531E;background:#fff;}
@@ -132,6 +134,7 @@
 <div class="sheet" id="sheet">
   <div class="sheet-h"><b id="sheetTitle">Task</b>
     <div style="display:flex;gap:8px;align-items:center">
+      <button class="btn btn-2" id="linkBtn" style="padding:6px 13px;font-size:12.5px" title="Copy a link to this task">Copy link</button>
       <button class="btn btn-2" id="editBtn" style="padding:6px 13px;font-size:12.5px">Edit</button>
       <button class="x" id="close">&times;</button>
     </div>
@@ -246,6 +249,10 @@ function render(){
             (t.due_date ? '<span class="due '+dc+'">'+dueText(t.due_date)+'</span>' : '')+
             (t.client_visible ? '<span class="eye">Client</span>' : '')+
             (t.status==='blocked' && t.blocked_reason ? '<span class="blk" title="'+esc(t.blocked_reason)+'">Blocked</span>' : '')+
+            (cmCounts[t.id] ? '<span class="cmc" title="'+cmCounts[t.id]+' comments">'+
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">'+
+              '<path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.2A8.4 8.4 0 0 1 21 11.5z"/></svg>'+
+              cmCounts[t.id]+'</span>' : '')+
           '</div></div>';
       }).join('')+
       '<button class="add" data-add="'+c[0]+'">+ Add task</button>'+
@@ -447,11 +454,24 @@ function mentionedIds(text){
   return ids.filter(function(v,i,a){ return a.indexOf(v) === i && v !== me.id; });
 }
 
+var cmCounts = {};
+
+async function loadCounts(){
+  cmCounts = {};
+  if (!tasks.length) return;
+  var r = await sb.from('comments').select('task_id')
+    .in('task_id', tasks.map(function(t){ return t.id; }));
+  (r.data || []).forEach(function(c){
+    cmCounts[c.task_id] = (cmCounts[c.task_id] || 0) + 1;
+  });
+}
+
 async function load(){
   if (!engId) { $('board').innerHTML = '<div class="empty">Pick an engagement.</div>'; return; }
   var r = await sb.from('tasks').select('*').eq('engagement_id', engId).order('sort_order');
   if (r.error) { $('board').innerHTML = '<div class="empty">'+esc(r.error.message)+'</div>'; return; }
   tasks = r.data || [];
+  await loadCounts();
   render();
 }
 
@@ -477,6 +497,15 @@ window.vcInit = async function(){
   $('filt').addEventListener('change', render);
   $('tStatus').addEventListener('change', toggleBlocked);
   $('editBtn').addEventListener('click', function(){ mode(true); });
+
+  $('linkBtn').addEventListener('click', function(){
+    if (!current) return;
+    var url = location.origin + '/board?task=' + current.id;
+    navigator.clipboard.writeText(url);
+    var b = $('linkBtn'), was = b.textContent;
+    b.textContent = 'Copied';
+    setTimeout(function(){ b.textContent = was; }, 1400);
+  });
   $('close').addEventListener('click', shut);
   $('cancel').addEventListener('click', shut);
   $('veil').addEventListener('click', shut);
@@ -536,6 +565,7 @@ window.vcInit = async function(){
     $('cmText').value = ''; $('cmVisible').checked = false;
     $('cmMsg').className = 'msg';
     loadComments(current.id);
+    loadCounts().then(render);
 
     // Mentioning someone should reach them, not wait for them to open the board.
     if (ids.length) {
@@ -567,7 +597,23 @@ window.vcInit = async function(){
     if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') $('cmSend').click();
   });
 
-  load();
+  await load();
+
+  // Deep link: /board?task=<id> opens that task, switching engagement if needed.
+  var want = new URLSearchParams(location.search).get('task');
+  if (want) {
+    var found = tasks.filter(function(t){ return t.id === want; })[0];
+    if (!found) {
+      var one = await sb.from('tasks').select('engagement_id').eq('id', want).single();
+      if (one.data && one.data.engagement_id) {
+        engId = one.data.engagement_id;
+        $('eng').value = engId;
+        await load();
+        found = tasks.filter(function(t){ return t.id === want; })[0];
+      }
+    }
+    if (found) open(found.id);
+  }
 };
 </script>
 </body>

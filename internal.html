@@ -212,7 +212,7 @@ var CATALOG = [
   { g:'Travel', d:'Lodging — at cost, itemized', p:0 }
 ];
 
-function pw(){ return sessionStorage.getItem(PW_KEY) || ''; }
+function pw(){ return localStorage.getItem(PW_KEY) || ''; }
 function money(n){ return '$' + (Number(n)||0).toFixed(2); }
 function api(path, opts){
   opts = opts || {};
@@ -333,7 +333,7 @@ function refresh(){
 // ---- actions ----
 document.getElementById('unlockBtn').addEventListener('click', function(){
   var v = document.getElementById('pw').value; if (!v) return;
-  sessionStorage.setItem(PW_KEY, v);
+  localStorage.setItem(PW_KEY, v);
   refresh().then(function(){
     document.getElementById('gate').style.display='none';
     document.getElementById('app').style.display='block';

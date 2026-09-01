@@ -112,6 +112,48 @@ var sb, me, days = 30, engId = null, engs = [];
 function iso(d){ return d.toISOString().slice(0,10); }
 function addD(d,n){ var x=new Date(d); x.setDate(x.getDate()+n); return x; }
 
+/* Bars are often 20-60px wide. Clipping mid-word reads as broken, so shorten
+   with known abbreviations first, then trim on a word boundary. */
+var ABBR = {
+  'management':'mgmt', 'production':'prod', 'campaign':'camp', 'deliverable':'deliv',
+  'deliverables':'delivs', 'conversion':'conv', 'positioning':'pos',
+  'messaging':'msg', 'photography':'photo', 'videographer':'video',
+  'photographer':'photo', 'assessment':'assess', 'presentation':'pres',
+  'development':'dev', 'requirements':'reqs', 'documentation':'docs',
+  'revision':'rev', 'revisions':'revs', 'approval':'appr', 'client':'clt',
+  'internal':'int', 'strategy':'strat', 'analytics':'stats', 'report':'rpt',
+  'meeting':'mtg', 'review':'rev', 'account':'acct', 'social':'soc',
+  'creative':'crtv', 'shoot':'shoot', 'aerial':'aerial', 'kickoff':'kickoff'
+};
+
+function fit(text, widthPct){
+  if (!text) return '';
+  // ~7px per character at 11px/700, minus 18px padding
+  var px = (widthPct / 100) * (document.querySelector('.grid') || {}).clientWidth || 0;
+  var lane = px ? px : 60;
+  var chars = Math.max(Math.floor((lane - 20) / 6.2), 0);
+
+  if (chars < 3) return '';
+  if (text.length <= chars) return text;
+
+  var short = text.split(/\s+/).map(function(w){
+    var k = w.toLowerCase().replace(/[^a-z]/g,'');
+    return ABBR[k] ? (w[0] === w[0].toUpperCase()
+      ? ABBR[k].charAt(0).toUpperCase() + ABBR[k].slice(1) : ABBR[k]) : w;
+  }).join(' ');
+  if (short.length <= chars) return short;
+
+  // Trim on a word boundary rather than mid-word
+  var words = short.split(' '), out = '';
+  for (var i = 0; i < words.length; i++) {
+    var next = out ? out + ' ' + words[i] : words[i];
+    if (next.length > chars - 1) break;
+    out = next;
+  }
+  if (!out) out = short.slice(0, Math.max(chars - 1, 1));
+  return out + '\u2026';
+}
+
 async function draw(){
   var start = addD(new Date(), -7); start.setHours(12,0,0,0);
   var end = addD(start, days);
@@ -181,7 +223,8 @@ async function draw(){
     var b = eng.ends_on ? pos(eng.ends_on) : { pct: 100, i: cols };
     var l = Math.max(a.pct, 0), w = Math.min(b.pct, 100) - l;
     if (w > 0) bar = '<div class="bar" style="left:' + l + '%;width:' + w + '%;background:#0B0D10" ' +
-      'data-k="engagement" data-r="' + eng.id + '">' + esc(eng.title || 'Engagement') + '</div>';
+      'data-k="engagement" data-r="' + eng.id + '" title="' + esc(eng.title || 'Engagement') + '">' +
+      esc(fit(eng.title || 'Engagement', w)) + '</div>';
   }
   row((eng.clients && eng.clients.business_name) || 'Client', null, bar);
 
@@ -203,9 +246,11 @@ async function draw(){
       var bars = byRole[k].map(function(d){
         var p = pos(d.work_date);
         if (!p.inRange) return '';
+        var lbl = d.call_time ? d.call_time.slice(0,5) : 'TBC';
         return '<div class="bar" style="left:' + p.pct + '%;width:' + (100/cols) + '%;background:#7C3AED" ' +
-          'data-k="assignment" data-r="' + d.assignment_id + '">' +
-          (d.call_time ? d.call_time.slice(0,5) : '') + '</div>';
+          'data-k="assignment" data-r="' + d.assignment_id + '" ' +
+          'title="' + esc(k + ' \u00b7 ' + d.work_date + (d.call_time ? ' \u00b7 ' + d.call_time.slice(0,5) : '')) + '">' +
+          esc(fit(lbl, 100/cols)) + '</div>';
       }).join('');
       row(k, 'crew', bars);
     });
@@ -224,10 +269,12 @@ async function draw(){
                 : m.status === 'blocked' ? '#991B1B'
                 : m.status === 'waiting_on_client' ? '#B45309' : '#4B5563';
         bars = p.inRange
-          ? '<div class="pt" style="left:' + p.pct + '%;background:' + col + '" data-k="milestone" data-r="' + m.id + '"></div>'
+          ? '<div class="pt" style="left:' + p.pct + '%;background:' + col + '" data-k="milestone" data-r="' + m.id +
+            '" title="' + esc(m.label + ' \u00b7 ' + m.due_date) + '"></div>'
           : '';
       } else {
-        bars = '<div class="bar ghost" style="left:0;width:' + (100/cols*3) + '%">no date</div>';
+        bars = '<div class="bar ghost" style="left:0;width:' + (100/cols*3) + '%" ' +
+               'title="' + esc(m.label + ' \u2014 no date set') + '">no date</div>';
       }
       row(m.label, m.status === 'done' ? 'done' : null, bars);
     });
@@ -245,7 +292,8 @@ async function draw(){
       var bars = p.inRange
         ? '<div class="bar" style="left:' + Math.max(p.pct - (100/cols*1.5), 0) + '%;width:' + (100/cols*2) +
           '%;background:' + (done ? '#9CA3AF' : (t.status === 'blocked' ? '#991B1B' : '#9A3412')) + '" ' +
-          'data-k="task" data-r="' + t.id + '">' + esc(t.title) + '</div>'
+          'data-k="task" data-r="' + t.id + '" title="' + esc(t.title) + '">' +
+          esc(fit(t.title, 100/cols*2)) + '</div>'
         : '';
       var who = t.profiles && t.profiles.full_name ? t.profiles.full_name.split(' ')[0] : null;
       row(t.title, who, bars);

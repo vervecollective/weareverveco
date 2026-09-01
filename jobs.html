@@ -62,7 +62,7 @@
   <p class="lede" id="ld">Loading…</p>
 
   <!-- STAFF: offer a job -->
-  <div class="card" id="offerCard" style="display:none">
+  <div class="card" id="offerCard" data-staff-only style="display:none">
     <h2>Offer a job</h2>
     <p class="hint">The contractor sees the scope, the date, and their pay. They never see client pricing or margin.</p>
     <div id="gateNote"></div>
@@ -181,7 +181,7 @@ window.vcInit = async function(){
 
   // staff
   $('ld').textContent = 'Offer work to contractors and track who has accepted.';
-  $('offerCard').style.display = 'block';
+  var oc = $('offerCard'); if (oc) oc.style.display = 'block';
 
   var eq = await sb.from('engagements')
     .select('id, title, clients(business_name)').order('updated_at',{ascending:false});

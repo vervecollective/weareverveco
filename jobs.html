@@ -52,6 +52,12 @@
   .checks{display:flex;gap:16px;flex-wrap:wrap;margin-top:6px;}
   .ck{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:500;color:#374151;cursor:pointer;}
   .ck input{width:auto;margin:0;}
+  .chips{display:flex;gap:7px;flex-wrap:wrap;margin:-4px 0 14px;}
+  .chip{display:inline-flex;align-items:center;gap:7px;background:#fdf0eb;color:#9a3412;
+    border:1px solid #f6d9cc;border-radius:20px;padding:5px 10px;font-size:12.5px;font-weight:500;}
+  .chip b{color:#7c2d12;}
+  .chip button{background:none;border:none;color:#9a3412;cursor:pointer;font-size:15px;
+    line-height:1;padding:0;width:auto;}
   .totalbox{margin-top:14px;padding-top:12px;border-top:1px solid #e5e7eb;font-size:13.5px;color:#111827;}
   .totalbox b{color:#047857;}
   .dayrow{display:grid;grid-template-columns:1.1fr .8fr .8fr 1.4fr auto;gap:8px;margin-bottom:8px;align-items:center;}
@@ -139,6 +145,7 @@
       <div class="field"><label for="pkg">Package</label><select id="pkg"></select></div>
       <div class="field"><label for="addons">Add-ons</label><select id="addons"></select></div>
     </div>
+    <div id="pickedList" class="chips"></div>
     <div class="field"><label for="scope">Scope — what they are being asked to do</label>
       <textarea id="scope" rows="3" placeholder="Pick a package above, then adjust."></textarea></div>
     <div class="field"><label for="deliv">Deliverables</label>
@@ -515,13 +522,34 @@ window.vcInit = async function(){
     o.value = i; o.textContent = p[1] + (p[4] ? '  \u2014  pays ' + money(p[4]) : '');
     pk.lastChild.appendChild(o);
   });
+  /* Packages stack. A shoot is often a half-day plus drone plus testimonials,
+     and each one adds its own scope, deliverables, and pay. */
+  var picked = [];
+  function renderPicked(){
+    var el = document.getElementById('pickedList');
+    if (!picked.length) { el.innerHTML = ''; return; }
+    el.innerHTML = picked.map(function(p, i){
+      return '<span class="chip">'+esc(p[1])+' <b>'+money(p[4])+'</b>'+
+             '<button type="button" data-i="'+i+'">\u00d7</button></span>';
+    }).join('');
+    el.querySelectorAll('button').forEach(function(b){
+      b.addEventListener('click', function(){
+        picked.splice(Number(b.dataset.i), 1);
+        rebuildFromPicked();
+      });
+    });
+  }
+  function rebuildFromPicked(){
+    $('scope').value = picked.map(function(p){ return p[2]; }).join('\n');
+    $('deliv').value = picked.map(function(p){ return p[3]; }).join(', ');
+    $('pay').value = picked.reduce(function(sum, p){ return sum + (Number(p[4]) || 0); }, 0) || '';
+    renderPicked(); checkMargin(); totalComp();
+  }
   pk.addEventListener('change', function(){
     if (pk.value === '') return;
-    var p = PACKAGES[Number(pk.value)];
-    $('scope').value = p[2];
-    $('deliv').value = p[3];
-    if (p[4] && !Number($('pay').value)) $('pay').value = p[4];
-    checkMargin(); totalComp();
+    picked.push(PACKAGES[Number(pk.value)]);
+    pk.value = '';
+    rebuildFromPicked();
   });
 
   var ad = $('addons');
@@ -532,11 +560,9 @@ window.vcInit = async function(){
   ad.addEventListener('change', function(){
     if (ad.value === '') return;
     var a = ADDONS[Number(ad.value)];
-    $('scope').value = ($('scope').value ? $('scope').value + '\n\nPlus: ' : '') + a[1];
-    $('deliv').value = $('deliv').value ? $('deliv').value + ', ' + a[2] : a[2];
-    if (a[3]) $('pay').value = (Number($('pay').value) || 0) + a[3];
+    picked.push(['Add-on', a[0], a[1], a[2], a[3]]);
     ad.value = '';
-    checkMargin(); totalComp();
+    rebuildFromPicked();
   });
 
   document.getElementById('addLoc').addEventListener('click', function(){ addLocRow(); });
@@ -630,6 +656,7 @@ window.vcInit = async function(){
     } catch (mailErr) { /* the offer is saved either way */ }
 
     say('offerMsg','Offer sent and emailed. They see it on their Jobs page.', true);
+    picked = []; renderPicked();
     $('scope').value=''; $('deliv').value=''; $('pay').value='';
     document.getElementById('locRows').innerHTML=''; addLocRow();
     loadJobs();

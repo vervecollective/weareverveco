@@ -62,3 +62,8 @@
   from = "/settings"
   to = "/settings.html"
   status = 200
+
+[[redirects]]
+  from = "/settings"
+  to = "/settings.html"
+  status = 200

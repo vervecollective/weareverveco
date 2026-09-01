@@ -1,6 +1,5 @@
 import { getStore } from '@netlify/blobs';
 
-const DEFAULT_PASSWORD = 'Verve-Collective-2026!';
 
 function checkAuth(req, storedPassword) {
   const supplied = req.headers.get('x-admin-password');
@@ -41,7 +40,7 @@ export default async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405, headers: cors });
 
-  const storedPassword = (await contentStore.get('admin_password')) || DEFAULT_PASSWORD;
+  const storedPassword = (await contentStore.get('admin_password')) || Deno.env.get('ADMIN_PASSWORD');
   if (!checkAuth(req, storedPassword)) return json({ error: 'Unauthorized' }, 401, cors);
 
   const key = Deno.env.get('STRIPE_SECRET_KEY');

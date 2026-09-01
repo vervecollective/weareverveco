@@ -116,8 +116,15 @@ function paint(){
 
     return '<div class="p">'+
       '<div class="who"><span class="av" style="background:'+(p.colour||'#111827')+'">'+ini(p.full_name)+'</span>'+
-        '<span><b>'+esc(p.full_name||'\u2014')+'</b>'+
-        '<em>'+(p.engagement_count||0)+(p.engagement_count===1?' account':' accounts')+'</em></span></div>'+
+        '<span><b>'+esc(p.full_name||'\u2014')+
+          (p.accepting_work === false ? ' <span style="font-size:10px;font-weight:700;background:#f1f5f9;color:#64748b;padding:1px 6px;border-radius:20px">Not taking work</span>' : '')+
+        '</b>'+
+        '<em>'+(p.engagement_count||0)+(p.engagement_count===1?' account':' accounts')+
+          (p.available_days && p.available_days.length && p.available_days.length < 5
+            ? ' \u00b7 '+esc(p.available_days.join(', ')) : '')+
+        '</em>'+
+        (p.availability_note ? '<em style="color:#b45309">'+esc(p.availability_note)+'</em>' : '')+
+        '</span></div>'+
       '<div class="track">'+
         '<div class="fill '+band(pctWith)+'" style="width:'+w1+'%;position:absolute;left:0;top:0"></div>'+
         (w2 > 0 ? '<div class="fill ghost" style="width:'+w2+'%;position:absolute;left:'+w1+'%;top:0"></div>' : '')+
@@ -133,6 +140,7 @@ function paint(){
   var free = Math.max(cap - used, 0);
   var pct = cap ? Math.round(used/cap*100) : 0;
   var stretched = team.filter(function(p){ return Number(p.load_pct) > 85; }).length;
+  var unset = team.filter(function(p){ return !Number(p.capacity_hours); });
 
   $('tiles').innerHTML =
     '<div class="tile free"><div class="n">'+free+'h</div><div class="l">Free this week</div></div>'+
@@ -140,12 +148,22 @@ function paint(){
     '<div class="tile '+(stretched?'tight':'')+'"><div class="n">'+stretched+'</div><div class="l">People over 85%</div></div>'+
     '<div class="tile"><div class="n">'+engs.length+'</div><div class="l">Live engagements</div></div>';
 
+  if (unset.length) {
+    $('tiles').insertAdjacentHTML('afterend',
+      '<div class="verdict maybe" style="margin-bottom:22px"><b>'+unset.length+
+      (unset.length===1?' person has':' people have')+' not set their hours.</b>'+
+      'They are counted as zero, so the numbers below understate what is available. '+
+      'Ask them to set it in Settings \u2192 Profile \u2014 they know their own week better than we do.</div>');
+  }
+
   // Verdict
   var v = $('verdict');
   var weeks = Number($('weeks').value) || 1;
   if (!add) { v.innerHTML = ''; return; }
 
-  var pool = target === 'any' ? team : team.filter(function(p){ return p.id === target; });
+  var pool = target === 'any'
+    ? team.filter(function(p){ return p.accepting_work !== false; })
+    : team.filter(function(p){ return p.id === target; });
   var poolFree = pool.reduce(function(s,p){ return s + (Number(p.free_hours)||0); },0);
   var name = target === 'any' ? 'the team' : ((pool[0] && pool[0].full_name) || 'them');
 

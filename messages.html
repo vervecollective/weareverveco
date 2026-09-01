@@ -33,10 +33,16 @@
     min-width:18px;height:18px;display:flex;align-items:center;justify-content:center;padding:0 5px;}
 
   .pane{flex:1;display:flex;flex-direction:column;min-width:0;}
-  .pane-h{padding:16px 22px;border-bottom:1px solid #EBECEF;display:flex;align-items:center;gap:11px;}
+  .pane-h{padding:15px 24px;border-bottom:1px solid #EBECEF;display:flex;align-items:center;gap:12px;
+    background:#fff;}
+  .pane-h .av{width:34px;height:34px;border-radius:50%;background:#111827;color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;}
   .pane-h b{font-size:15px;font-weight:700;}
   .pane-h em{font-size:12.5px;font-style:normal;color:#00875A;font-weight:600;}
-  .feed{flex:1;overflow-y:auto;padding:22px;display:flex;flex-direction:column;gap:3px;}
+  .feed{flex:1;overflow-y:auto;padding:26px 28px;display:flex;flex-direction:column;gap:3px;
+    background:#FCFCFD;}
+  .feed .m:hover{background:#fff;border-radius:10px;}
+  .m{padding:4px 8px !important;margin-left:-8px;}
   .day{text-align:center;font-size:11.5px;font-weight:700;color:#5C6470;margin:16px 0 10px;}
   .m{display:flex;gap:10px;padding:2px 0;}
   .m .av{width:30px;height:30px;border-radius:50%;background:#111827;color:#fff;flex-shrink:0;
@@ -55,7 +61,7 @@
   .dots i:nth-child(2){animation-delay:.2s;} .dots i:nth-child(3){animation-delay:.4s;}
   @keyframes bl{0%,60%,100%{opacity:.25;}30%{opacity:1;}}
 
-  .compose{padding:14px 22px 20px;border-top:1px solid #EBECEF;display:flex;gap:10px;align-items:flex-end;}
+  .compose{padding:16px 24px 22px;border-top:1px solid #EBECEF;display:flex;gap:10px;align-items:flex-end;background:#fff;}
   .compose textarea{flex:1;border:1px solid #D8DAE0;border-radius:12px;padding:12px 15px;
     font:400 14.5px/1.5 'Inter',sans-serif;resize:none;max-height:150px;color:#111827;}
   .compose textarea:focus{outline:none;border-color:#9A3412;box-shadow:0 0 0 4px rgba(154,52,18,.09);}
@@ -110,7 +116,10 @@
   .m:hover .rx .add{opacity:1;}
   .rx .add{opacity:0;transition:opacity .12s;}
   .tools{display:flex;gap:6px;align-items:center;}
-  .tool{background:none;border:none;font-size:18px;cursor:pointer;padding:8px;border-radius:9px;line-height:1;}
+  .tool{background:none;border:none;cursor:pointer;padding:9px;border-radius:10px;
+    line-height:0;color:#5C6470;display:flex;}
+  .tool svg{width:20px;height:20px;}
+  .tool:hover{background:#F3F4F6;color:#111827;}
   .tool:hover{background:#F3F4F6;}
   .emo{position:absolute;bottom:74px;right:22px;background:#fff;border:1px solid #EBECEF;
     border-radius:12px;padding:10px;box-shadow:0 12px 32px rgba(16,24,40,.16);display:none;
@@ -139,8 +148,15 @@
       <div class="compose">
         <div class="emo" id="emo"></div>
         <div class="tools">
-          <button class="tool" id="emoBtn" title="Emoji">\u263A</button>
-          <button class="tool" id="fileBtn" title="Attach">\uD83D\uDCCE</button>
+          <button class="tool" id="emoBtn" title="Emoji" aria-label="Emoji">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+              <circle cx="12" cy="12" r="9"/><path d="M8.5 14.5a4.5 4.5 0 0 0 7 0"/>
+              <circle cx="9" cy="10" r=".6" fill="currentColor"/><circle cx="15" cy="10" r=".6" fill="currentColor"/></svg>
+          </button>
+          <button class="tool" id="fileBtn" title="Attach a file" aria-label="Attach a file">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21.4 11.05 12.25 20.2a5.5 5.5 0 0 1-7.78-7.78l9.19-9.19a3.67 3.67 0 0 1 5.19 5.19l-9.2 9.19a1.83 1.83 0 0 1-2.59-2.59l8.49-8.48"/></svg>
+          </button>
           <input type="file" id="file" style="display:none"
             accept="image/*,video/*,application/pdf,.doc,.docx">
         </div>
@@ -288,7 +304,9 @@ async function paint(){
       '<div class="tx">'+esc(m.body)+'</div>'+att+rxHtml+'</span></div>';
     lastAuthor=m.author_id; lastAt=new Date(m.created_at);
   });
-  $('feed').innerHTML = html || '<p style="font-size:13.5px;color:#9CA3AF;text-align:center;padding:30px">Say something.</p>';
+  $('feed').innerHTML = html || '<div style="flex:1;display:flex;align-items:center;justify-content:center;text-align:center;padding:40px">'+
+   '<div><div style="font-size:15px;font-weight:600;color:#111827;margin-bottom:5px">No messages yet</div>'+
+   '<div style="font-size:13.5px;color:#5C6470;max-width:280px">Say hello. Files, emoji and reactions all work here.</div></div></div>';
   $('feed').scrollTop = $('feed').scrollHeight;
 
   $('feed').querySelectorAll('.rx button').forEach(function(b){

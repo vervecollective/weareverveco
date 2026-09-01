@@ -78,7 +78,11 @@ Enforced by Postgres RLS policies, not by hiding UI. Helper functions live in a 
 | `/settings` | Profile, security, team invites, split defaults | Live |
 | `/help` | Role-specific onboarding | Live |
 | `/project` | Client portal: progress, milestones, billing, requests | Live |
-| `/jobs` | Contractor job offers, accept/decline | **NOT BUILT** |
+| `/jobs` | Job offers with call sheets, accept/decline | Live |
+| `/documents` | Send + track signatures | Live |
+| `/audit` | Social + ad audit with counted checklist | Live (manual data) |
+| `/team` | People: team, contractors, client logins | Live |
+| `/help` | Role-specific onboarding | Live — **stale, missing Audits/Documents/Jobs** |
 
 ---
 
@@ -97,10 +101,24 @@ Enforced by Postgres RLS policies, not by hiding UI. Helper functions live in a 
 
 ## 6. Known gaps — ranked
 
+### Done since first draft
+- All five documents drafted, brand-consistent, `hello@` throughout
+- SignWell replaces Dropbox Sign (~$4/mo vs $100–300 — no monthly minimum)
+- `send-document`, `signwell-webhook`, `notify`, `invite-user` edge functions live
+- **SOW autofill** — 19 fields populate from the engagement
+- `/jobs` with multi-day call sheets, travel/lodging/meals, stacking packages, multi-location
+- Contractor eligibility gate: no IP assignment signed = cannot be offered work
+- Branded email via Google Apps Script (job offers, responses, payments)
+- Console timeline publishes real milestones; staff can set status
+- Mobile shell rebuilt: fixed top bar, drawer, stacked data tables
+
 ### P1 — blocks real operation
 1. **Contract signing not wired.** Dropbox Sign API key is in Netlify env (`DROPBOX_SIGN_API_KEY`) but nothing calls it. **Your own process says contract → deposit → work.** The system currently lets you skip it.
 2. **`/jobs` does not exist.** Contractors can be invited but have nowhere to accept work. Blocks hiring.
-3. ~~Contractor agreements do not exist~~ — **DONE.** All five documents drafted (see §11). Attorney review still outstanding.
+3. ~~Contractor agreements~~ — **DONE.** Attorney review still outstanding.
+4. **Four SignWell templates still to build** — CSA, SOW, ICA, IP/NDA. Release is done (`04f1dc11-06db-4061-8548-fe258839318b`). Get template IDs from the API, not the browser URL — the share slug is different.
+5. **Contractor payment splits do not exist.** One `pay_amount` per assignment, no deposit/balance, no payment tracking.
+6. **Contractors cannot submit their own details.** W-9 and payment info still collected by email.
 
 ### P2 — degrades the product
 4. **Supermetrics dashboards not built.** Audit data is entered by hand, which does not scale past one person.
@@ -111,6 +129,13 @@ Enforced by Postgres RLS policies, not by hiding UI. Helper functions live in a 
 7. QA sweep of all docs against the built flow
 8. Delete the orphaned `engagements` edge function and Blobs store
 9. Leaked Password Protection toggle in Supabase (dashboard only)
+10. `/help` needs updating — no mention of Audits, Documents, or Jobs
+11. No early warning on stalled engagements (proposal sent 21 days ago, no movement)
+
+### Recurring mistake to avoid
+Broad CSS rules keep clobbering specific ones written earlier — it caused the
+black flash, the invisible button hover, and the oversized mobile logo. Scope
+new rules narrowly rather than widening existing ones.
 
 ---
 

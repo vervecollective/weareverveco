@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Audit — Verve Collective</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/shell.css">
+<script type="module" src="/assets/shell.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',system-ui,sans-serif;color:#111827;line-height:1.55;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1160px; margin:0; padding:32px 36px 90px;}
+  h1{font-size:22px;font-weight:700;letter-spacing:-.02em;}
+  .lede{color:#6b7280;font-size:14px;margin-bottom:22px;}
+  .card{border-radius:8px;padding:22px;margin-bottom:18px;}
+  .card h2{font-size:15px;font-weight:600;margin-bottom:3px;}
+  .card .hint{font-size:13px;color:#6b7280;margin-bottom:16px;}
+
+  .when{background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:14px 16px;
+    font-size:13.5px;color:#78350f;margin-bottom:20px;}
+  .when b{color:#451a03;}
+
+  label{display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:5px;}
+  input,select,textarea{width:100%;padding:8px 10px;font-size:13.5px;font-family:inherit;}
+  .field{margin-bottom:14px;}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .row4{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr 1fr auto;gap:8px;align-items:end;}
+  @media(max-width:820px){.row,.row4{grid-template-columns:1fr;}}
+
+  table{width:100%;border-collapse:collapse;}
+  th{text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;
+    color:#6b7280;padding:8px 8px;border-bottom:1px solid #e5e7eb;}
+  td{padding:6px 8px;border-bottom:1px solid #f3f4f6;font-size:13.5px;}
+  .num{text-align:right;}
+  .calc{font-weight:600;}
+  .good{color:#047857;} .mid{color:#b45309;} .bad{color:#b91c1c;}
+
+  .btn{border:none;border-radius:6px;padding:9px 15px;font-size:13px;font-weight:600;
+    cursor:pointer;font-family:inherit;}
+  .btn-sm{padding:6px 11px;font-size:12px;}
+  .acts{display:flex;gap:9px;flex-wrap:wrap;margin-top:18px;}
+  .msg{font-size:13px;margin-top:11px;display:none;}
+  .msg.show{display:block;} .msg.ok{color:#047857;} .msg.err{color:#b91c1c;}
+
+  .report{background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:20px;
+    font-size:13.5px;white-space:pre-wrap;line-height:1.65;margin-top:16px;}
+  .bench{font-size:12.5px;color:#6b7280;margin-top:8px;}
+  .empty{color:#9ca3af;font-size:13px;padding:14px 0;text-align:center;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Audit</h1>
+  <p class="lede">The same sweep on every account, so the story is comparable.</p>
+
+  <div class="when">
+    <b>When to run this.</b> The <b>ad account audit</b> happens live, on the discovery call — you look at it together, no prep.
+    The <b>social sweep</b> happens <b>after</b> the call and <b>before</b> the proposal. Pulling 90 days of performance is real
+    work, and it is not work you do for someone who has not had a conversation with you yet.
+  </div>
+
+  <div class="card">
+    <h2>Which account</h2>
+    <div class="row">
+      <div class="field"><label for="engSel">Engagement</label><select id="engSel"></select></div>
+      <div class="field"><label for="kind">Audit type</label>
+        <select id="kind">
+          <option value="social">Social sweep</option>
+          <option value="ads">Ad account</option>
+          <option value="both">Both</option>
+        </select>
+      </div>
+    </div>
+    <div class="field" style="max-width:220px"><label for="period">Period (days)</label>
+      <select id="period"><option>30</option><option selected>90</option><option>180</option></select>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>The numbers</h2>
+    <p class="hint">One row per platform. Rates calculate themselves — you only enter what you can see.</p>
+    <table>
+      <thead><tr>
+        <th style="width:20%">Platform</th><th class="num">Followers</th><th class="num">Posts</th>
+        <th class="num">Reach</th><th class="num">Engagements</th>
+        <th class="num">Eng. rate</th><th class="num">Posts/wk</th><th></th>
+      </tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <button class="btn btn-2 btn-sm" id="addRow" style="margin-top:10px">+ Add platform</button>
+    <p class="bench">Benchmark: organic engagement rate is roughly <b>1–3%</b> on Instagram and <b>0.5–1%</b> on Facebook for small business accounts. Under 0.5% usually means the content is not reaching the right people, not that there is too little of it.</p>
+  </div>
+
+  <div class="card">
+    <h2>What you see</h2>
+    <p class="hint">These five questions, every time. Consistency is what makes audits comparable across accounts.</p>
+    <div class="field"><label for="story">1. The story — what is actually happening here?</label>
+      <textarea id="story" rows="3" placeholder="They post consistently but reach collapsed in month two…"></textarea></div>
+    <div class="field"><label for="strengths">2. What is genuinely working</label>
+      <textarea id="strengths" rows="2" placeholder="Say something true. If nothing works, say that instead."></textarea></div>
+    <div class="field"><label for="gaps">3. The gap costing them the most</label>
+      <textarea id="gaps" rows="2"></textarea></div>
+    <div class="field"><label for="recs">4. What we would do</label>
+      <textarea id="recs" rows="3"></textarea></div>
+    <div class="field"><label for="priority">5. The one thing to fix first</label>
+      <input type="text" id="priority" placeholder="One sentence. If you cannot pick one, you have not finished the audit."></div>
+
+    <div class="acts">
+      <button class="btn" id="saveBtn">Save audit</button>
+      <button class="btn btn-2" id="genBtn">Generate report</button>
+    </div>
+    <p class="msg" id="msg"></p>
+  </div>
+
+  <div class="card" id="reportCard" style="display:none">
+    <h2>Report</h2>
+    <p class="hint">Copy into the proposal, or send as-is.</p>
+    <div class="report" id="report"></div>
+    <div class="acts"><button class="btn btn-2 btn-sm" id="copyBtn">Copy to clipboard</button></div>
+  </div>
+
+  <div class="card">
+    <h2>Previous audits</h2>
+    <div id="past"><div class="empty">None yet.</div></div>
+  </div>
+</div>
+
+<script>
+function $(i){return document.getElementById(i);}
+function esc(s){var d=document.createElement('div');d.textContent=s==null?'':s;return d.innerHTML;}
+function n(v){return Number(v)||0;}
+function say(t,ok){var m=$('msg');m.textContent=t;m.className='msg show '+(ok?'ok':'err');}
+var sb, me, engagements=[], currentAudit=null;
+
+var PLATFORMS = ['Instagram','Facebook','TikTok','LinkedIn','YouTube','X','Google Business'];
+
+function addRow(p){
+  p = p || {};
+  var tr=document.createElement('tr');
+  tr.innerHTML =
+    '<td><select class="pf">'+PLATFORMS.map(function(x){return '<option>'+x+'</option>';}).join('')+'</select></td>'+
+    '<td><input type="number" class="fo num"></td>'+
+    '<td><input type="number" class="po num"></td>'+
+    '<td><input type="number" class="re num"></td>'+
+    '<td><input type="number" class="en num"></td>'+
+    '<td class="num calc er">—</td>'+
+    '<td class="num calc pw">—</td>'+
+    '<td><button class="btn btn-danger btn-sm x" type="button">×</button></td>';
+  $('rows').appendChild(tr);
+  if(p.platform) tr.querySelector('.pf').value=p.platform;
+  tr.querySelector('.fo').value = p.followers||'';
+  tr.querySelector('.po').value = p.posts||'';
+  tr.querySelector('.re').value = p.reach||'';
+  tr.querySelector('.en').value = p.engagements||'';
+  tr.addEventListener('input', recalc);
+  tr.querySelector('.x').addEventListener('click',function(){tr.remove();recalc();});
+  recalc();
+}
+
+function recalc(){
+  var days = n($('period').value)||90;
+  document.querySelectorAll('#rows tr').forEach(function(tr){
+    var reach=n(tr.querySelector('.re').value),
+        eng=n(tr.querySelector('.en').value),
+        posts=n(tr.querySelector('.po').value);
+    var er = reach>0 ? (eng/reach)*100 : 0;
+    var cell = tr.querySelector('.er');
+    cell.textContent = reach>0 ? er.toFixed(2)+'%' : '—';
+    cell.className = 'num calc er ' + (er>=2 ? 'good' : (er>=0.8 ? 'mid' : (reach>0?'bad':'')));
+    tr.querySelector('.pw').textContent = posts>0 ? (posts/(days/7)).toFixed(1) : '—';
+  });
+}
+
+function collect(){
+  var out=[];
+  document.querySelectorAll('#rows tr').forEach(function(tr){
+    var f=n(tr.querySelector('.fo').value), r=n(tr.querySelector('.re').value);
+    if(!f && !r) return;
+    out.push({
+      platform: tr.querySelector('.pf').value,
+      followers: f, posts: n(tr.querySelector('.po').value),
+      reach: r, engagements: n(tr.querySelector('.en').value)
+    });
+  });
+  return out;
+}
+
+function buildReport(){
+  var days = n($('period').value)||90;
+  var pf = collect();
+  var eng = engagements.filter(function(x){return x.id===$('engSel').value;})[0];
+  var biz = (eng && eng.clients && eng.clients.business_name) || 'this account';
+
+  var L = [];
+  L.push('SOCIAL AUDIT — ' + biz);
+  L.push('Last ' + days + ' days');
+  L.push('');
+  L.push('WHAT WE LOOKED AT');
+  if (!pf.length) { L.push('No platform data entered.'); }
+  pf.forEach(function(p){
+    var er = p.reach>0 ? ((p.engagements/p.reach)*100).toFixed(2)+'%' : 'n/a';
+    var pw = p.posts>0 ? (p.posts/(days/7)).toFixed(1) : '0';
+    L.push('• ' + p.platform + ' — ' + p.followers.toLocaleString() + ' followers, ' +
+           p.posts + ' posts (' + pw + '/week), ' + p.reach.toLocaleString() +
+           ' reach, ' + er + ' engagement rate');
+  });
+  L.push('');
+  L.push('WHAT WE SEE');
+  L.push($('story').value.trim() || '—');
+  L.push('');
+  L.push('WHAT IS WORKING');
+  L.push($('strengths').value.trim() || '—');
+  L.push('');
+  L.push('THE GAP');
+  L.push($('gaps').value.trim() || '—');
+  L.push('');
+  L.push('WHAT WE WOULD DO');
+  L.push($('recs').value.trim() || '—');
+  L.push('');
+  L.push('START HERE');
+  L.push($('priority').value.trim() || '—');
+  L.push('');
+  L.push('—');
+  L.push('Verve Collective LLC · Columbia, MO · weareverveco.com');
+  L.push('This is an observation, not a guarantee of results. Specific targets are set in a written proposal.');
+  return L.join('\\n');
+}
+
+async function loadPast(){
+  var eid = $('engSel').value;
+  if(!eid){ $('past').innerHTML='<div class="empty">Pick an engagement.</div>'; return; }
+  var r = await sb.from('audits').select('*').eq('engagement_id', eid).order('created_at',{ascending:false});
+  if(!r.data || !r.data.length){ $('past').innerHTML='<div class="empty">None yet.</div>'; return; }
+  $('past').innerHTML = r.data.map(function(a){
+    return '<div style="padding:10px 0;border-bottom:1px solid #f3f4f6;font-size:13.5px">'+
+      '<b>'+esc(a.kind)+'</b> · '+a.period_days+' days · '+
+      new Date(a.created_at).toLocaleDateString()+
+      '<div style="color:#6b7280;font-size:12.5px">'+esc((a.priority_action||'').slice(0,110))+'</div></div>';
+  }).join('');
+}
+
+window.vcInit = async function(){
+  sb = window.__sb; me = window.__user;
+  if (window.__role === 'contractor' || window.__role === 'client') {
+    document.querySelector('.wrap').innerHTML = '<h1>Audit</h1><p class="lede">You do not have access to this page.</p>';
+    return;
+  }
+
+  var r = await sb.from('engagements').select('id, title, clients(business_name)').order('updated_at',{ascending:false});
+  engagements = r.data || [];
+  $('engSel').innerHTML = engagements.length
+    ? engagements.map(function(e){
+        return '<option value="'+e.id+'">'+esc((e.clients&&e.clients.business_name)||e.title||'Untitled')+'</option>';
+      }).join('')
+    : '<option value="">No engagements yet — create one first</option>';
+
+  addRow({platform:'Instagram'});
+  addRow({platform:'Facebook'});
+
+  $('addRow').addEventListener('click', function(){ addRow(); });
+  $('period').addEventListener('change', recalc);
+  $('engSel').addEventListener('change', loadPast);
+
+  $('genBtn').addEventListener('click', function(){
+    $('report').textContent = buildReport();
+    $('reportCard').style.display = 'block';
+    $('reportCard').scrollIntoView({behavior:'smooth', block:'nearest'});
+  });
+
+  $('copyBtn').addEventListener('click', function(){
+    navigator.clipboard.writeText($('report').textContent);
+    say('Copied.', true);
+  });
+
+  $('saveBtn').addEventListener('click', async function(){
+    var eid = $('engSel').value;
+    if(!eid) return say('Pick an engagement first.', false);
+    var payload = {
+      engagement_id: eid,
+      kind: $('kind').value,
+      period_days: n($('period').value)||90,
+      platforms: collect(),
+      story: $('story').value.trim() || null,
+      strengths: $('strengths').value.trim() || null,
+      gaps: $('gaps').value.trim() || null,
+      recommendations: $('recs').value.trim() || null,
+      priority_action: $('priority').value.trim() || null,
+      created_by: me.id,
+      status: 'draft'
+    };
+    var res = await sb.from('audits').insert(payload);
+    if(res.error) return say(res.error.message, false);
+    say('Audit saved to this engagement.', true);
+    loadPast();
+  });
+
+  loadPast();
+};
+</script>
+</body>
+</html>

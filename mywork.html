@@ -62,6 +62,15 @@
   <h1 id="hd">My Work</h1>
   <p class="lede" id="ld">Everything assigned to you, across every account.</p>
 
+  <div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap">
+    <select id="fOrg" style="height:36px;padding:0 11px;border:1px solid #e5e7eb;border-radius:7px;
+      background:#fff;font-size:13px;font-family:inherit"><option value="">All accounts</option></select>
+    <select id="fKind" style="height:36px;padding:0 11px;border:1px solid #e5e7eb;border-radius:7px;
+      background:#fff;font-size:13px;font-family:inherit">
+      <option value="">Tasks and jobs</option><option value="task">Tasks only</option><option value="job">Jobs only</option>
+    </select>
+  </div>
+
   <div class="tiles" id="tiles"></div>
   <div id="body"></div>
 </div>
@@ -156,6 +165,28 @@ window.vcInit = async function(){
     });
   });
 
+  function applyFilters(){
+    var o = $('fOrg').value, k = $('fKind').value;
+    return items.filter(function(x){
+      if (o && x.sub !== o) return false;
+      if (k && x.kind !== k) return false;
+      return true;
+    });
+  }
+
+  var keepOrg = $('fOrg').value, keepKind = $('fKind').value;
+  var accounts = items.map(function(x){ return x.sub; })
+    .filter(function(v,i,a){ return v && a.indexOf(v) === i; }).sort();
+  $('fOrg').innerHTML = '<option value="">All accounts</option>' +
+    accounts.map(function(a){ return '<option value="'+esc(a)+'">'+esc(a)+'</option>'; }).join('');
+  $('fOrg').value = keepOrg; $('fKind').value = keepKind;
+
+  ['fOrg','fKind'].forEach(function(id){
+    if ($(id).__w) return; $(id).__w = true;
+    $(id).addEventListener('change', function(){ window.vcInit(); });
+  });
+
+  items = applyFilters();
   var open = items.filter(function(x){ return x.status !== 'done'; });
   var late = open.filter(function(x){ var n = days(x.due); return n !== null && n < 0; });
   var soon = open.filter(function(x){ var n = days(x.due); return n !== null && n >= 0 && n <= 2; });

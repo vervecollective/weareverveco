@@ -529,7 +529,11 @@ if (role !== 'client') {
     .on('postgres_changes',
         { event:'INSERT', schema:'public', table:'notifications',
           filter:'profile_id=eq.' + session.user.id },
-        (payload) => { load().then(() => { paint(); popup(payload.new); }); })
+        (payload) => { load().then(() => {
+            paint(); popup(payload.new);
+            bell.classList.add('new');
+            setTimeout(() => bell.classList.remove('new'), 1600);
+          }); })
     .subscribe();
 })();
 

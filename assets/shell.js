@@ -40,10 +40,11 @@ const NAV = [
     { href: '/hub',      label: 'Home',        icon: 'home',   roles: ['owner','account_owner','contractor','client'] },
     { href: '/console',  label: 'Call Console',icon: 'phone',  roles: ['owner','account_owner'] },
     { href: '/internal', label: 'Engagements', icon: 'folder', roles: ['owner','account_owner'] },
+    { href: '/mywork', label: 'My Work', icon: 'check', roles: ['owner','account_owner','contractor'] },
     { href: '/board', label: 'Board', icon: 'board', roles: ['owner','account_owner','contractor'] },
     { href: '/audit', label: 'Audits', icon: 'chart', roles: ['owner','account_owner'] },
     { href: '/documents', label: 'Documents', icon: 'doc', roles: ['owner','account_owner'] },
-    { href: '/jobs',     label: 'Jobs',        icon: 'check',  roles: ['owner','account_owner','contractor'] },
+    { href: '/jobs',     label: 'Jobs',        icon: 'camera', roles: ['owner','account_owner','contractor'] },
     { href: '/project',  label: 'My Project',  icon: 'chart',  roles: ['client'] },
   ]},
   { group: 'Team', items: [

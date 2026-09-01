@@ -133,6 +133,35 @@
     <p class="msg" id="iMsg"></p>
   </div>
 
+  <div class="card" id="ratesCard" style="display:none">
+    <h2>Agreed contractor rates</h2>
+    <p class="hint">Set in their signed agreement, not negotiated per job. Client price is fixed by the rate card — so a higher rate here reduces your margin rather than the client’s invoice.</p>
+    <div class="row3">
+      <div class="field"><label for="rcWho">Contractor</label><select id="rcWho"></select></div>
+      <div class="field"><label for="rcSvc">Service</label><select id="rcSvc"></select></div>
+      <div class="field"><label for="rcRate">Their agreed rate ($)</label><input type="number" id="rcRate" step="0.01"></div>
+    </div>
+    <div id="rcMargin"></div>
+    <button class="btn btn-2" id="rcAdd">Save rate</button>
+    <p class="msg" id="rcMsg"></p>
+    <div id="rcList" style="margin-top:16px"></div>
+  </div>
+
+  <div class="card" id="raiseCard" style="display:none">
+    <h2>Raise a payment</h2>
+    <p class="hint">You issue the record, not them. It appears on their Pay page for their books and for the 1099 trail.</p>
+    <div class="row3">
+      <div class="field"><label for="rsJob">Job</label><select id="rsJob"></select></div>
+      <div class="field"><label for="rsStage">Covers</label>
+        <select id="rsStage"><option value="full">The whole job</option>
+          <option value="deposit">Deposit</option><option value="balance">Balance</option></select></div>
+      <div class="field"><label for="rsAmt">Amount ($)</label><input type="number" id="rsAmt" step="0.01"></div>
+    </div>
+    <div class="field"><label for="rsNote">Note</label><input type="text" id="rsNote" placeholder="Optional"></div>
+    <button class="btn" id="rsCreate">Raise payment</button>
+    <p class="msg" id="rsMsg"></p>
+  </div>
+
   <div class="card" id="payoutCard" style="display:none">
     <h2 id="poTitle">Account owner shares</h2>
     <p class="hint" id="poHint">Calculated on money actually collected, minus what contractors were paid — not on what was billed.</p>
@@ -331,6 +360,61 @@ async function loadPayouts(){
   });
 }
 
+var CATALOG_SERVICES = [
+  ['half_day','Half-day shoot',1500],['full_day','Full-day shoot',2800],
+  ['quick_turn','Quick-turn vertical video',350],['social_pack','Social pack \u2014 3 videos',850],
+  ['testimonial','Testimonial package',1800],['brand_film','Brand film',2500],
+  ['aerial_stills','Aerial \u2014 single site',450],['aerial_video','Aerial \u2014 site + video',750],
+  ['aerial_progress','Aerial \u2014 progress visit',350],
+  ['photo_half','Photography \u2014 half day',450],['photo_full','Photography \u2014 full day',800],
+  ['social_batch','Social content batch',350],['edit_cut','Edit \u2014 per finished cut',150]
+];
+
+async function loadRates(){
+  var r = await sb.from('contractor_rates')
+    .select('*, profiles(full_name)').eq('active', true).order('service_label');
+  var d = r.data || [];
+  var pol = await sb.from('margin_policy').select('*').single();
+  var floor = (pol.data && Number(pol.data.floor_pct)) || 25;
+  var warn  = (pol.data && Number(pol.data.warn_pct))  || 35;
+
+  $('rcList').innerHTML = d.length ? d.map(function(x){
+    var svc = CATALOG_SERVICES.filter(function(c){ return c[0] === x.service_key; })[0];
+    var price = svc ? svc[2] : 0;
+    var m = price - Number(x.rate);
+    var pct = price ? Math.round(m / price * 100) : 0;
+    var col = pct < floor ? '#991B1B' : (pct < warn ? '#854D0E' : '#065F46');
+    return '<div style="display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid #f3f4f6">'+
+      '<span style="flex:1;min-width:0"><b style="font-size:13.5px">'+esc((x.profiles&&x.profiles.full_name)||'')+'</b>'+
+      '<div class="s">'+esc(x.service_label)+'</div></span>'+
+      '<span style="font-size:13px">pays '+money(x.rate)+'</span>'+
+      '<span style="font-size:13px;color:#4b5563">client '+money(price)+'</span>'+
+      '<span style="font-size:13px;font-weight:700;color:'+col+'">'+money(m)+' \u00b7 '+pct+'%</span>'+
+      '<button class="btn btn-danger btn-sm rcX" data-id="'+x.id+'">\u00d7</button></div>';
+  }).join('') : '<p class="s" style="padding:8px 0">No rates agreed yet.</p>';
+
+  $('rcList').querySelectorAll('.rcX').forEach(function(b){
+    b.addEventListener('click', async function(){
+      await sb.from('contractor_rates').delete().eq('id', b.dataset.id);
+      loadRates();
+    });
+  });
+}
+
+function previewRateMargin(){
+  var svc = CATALOG_SERVICES.filter(function(c){ return c[0] === $('rcSvc').value; })[0];
+  if (!svc) { $('rcMargin').innerHTML = ''; return; }
+  var price = svc[2], rate = Number($('rcRate').value) || 0;
+  var m = price - rate, pct = price ? Math.round(m/price*100) : 0;
+  var tone = pct < 25 ? ['#fef2f2','#7f1d1d','Below your floor. This job costs more to run than it returns.']
+           : pct < 35 ? ['#fffbeb','#78350f','Thin. Fine for a specialist you want to keep, not as a habit.']
+           : ['#ecfdf5','#065F46','Healthy.'];
+  $('rcMargin').innerHTML =
+    '<div style="background:'+tone[0]+';color:'+tone[1]+';border-radius:8px;padding:12px 14px;margin:10px 0;font-size:13px">'+
+    '<b>Client pays '+money(price)+' \u00b7 they get '+money(rate)+' \u00b7 you keep '+money(m)+' ('+pct+'%)</b>'+
+    '<div style="margin-top:3px">'+tone[2]+'</div></div>';
+}
+
 window.vcInit = async function(){
   sb = window.__sb; me = window.__user; role = window.__role;
 
@@ -347,7 +431,7 @@ window.vcInit = async function(){
     $('ld').textContent = 'Invoice us for completed work and keep your details current.';
     $('listTitle').textContent = 'Your invoices';
     $('detailsCard').style.display = 'block';
-    $('submitCard').style.display = 'block';
+    $('submitCard').style.display = 'none';   // Verve raises payments, not them
 
     var cd = await sb.from('contractor_details').select('*').eq('profile_id', me.id).single();
     var d = cd.data || {};
@@ -438,6 +522,70 @@ window.vcInit = async function(){
     $('hd').textContent = 'Pay';
     $('ld').textContent = 'Contractor invoices, approvals and payments.';
     $('listTitle').textContent = 'Contractor invoices';
+  }
+
+  if (role === 'owner' || role === 'account_owner') {
+    $('ratesCard').style.display = 'block';
+    $('raiseCard').style.display = 'block';
+
+    $('rcWho').innerHTML = people.filter(function(p){ return p.id; }).map(function(p){
+      return '<option value="'+p.id+'">'+esc(p.full_name||p.email)+'</option>';
+    }).join('');
+    $('rcSvc').innerHTML = CATALOG_SERVICES.map(function(c){
+      return '<option value="'+c[0]+'">'+esc(c[1])+' \u2014 client pays '+money(c[2])+'</option>';
+    }).join('');
+    ['rcSvc','rcRate'].forEach(function(id){ $(id).addEventListener('input', previewRateMargin); });
+    $('rcSvc').addEventListener('change', previewRateMargin);
+    previewRateMargin();
+
+    $('rcAdd').addEventListener('click', async function(){
+      var svc = CATALOG_SERVICES.filter(function(c){ return c[0] === $('rcSvc').value; })[0];
+      if (!svc || !Number($('rcRate').value)) return say('rcMsg','Pick a service and a rate.', false);
+      var r = await sb.from('contractor_rates').upsert({
+        profile_id: $('rcWho').value, service_key: svc[0], service_label: svc[1],
+        rate: Number($('rcRate').value), unit: 'per_job',
+        agreed_on: new Date().toISOString().slice(0,10), active: true
+      }, { onConflict: 'profile_id,service_key' });
+      say('rcMsg', r.error ? r.error.message : 'Saved.', !r.error);
+      loadRates();
+    });
+
+    var jq = await sb.from('assignments')
+      .select('id, role_on_job, work_date, pay_amount, contractor_id, engagements(clients(business_name))')
+      .in('status',['accepted','completed']);
+    var jobs2 = jq.data || [];
+    $('rsJob').innerHTML = jobs2.length ? jobs2.map(function(a){
+      var biz=(a.engagements&&a.engagements.clients&&a.engagements.clients.business_name)||'Job';
+      return '<option value="'+a.id+'" data-c="'+a.contractor_id+'" data-p="'+(a.pay_amount||0)+'">'+
+        esc(biz+' \u2014 '+a.role_on_job)+'</option>';
+    }).join('') : '<option value="">No accepted jobs</option>';
+
+    function fillRaise(){
+      var o = $('rsJob').selectedOptions[0]; if (!o) return;
+      var pay = Number(o.dataset.p) || 0;
+      $('rsAmt').value = $('rsStage').value === 'deposit' ? (pay/2).toFixed(2) : pay.toFixed(2);
+    }
+    ['rsJob','rsStage'].forEach(function(id){ $(id).addEventListener('change', fillRaise); });
+    fillRaise();
+
+    $('rsCreate').addEventListener('click', async function(){
+      var o = $('rsJob').selectedOptions[0];
+      if (!o || !o.value) return say('rsMsg','Pick a job.', false);
+      if (!Number($('rsAmt').value)) return say('rsMsg','Enter an amount.', false);
+      var r = await sb.from('contractor_invoices').insert({
+        assignment_id: o.value, contractor_id: o.dataset.c,
+        stage: $('rsStage').value, amount: Number($('rsAmt').value),
+        note: $('rsNote').value.trim() || null,
+        raised_by_verve: true, status: 'approved',
+        approved_at: new Date().toISOString(), approved_by: me.id
+      });
+      if (r.error) return say('rsMsg', r.error.message, false);
+      say('rsMsg','Raised and approved. Mark it paid once the transfer goes out.', true);
+      $('rsNote').value = '';
+      loadInvoices();
+    });
+
+    loadRates();
   }
 
   if (role === 'owner') {

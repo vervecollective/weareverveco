@@ -899,3 +899,42 @@ body.vc-shelled .stc{
 body.vc-shelled .cmc svg,
 body.vc-shelled .stc svg{ width:12px; height:12px; }
 body.vc-shelled .stc.all{ background:#E4F7EF; color:#00875A; }
+
+
+/* ---- engagement list: status reads as state, not a grey blob ---- */
+body.vc-shelled .eng-item{ padding:13px 14px !important; }
+body.vc-shelled .eng-item .st{
+  display:inline-block !important; margin-top:7px !important;
+  font-size:10.5px !important; font-weight:700 !important; padding:4px 10px !important;
+}
+body.vc-shelled .eng-item .st.draft{ background:#EDEEF1 !important; color:#5C6470 !important; }
+body.vc-shelled .eng-item .st.invoiced{ background:#FDAB3D !important; color:#fff !important; }
+body.vc-shelled .eng-item .st.paid{ background:#00A870 !important; color:#fff !important; }
+body.vc-shelled .eng-item span{ display:block; }
+body.vc-shelled .eng-item b{ font-size:14px !important; margin-bottom:3px; display:block; }
+
+/* ---- notifications: arrive with colour and motion ---- */
+@keyframes vcPop{
+  0%{transform:scale(.4);opacity:0;}
+  55%{transform:scale(1.22);opacity:1;}
+  100%{transform:scale(1);opacity:1;}
+}
+@keyframes vcRing{
+  0%,100%{transform:rotate(0);}
+  18%{transform:rotate(-13deg);} 36%{transform:rotate(11deg);}
+  54%{transform:rotate(-7deg);}  72%{transform:rotate(5deg);}
+}
+.vc-bell-n{ animation:vcPop .34s cubic-bezier(.34,1.56,.64,1) both; }
+.vc-bell.new svg{ animation:vcRing .7s ease-in-out 2; color:#9A3412; }
+.vc-bell.new .vc-bell-n{ background:#E2445C !important; }
+.vc-nt.unread{ border-left:3px solid #9A3412; }
+.vc-nt.unread .vc-nt-i{ color:#9A3412; }
+.vc-nt.mention{ background:#FFF4EF !important; }
+@keyframes vcSlide{ from{opacity:0;transform:translateX(10px);} to{opacity:1;transform:none;} }
+.vc-tray.on .vc-nt{ animation:vcSlide .22s ease both; }
+.vc-tray.on .vc-nt:nth-child(2){ animation-delay:.03s; }
+.vc-tray.on .vc-nt:nth-child(3){ animation-delay:.06s; }
+.vc-tray.on .vc-nt:nth-child(4){ animation-delay:.09s; }
+@media (prefers-reduced-motion: reduce){
+  .vc-bell-n,.vc-bell.new svg,.vc-tray.on .vc-nt{ animation:none !important; }
+}

@@ -96,7 +96,7 @@ body.vc-shelled{margin-left:var(--vc-w) !important;}
 /* ---------- light theme override ----------
    The tool pages were built dark. Rather than rewrite each one, remap the
    variables they already use so every surface goes light and legible. */
-body.vc-shelled{
+body{
   --black:#ffffff;
   --black-2:#ffffff;
   --black-3:#f9fafb;
@@ -117,62 +117,62 @@ body.vc-shelled{
   background:var(--vc-bg) !important;
   color:var(--vc-text) !important;
 }
-body.vc-shelled .panel,
-body.vc-shelled .card,
-body.vc-shelled .price-card,
-body.vc-shelled .pillar{
+body .panel,
+body .card,
+body .price-card,
+body .pillar{
   background:var(--vc-bg) !important;
   border-color:var(--vc-line) !important;
   box-shadow:0 1px 2px rgba(17,24,39,.04);
 }
-body.vc-shelled input,
-body.vc-shelled textarea,
-body.vc-shelled select{
+body input,
+body textarea,
+body select{
   background:var(--vc-bg) !important;
   color:var(--vc-text) !important;
   border-color:var(--vc-line) !important;
 }
-body.vc-shelled input::placeholder,
-body.vc-shelled textarea::placeholder{color:var(--vc-text-4) !important;}
+body input::placeholder,
+body textarea::placeholder{color:var(--vc-text-4) !important;}
 /* Script panel: keep a soft tint so talk-tracks stay visually distinct */
-body.vc-shelled .say{
+body .say{
   background:var(--vc-accent-soft) !important;
   border-left-color:var(--vc-accent) !important;
   color:var(--vc-text) !important;
 }
-body.vc-shelled .do{color:var(--vc-text-2) !important; border-left-color:var(--vc-line) !important;}
-body.vc-shelled .warn{
+body .do{color:var(--vc-text-2) !important; border-left-color:var(--vc-line) !important;}
+body .warn{
   background:var(--vc-err-soft) !important;
   border-left-color:var(--vc-err) !important;
   color:#7f1d1d !important;
 }
-body.vc-shelled .qa .why{color:var(--vc-text-3) !important;}
-body.vc-shelled .stage-btn{border-color:var(--vc-line) !important; color:var(--vc-text-2) !important;}
-body.vc-shelled .stage-btn.active{background:var(--vc-accent) !important; border-color:var(--vc-accent) !important; color:#fff !important;}
-body.vc-shelled th{color:var(--vc-text-3) !important; border-bottom-color:var(--vc-line) !important;}
-body.vc-shelled td{border-bottom-color:var(--vc-line-soft) !important;}
-body.vc-shelled .btn{background:var(--vc-accent); color:#fff;}
-body.vc-shelled .btn-sec,
-body.vc-shelled .btn-secondary,
-body.vc-shelled .btn-outline{
+body .qa .why{color:var(--vc-text-3) !important;}
+body .stage-btn{border-color:var(--vc-line) !important; color:var(--vc-text-2) !important;}
+body .stage-btn.active{background:var(--vc-accent) !important; border-color:var(--vc-accent) !important; color:#fff !important;}
+body th{color:var(--vc-text-3) !important; border-bottom-color:var(--vc-line) !important;}
+body td{border-bottom-color:var(--vc-line-soft) !important;}
+body .btn{background:var(--vc-accent); color:#fff;}
+body .btn-sec,
+body .btn-secondary,
+body .btn-outline{
   background:var(--vc-bg) !important; color:var(--vc-text) !important;
   border:1px solid var(--vc-line) !important;
 }
-body.vc-shelled .btn-sec:hover,
-body.vc-shelled .btn-secondary:hover,
-body.vc-shelled .btn-outline:hover{background:var(--vc-surface) !important;}
-body.vc-shelled .btn-go,
-body.vc-shelled .btn-publish{background:var(--vc-ok) !important; color:#fff !important;}
-body.vc-shelled .btn-danger{background:var(--vc-bg) !important; color:var(--vc-err) !important; border:1px solid var(--vc-line) !important;}
-body.vc-shelled .eng-item{border-color:var(--vc-line) !important;}
-body.vc-shelled .eng-item.active{background:var(--vc-accent-soft) !important; border-color:var(--vc-accent) !important;}
-body.vc-shelled .loaded-badge{background:var(--vc-ok-soft) !important; color:var(--vc-ok) !important; border-color:#a7f3d0 !important;}
-body.vc-shelled .diff-badge{background:var(--vc-warn-soft) !important; color:var(--vc-warn) !important; border-color:#fde68a !important;}
-body.vc-shelled .passthru{background:var(--vc-surface) !important; border-color:var(--vc-line) !important; color:var(--vc-text-2) !important;}
-body.vc-shelled .invoice-link{background:var(--vc-ok-soft) !important; border-color:#a7f3d0 !important; color:var(--vc-ok) !important;}
-body.vc-shelled .note{background:var(--vc-surface) !important; border-color:var(--vc-line) !important; color:var(--vc-text-2) !important;}
-body.vc-shelled .step{background:var(--vc-bg) !important; border-color:var(--vc-line) !important;}
-body.vc-shelled .tag.live{background:var(--vc-ok-soft) !important; color:var(--vc-ok) !important;}
-body.vc-shelled .tag.manual{background:var(--vc-warn-soft) !important; color:var(--vc-warn) !important;}
-body.vc-shelled .tag.soon{background:var(--vc-surface-2) !important; color:var(--vc-text-3) !important;}
-body.vc-shelled .preview-panel{background:var(--vc-bg) !important; border-color:var(--vc-line) !important;}
+body .btn-sec:hover,
+body .btn-secondary:hover,
+body .btn-outline:hover{background:var(--vc-surface) !important;}
+body .btn-go,
+body .btn-publish{background:var(--vc-ok) !important; color:#fff !important;}
+body .btn-danger{background:var(--vc-bg) !important; color:var(--vc-err) !important; border:1px solid var(--vc-line) !important;}
+body .eng-item{border-color:var(--vc-line) !important;}
+body .eng-item.active{background:var(--vc-accent-soft) !important; border-color:var(--vc-accent) !important;}
+body .loaded-badge{background:var(--vc-ok-soft) !important; color:var(--vc-ok) !important; border-color:#a7f3d0 !important;}
+body .diff-badge{background:var(--vc-warn-soft) !important; color:var(--vc-warn) !important; border-color:#fde68a !important;}
+body .passthru{background:var(--vc-surface) !important; border-color:var(--vc-line) !important; color:var(--vc-text-2) !important;}
+body .invoice-link{background:var(--vc-ok-soft) !important; border-color:#a7f3d0 !important; color:var(--vc-ok) !important;}
+body .note{background:var(--vc-surface) !important; border-color:var(--vc-line) !important; color:var(--vc-text-2) !important;}
+body .step{background:var(--vc-bg) !important; border-color:var(--vc-line) !important;}
+body .tag.live{background:var(--vc-ok-soft) !important; color:var(--vc-ok) !important;}
+body .tag.manual{background:var(--vc-warn-soft) !important; color:var(--vc-warn) !important;}
+body .tag.soon{background:var(--vc-surface-2) !important; color:var(--vc-text-3) !important;}
+body .preview-panel{background:var(--vc-bg) !important; border-color:var(--vc-line) !important;}

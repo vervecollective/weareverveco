@@ -177,11 +177,41 @@ window.vcInit = async function(){
       props.filter(function(p){return p.status==='viewed';}).length+' opened</div></a>'+
     '<a class="tile '+(bills.length?'bad':'good')+'" href="/pay"><div class="n">'+bills.length+
       '</div><div class="l">Invoices to approve</div><div class="s">from contractors</div></a>'+
+    '<a class="tile '+(stalls.length?'bad':'good')+'" href="/internal"><div class="n">'+stalls.length+
+      '</div><div class="l">Going quiet</div><div class="s">need chasing</div></a>'+
     '<a class="tile" href="/capacity"><div class="n">'+live.length+
       '</div><div class="l">Live engagements</div><div class="s">in delivery</div></a>';
 
+  var sq = await sb.from('stalled').select('*').not('reason','is',null);
+  var stalls = sq.data || [];
+
+  var STALL = {
+    proposal_unopened: ['#b91c1c','has not opened the proposal',
+      'Sent %d days ago, never opened. That is a delivery problem \u2014 check the address, or text them the link.'],
+    proposal_cold: ['#b45309','opened the proposal and went quiet',
+      'Opened %v times but no reply in %d days. Ask directly whether the scope is wrong.'],
+    proposal_stale: ['#b45309','has a proposal with no movement',
+      'Nothing for %d days. Time for the day-14 message, or close it out.'],
+    contract_unsigned: ['#b91c1c','has not signed the agreement',
+      'Sent %d days ago. Nothing starts until it is signed \u2014 chase it today.'],
+    call_not_held: ['#b45309','booked a call that has not happened',
+      'Booked %d days ago with nothing since. Confirm or release the slot.'],
+    lead_untouched: ['#D9531E','is an untouched lead',
+      '%d days since they came in. The first response window is long gone.'],
+    client_quiet: ['#6b7280','has gone quiet',
+      'No activity for %d days on a live account. Silence from a paying client is rarely good news.']
+  };
+
   // Needs you — ordered by cost of delay
   var att = [];
+
+  stalls.forEach(function(st){
+    var cfg = STALL[st.reason]; if (!cfg) return;
+    var msg = cfg[2].replace('%d', st.days_quiet).replace('%v', st.proposal_views || 0);
+    att.push(row('/internal', cfg[0],
+      (st.business_name || 'A client') + ' ' + cfg[1], msg,
+      st.days_quiet + 'd', st.days_quiet > 14 ? 'late' : 'soon'));
+  });
   bills.forEach(function(b){
     att.push(row('/pay','#b91c1c','Approve invoice from '+((b.profiles&&b.profiles.full_name)||'a contractor'),
       money(Number(b.amount)+Number(b.expenses||0))+' waiting', 'Pay', 'late'));
@@ -247,6 +277,10 @@ window.vcInit = async function(){
   if (!engs.length) {
     hero = '<b>No clients yet</b><p>The system is ready. The next move is outreach, not more setup \u2014 '+
            'open the <a href="/console">call console</a> when you have one booked.</p>';
+  } else if (stalls.filter(function(x){return x.days_quiet > 10;}).length) {
+    var n = stalls.filter(function(x){return x.days_quiet > 10;}).length;
+    hero = '<b>'+n+(n===1?' deal has':' deals have')+' gone quiet</b><p>Nothing dies loudly \u2014 '+
+           'it just stops moving. <a href="/internal">Chase them</a> before they are gone.</p>';
   } else if (bills.length) {
     hero = '<b>Contractors are waiting on you</b><p>You pay on your terms, not the client\u2019s. '+
            '<a href="/pay">Approve them</a> before the day gets away.</p>';

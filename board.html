@@ -202,6 +202,8 @@
 </div>
 
 <script>
+/* Columns are configurable in Settings. This is the fallback if the table is
+   unreachable, so a board never renders empty. */
 var COLS = [
   ['todo','To do','#94a3b8'],
   ['in_progress','In progress','#D9531E'],
@@ -209,6 +211,7 @@ var COLS = [
   ['review','Review','#7c3aed'],
   ['done','Done','#047857']
 ];
+var DONE_KEYS = ['done'];
 function $(i){return document.getElementById(i);}
 function esc(s){var d=document.createElement('div');d.textContent=s==null?'':s;return d.innerHTML;}
 function ini(n){return (n||'?').split(' ').map(function(p){return p[0];}).filter(Boolean).join('').slice(0,2).toUpperCase();}
@@ -217,7 +220,7 @@ function say(t,ok){var m=$('msg');m.textContent=t;m.className='msg show '+(ok?'o
 var sb, me, tasks=[], people=[], current=null, engId=null;
 
 function dueClass(d, status){
-  if (!d || status === 'done') return '';
+  if (!d || DONE_KEYS.indexOf(status) > -1) return '';
   var today = new Date(); today.setHours(0,0,0,0);
   var due = new Date(d + 'T12:00:00');
   var days = Math.round((due - today) / 86400000);
@@ -305,7 +308,7 @@ function wire(){
       var t = tasks.filter(function(x){return x.id===id;})[0];
       if (!t || t.status === col.dataset.s) return;
       var patch = { status: col.dataset.s };
-      if (col.dataset.s === 'done') patch.completed_at = new Date().toISOString();
+      if (DONE_KEYS.indexOf(col.dataset.s) > -1) patch.completed_at = new Date().toISOString();
       t.status = col.dataset.s;  // optimistic — the board should not feel laggy
       render();
       var r = await sb.from('tasks').update(patch).eq('id', id);
@@ -501,6 +504,18 @@ async function load(){
 window.vcInit = async function(){
   sb = window.__sb; me = window.__user;
 
+  try {
+    var stq = await sb.from('board_statuses').select('*').eq('active', true).order('sort_order');
+    if (stq.data && stq.data.length) {
+      COLS = stq.data.map(function(x){ return [x.key, x.label, x.colour]; });
+      DONE_KEYS = stq.data.filter(function(x){ return x.is_done; }).map(function(x){ return x.key; });
+      // Keep the editor dropdown in step with the columns.
+      $('tStatus').innerHTML = stq.data.map(function(x){
+        return '<option value="'+x.key+'">'+esc(x.label)+'</option>';
+      }).join('');
+    }
+  } catch (e) { /* fall back to the built-in columns */ }
+
   var pq = await sb.from('profiles').select('id, full_name, email, role').eq('is_active', true);
   people = pq.data || [];
   $('tAssignee').innerHTML = '<option value="">Unassigned</option>' +
@@ -573,7 +588,7 @@ window.vcInit = async function(){
       blocked_reason: $('tStatus').value === 'blocked' ? ($('tBlocked').value.trim() || null) : null,
       client_visible: $('tVisible').checked
     };
-    if ($('tStatus').value === 'done') payload.completed_at = new Date().toISOString();
+    if (DONE_KEYS.indexOf($('tStatus').value) > -1) payload.completed_at = new Date().toISOString();
 
     var r = current
       ? await sb.from('tasks').update(payload).eq('id', current.id)

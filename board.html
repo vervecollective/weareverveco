@@ -80,6 +80,27 @@
   .hintline{font-size:12px;color:#6b7280;margin-top:5px;}
   .msg{font-size:13px;margin-top:10px;display:none;}
   .msg.show{display:block;} .msg.ok{color:#047857;} .msg.err{color:#b91c1c;}
+  /* comments */
+  .cm-wrap{margin-top:22px;padding-top:18px;border-top:1px solid #e5e7eb;}
+  .cm-wrap h3{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6b7280;margin-bottom:12px;}
+  .cm{display:flex;gap:10px;margin-bottom:14px;}
+  .cm .av{margin-top:1px;}
+  .cm-b{flex:1;min-width:0;}
+  .cm-h{display:flex;align-items:baseline;gap:8px;margin-bottom:2px;}
+  .cm-h b{font-size:12.5px;font-weight:600;}
+  .cm-h em{font-size:11px;font-style:normal;color:#9ca3af;}
+  .cm-t{font-size:13.5px;color:#374151;line-height:1.55;white-space:pre-wrap;word-break:break-word;}
+  .cm-t .mention{background:#fdf0eb;color:#9a3412;font-weight:600;border-radius:4px;padding:0 3px;}
+  .cm.shared .cm-b{border-left:2px solid #047857;padding-left:9px;}
+  .cm-tag{font-size:9.5px;font-weight:700;padding:1px 6px;border-radius:20px;background:#ecfdf5;color:#047857;}
+  .cm-box{position:relative;}
+  .cm-box textarea{min-height:70px;}
+  .cm-act{display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap;}
+  .sugg{position:absolute;z-index:20;background:#fff;border:1px solid #e5e7eb;border-radius:8px;
+    box-shadow:0 6px 20px rgba(16,24,40,.14);max-height:190px;overflow-y:auto;width:230px;display:none;}
+  .sugg.on{display:block;}
+  .sugg div{padding:9px 12px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:8px;}
+  .sugg div:hover,.sugg div.sel{background:#fdf0eb;}
   .empty{color:#9ca3af;font-size:13px;text-align:center;padding:26px 10px;}
 </style>
 </head>
@@ -139,6 +160,20 @@
       <button class="btn btn-danger" id="del" style="margin-left:auto">Delete</button>
     </div>
     <p class="msg" id="msg"></p>
+
+    <div class="cm-wrap" id="cmWrap" style="display:none">
+      <h3>Discussion</h3>
+      <div id="cmList"></div>
+      <div class="cm-box">
+        <textarea id="cmText" placeholder="Add a note. Type @ to mention someone."></textarea>
+        <div class="sugg" id="sugg"></div>
+        <div class="cm-act">
+          <button class="btn" id="cmSend">Comment</button>
+          <label class="ck"><input type="checkbox" id="cmVisible"> Client can see this</label>
+        </div>
+        <p class="msg" id="cmMsg"></p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -254,11 +289,127 @@ function open(id, status){
   $('del').style.display = current ? '' : 'none';
   toggleBlocked();
   $('msg').className = 'msg';
+  loadComments(current ? current.id : null);
+  $('cmText').value = ''; $('cmVisible').checked = false;
   $('veil').classList.add('on'); $('sheet').classList.add('on');
   setTimeout(function(){ $('tTitle').focus(); }, 180);
 }
 function shut(){ $('veil').classList.remove('on'); $('sheet').classList.remove('on'); current=null; }
 function toggleBlocked(){ $('blockWrap').style.display = $('tStatus').value === 'blocked' ? '' : 'none'; }
+
+var comments = [];
+
+function when(ts){
+  var d = new Date(ts), now = new Date();
+  var mins = Math.round((now - d) / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return mins + 'm ago';
+  if (mins < 1440) return Math.round(mins/60) + 'h ago';
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+}
+
+/* Names are highlighted on render rather than stored as markup, so a rename
+   never leaves stale text behind in old comments. */
+function markMentions(text){
+  var out = esc(text);
+  people.forEach(function(p){
+    var n = (p.full_name || '').trim();
+    if (!n) return;
+    out = out.split('@' + esc(n)).join('<span class="mention">@' + esc(n) + '</span>');
+    var first = n.split(' ')[0];
+    if (first && first !== n) {
+      out = out.split('@' + esc(first)).join('<span class="mention">@' + esc(first) + '</span>');
+    }
+  });
+  return out;
+}
+
+async function loadComments(taskId){
+  var wrap = $('cmWrap');
+  if (!taskId) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+
+  var r = await sb.from('comments').select('*').eq('task_id', taskId).order('created_at');
+  comments = r.data || [];
+  var list = $('cmList');
+
+  if (!comments.length) {
+    list.innerHTML = '<p style="font-size:13px;color:#9ca3af;margin-bottom:14px">' +
+      'Nothing yet. Notes here stay with the task \u2014 whoever picks it up later sees why.</p>';
+    return;
+  }
+
+  list.innerHTML = comments.map(function(c){
+    var a = people.filter(function(p){return p.id===c.author_id;})[0];
+    var nm = a ? (a.full_name || a.email) : 'Someone';
+    return '<div class="cm'+(c.client_visible?' shared':'')+'">'+
+      '<span class="av">'+ini(nm)+'</span>'+
+      '<div class="cm-b"><div class="cm-h"><b>'+esc(nm)+'</b><em>'+when(c.created_at)+'</em>'+
+        (c.client_visible?'<span class="cm-tag">Client</span>':'')+'</div>'+
+      '<div class="cm-t">'+markMentions(c.body)+'</div></div></div>';
+  }).join('');
+}
+
+/* @mention autocomplete */
+(function(){
+  var box, sugg, matches = [], sel = 0, at = -1;
+
+  function hide(){ if (sugg) { sugg.classList.remove('on'); } matches = []; at = -1; }
+
+  function show(){
+    if (!matches.length) return hide();
+    sugg.innerHTML = matches.map(function(p,i){
+      return '<div class="'+(i===sel?'sel':'')+'" data-i="'+i+'">'+
+        '<span class="av">'+ini(p.full_name||p.email)+'</span>'+esc(p.full_name||p.email)+'</div>';
+    }).join('');
+    sugg.classList.add('on');
+    sugg.querySelectorAll('div').forEach(function(d){
+      d.addEventListener('mousedown', function(e){ e.preventDefault(); pick(Number(d.dataset.i)); });
+    });
+  }
+
+  function pick(i){
+    var p = matches[i]; if (!p) return;
+    var v = box.value, name = p.full_name || p.email;
+    box.value = v.slice(0, at) + '@' + name + ' ' + v.slice(box.selectionStart);
+    hide(); box.focus();
+  }
+
+  window.initMentions = function(){
+    box = $('cmText'); sugg = $('sugg');
+    box.addEventListener('input', function(){
+      var pos = box.selectionStart, v = box.value;
+      var i = v.lastIndexOf('@', pos - 1);
+      if (i === -1 || (i > 0 && /\S/.test(v[i-1]))) return hide();
+      var q = v.slice(i + 1, pos).toLowerCase();
+      if (q.length > 24 || q.indexOf(' ') > -1 && q.trim().split(' ').length > 2) return hide();
+      at = i; sel = 0;
+      matches = people.filter(function(p){
+        return (p.full_name || p.email || '').toLowerCase().indexOf(q) > -1;
+      }).slice(0, 6);
+      show();
+    });
+    box.addEventListener('keydown', function(e){
+      if (!matches.length) return;
+      if (e.key === 'ArrowDown'){ e.preventDefault(); sel=(sel+1)%matches.length; show(); }
+      else if (e.key === 'ArrowUp'){ e.preventDefault(); sel=(sel-1+matches.length)%matches.length; show(); }
+      else if (e.key === 'Enter' || e.key === 'Tab'){ e.preventDefault(); pick(sel); }
+      else if (e.key === 'Escape'){ hide(); }
+    });
+    box.addEventListener('blur', function(){ setTimeout(hide, 120); });
+  };
+})();
+
+function mentionedIds(text){
+  var ids = [];
+  people.forEach(function(p){
+    var n = (p.full_name || '').trim();
+    if (!n) return;
+    var first = n.split(' ')[0];
+    if (text.indexOf('@' + n) > -1 || (first && text.indexOf('@' + first) > -1)) ids.push(p.id);
+  });
+  return ids.filter(function(v,i,a){ return a.indexOf(v) === i && v !== me.id; });
+}
 
 async function load(){
   if (!engId) { $('board').innerHTML = '<div class="empty">Pick an engagement.</div>'; return; }
@@ -323,6 +474,60 @@ window.vcInit = async function(){
     var r = await sb.from('tasks').delete().eq('id', current.id);
     if (r.error) return say(r.error.message, false);
     shut(); load();
+  });
+
+  initMentions();
+
+  $('cmSend').addEventListener('click', async function(){
+    if (!current) return;
+    var body = $('cmText').value.trim();
+    if (!body) return;
+    var ids = mentionedIds(body);
+
+    var btn = this; btn.disabled = true;
+    var r = await sb.from('comments').insert({
+      engagement_id: engId,
+      task_id: current.id,
+      author_id: me.id,
+      body: body,
+      client_visible: $('cmVisible').checked,
+      mentions: ids
+    });
+    btn.disabled = false;
+    if (r.error) { $('cmMsg').textContent = r.error.message; $('cmMsg').className='msg show err'; return; }
+
+    $('cmText').value = ''; $('cmVisible').checked = false;
+    $('cmMsg').className = 'msg';
+    loadComments(current.id);
+
+    // Mentioning someone should reach them, not wait for them to open the board.
+    if (ids.length) {
+      try {
+        var { data:{ session } } = await sb.auth.getSession();
+        var mine = (window.__profile && window.__profile.full_name) || me.email;
+        for (var i = 0; i < ids.length; i++) {
+          var p = people.filter(function(x){ return x.id === ids[i]; })[0];
+          if (!p || !p.email) continue;
+          await fetch('https://otqrkxjtojqlpzzvqavp.supabase.co/functions/v1/notify', {
+            method:'POST',
+            headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},
+            body: JSON.stringify({
+              to: p.email,
+              subject: mine + ' mentioned you \u2014 ' + current.title,
+              heading: mine + ' mentioned you',
+              body: body,
+              facts: [{ label: 'Task', value: current.title }],
+              cta_url: 'https://weareverveco.com/board',
+              cta_label: 'Open the board'
+            })
+          });
+        }
+      } catch (e) { /* the comment is saved either way */ }
+    }
+  });
+
+  $('cmText').addEventListener('keydown', function(e){
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') $('cmSend').click();
   });
 
   load();

@@ -146,11 +146,23 @@
   </div>
 </div></div>
 
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+window.__sb = createClient(
+  'https://otqrkxjtojqlpzzvqavp.supabase.co',
+  'sb_publishable_OBViGLggbcOKacti5iUonA_QCzw3kBv'
+);
+const { data:{ session } } = await window.__sb.auth.getSession();
+if (!session) { location.href = '/login.html'; }
+window.__token = session ? session.access_token : '';
+window.__user  = session ? session.user : null;
+window.dispatchEvent(new Event('vc-auth-ready'));
+</script>
 <script>
 var PW='vc_admin_pw', current=null, engagements=[], stage='discovery';
 
 function pw(){return localStorage.getItem(PW)||'';}
-function api(p,o){o=o||{};o.headers=Object.assign({'Content-Type':'application/json','x-admin-password':pw()},o.headers||{});return fetch(p,o);}
+function api(p,o){o=o||{};o.headers=Object.assign({'Content-Type':'application/json','Authorization':'Bearer '+(window.__token||'')},o.headers||{});return fetch(p,o);}
 function money(n){return '$'+(Number(n)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function esc(s){var d=document.createElement('div');d.textContent=s||'';return d.innerHTML;}
 
@@ -376,5 +388,6 @@ document.getElementById('saveBtn').addEventListener('click',function(){
   }).catch(function(){document.getElementById('saveStatus').textContent='Save failed.';document.getElementById('saveStatus').className='status show err';});
 });
 </script>
+<script>window.addEventListener('vc-auth-ready',function(){var b=document.getElementById('unlockBtn');if(b)b.click();});</script>
 </body>
 </html>

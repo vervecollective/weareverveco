@@ -398,6 +398,125 @@ if (role !== 'client') {
   };
 })();
 
+
+/* ── Notifications ─────────────────────────────────────────────────────────
+   Written by database triggers, so nothing depends on a page remembering to
+   create them. Bell lives in the sidebar and works on every screen. */
+(function(){
+  const bell = document.createElement('button');
+  bell.className = 'vc-bell';
+  bell.setAttribute('aria-label','Notifications');
+  bell.innerHTML =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" ' +
+    'stroke-linecap="round" stroke-linejoin="round">' +
+    '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg>' +
+    '<span class="vc-bell-n" id="vcBellN"></span>';
+
+  const tray = document.createElement('div');
+  tray.className = 'vc-tray';
+  tray.innerHTML =
+    '<div class="vc-tray-h"><b>Notifications</b>' +
+      '<button id="vcReadAll">Mark all read</button></div>' +
+    '<div class="vc-tray-b" id="vcTrayB"></div>';
+
+  const brand = shell.querySelector('.vc-brand');
+  if (brand) brand.after(bell);
+  shell.append(tray);
+
+  bell.addEventListener('click', (e) => {
+    e.stopPropagation();
+    tray.classList.toggle('on');
+    if (tray.classList.contains('on')) paint();
+  });
+  document.addEventListener('click', (e) => {
+    if (!tray.contains(e.target) && !bell.contains(e.target)) tray.classList.remove('on');
+  });
+
+  const esc = (v) => { const d = document.createElement('div'); d.textContent = v == null ? '' : v; return d.innerHTML; };
+  const ago = (ts) => {
+    const m = Math.round((Date.now() - new Date(ts)) / 60000);
+    if (m < 1) return 'now';
+    if (m < 60) return m + 'm';
+    if (m < 1440) return Math.round(m/60) + 'h';
+    return Math.round(m/1440) + 'd';
+  };
+  const ICON = { mention:'\uD83D\uDCAC', assigned:'\u25CF', offer:'\u2691',
+                 offer_accepted:'\u2713', offer_declined:'\u2715' };
+
+  let items = [];
+
+  async function load(){
+    const { data } = await sb.from('notifications')
+      .select('*').eq('profile_id', session.user.id)
+      .order('created_at', { ascending:false }).limit(30);
+    items = data || [];
+    const unread = items.filter(n => !n.read_at).length;
+    const badge = document.getElementById('vcBellN');
+    if (badge) {
+      badge.textContent = unread > 9 ? '9+' : (unread || '');
+      badge.style.display = unread ? 'flex' : 'none';
+    }
+    return unread;
+  }
+
+  function paint(){
+    const b = document.getElementById('vcTrayB');
+    if (!items.length) {
+      b.innerHTML = '<p class="vc-tray-none">Nothing yet. You will hear about mentions, ' +
+                    'tasks assigned to you, and job offers.</p>';
+      return;
+    }
+    b.innerHTML = items.map(n =>
+      '<a class="vc-nt' + (n.read_at ? '' : ' unread') + '" href="' + (n.url || '#') + '" data-id="' + n.id + '">' +
+        '<span class="vc-nt-i">' + (ICON[n.kind] || '\u25CF') + '</span>' +
+        '<span class="vc-nt-b"><b>' + esc(n.title) + '</b>' +
+          (n.body ? '<em>' + esc(n.body) + '</em>' : '') + '</span>' +
+        '<span class="vc-nt-t">' + ago(n.created_at) + '</span>' +
+      '</a>').join('');
+
+    b.querySelectorAll('.vc-nt').forEach((a) => {
+      a.addEventListener('click', async () => {
+        await sb.from('notifications').update({ read_at: new Date().toISOString() })
+          .eq('id', a.dataset.id);
+      });
+    });
+  }
+
+  document.getElementById('vcReadAll').addEventListener('click', async (e) => {
+    e.stopPropagation();
+    await sb.from('notifications').update({ read_at: new Date().toISOString() })
+      .eq('profile_id', session.user.id).is('read_at', null);
+    await load(); paint();
+  });
+
+  /* Browser notification, but only after the person opts in by clicking the
+     bell. Asking on page load is the fastest way to get permanently blocked. */
+  let asked = false;
+  bell.addEventListener('click', () => {
+    if (asked || !('Notification' in window)) return;
+    asked = true;
+    if (Notification.permission === 'default') Notification.requestPermission();
+  });
+
+  function popup(n){
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    const note = new Notification(n.title, {
+      body: n.body || '', icon: '/assets/logo-email.png', tag: n.id
+    });
+    note.onclick = () => { window.focus(); if (n.url) location.href = n.url; };
+  }
+
+  load();
+  setInterval(load, 60000);
+
+  sb.channel('notif-' + session.user.id)
+    .on('postgres_changes',
+        { event:'INSERT', schema:'public', table:'notifications',
+          filter:'profile_id=eq.' + session.user.id },
+        (payload) => { load().then(() => { paint(); popup(payload.new); }); })
+    .subscribe();
+})();
+
 window.dispatchEvent(new Event('vc-auth-ready'));
 
 /* Pages define window.vcInit and expect it to run once auth resolves. Calling it

@@ -67,3 +67,7 @@
   from = "/settings"
   to = "/settings.html"
   status = 200
+
+[[edge_functions]]
+  function = "stripe-webhook"
+  path = "/api/stripe-webhook"

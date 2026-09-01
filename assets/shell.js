@@ -50,9 +50,6 @@ const NAV = [
   { group: 'Account', items: [
     { href: '/settings', label: 'Settings', icon: 'gear', roles: ['owner','account_owner','contractor','client'] },
   ]},
-  { group: 'Account', items: [
-    { href: '/settings', label: 'Settings', icon: 'gear', roles: ['owner','account_owner','contractor','client'] },
-  ]},
   { group: 'Business', items: [
     { href: '/admin.html', label: 'Site Content', icon: 'edit', roles: ['owner'] },
     { href: 'https://app.hubspot.com/contacts/51849674/objects/0-3/views/all/board', label: 'HubSpot', icon: 'ext', roles: ['owner','account_owner'], ext: true },

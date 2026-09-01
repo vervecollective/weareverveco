@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Jobs — Verve Collective</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/shell.css">
+<script type="module" src="/assets/shell.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',system-ui,sans-serif;color:#111827;line-height:1.55;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1160px;margin:0;padding:32px 36px 90px;}
+  h1{font-size:22px;font-weight:700;letter-spacing:-.02em;}
+  .lede{color:#6b7280;font-size:14px;margin-bottom:22px;}
+  .card{border-radius:8px;padding:22px;margin-bottom:18px;}
+  .card h2{font-size:15px;font-weight:600;margin-bottom:3px;}
+  .card .hint{font-size:13px;color:#6b7280;margin-bottom:16px;}
+
+  .job{border:1px solid #e5e7eb;border-radius:8px;padding:18px;margin-bottom:14px;background:#fff;}
+  .job.offered{border-left:3px solid #D9531E;}
+  .job.accepted{border-left:3px solid #047857;}
+  .job.declined,.job.cancelled{border-left:3px solid #d1d5db;opacity:.65;}
+  .job-h{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:10px;}
+  .job-h b{font-size:16px;font-weight:700;}
+  .pay{font-size:20px;font-weight:700;color:#047857;white-space:nowrap;}
+  .meta{display:flex;gap:18px;flex-wrap:wrap;font-size:13px;color:#4b5563;margin-bottom:12px;}
+  .meta span b{color:#111827;}
+  .scope{font-size:13.5px;color:#374151;background:#f9fafb;border-radius:6px;padding:12px 14px;margin-bottom:12px;white-space:pre-wrap;}
+  .st{display:inline-block;font-size:10.5px;font-weight:600;padding:3px 8px;border-radius:20px;}
+  .st.offered{background:#fdf0eb;color:#D9531E;}
+  .st.accepted{background:#ecfdf5;color:#047857;}
+  .st.declined,.st.cancelled{background:#f1f5f9;color:#475569;}
+  .st.completed{background:#eff6ff;color:#1d4ed8;}
+
+  label{display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:5px;}
+  input,select,textarea{width:100%;padding:9px 11px;font-size:13.5px;font-family:inherit;}
+  .field{margin-bottom:14px;}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+  @media(max-width:760px){.row,.row3{grid-template-columns:1fr;}}
+
+  .btn{border:none;border-radius:6px;padding:9px 16px;font-size:13.5px;font-weight:600;cursor:pointer;font-family:inherit;}
+  .btn-sm{padding:7px 13px;font-size:12.5px;}
+  .acts{display:flex;gap:10px;flex-wrap:wrap;}
+  .msg{font-size:13px;margin-top:11px;display:none;}
+  .msg.show{display:block;} .msg.ok{color:#047857;} .msg.err{color:#b91c1c;}
+  .empty{text-align:center;padding:34px 20px;color:#6b7280;font-size:13.5px;}
+  .empty b{display:block;color:#111827;font-size:15px;margin-bottom:5px;}
+
+  .gate{background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:13px 15px;
+    font-size:13px;color:#78350f;margin-bottom:16px;}
+  .gate b{color:#451a03;}
+  .blocked{background:#fef2f2;border-color:#fecaca;color:#7f1d1d;}
+  .blocked b{color:#991b1b;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1 id="hd">Jobs</h1>
+  <p class="lede" id="ld">Loading…</p>
+
+  <!-- STAFF: offer a job -->
+  <div class="card" id="offerCard" style="display:none">
+    <h2>Offer a job</h2>
+    <p class="hint">The contractor sees the scope, the date, and their pay. They never see client pricing or margin.</p>
+    <div id="gateNote"></div>
+    <div class="row">
+      <div class="field"><label for="eng">Engagement</label><select id="eng"></select></div>
+      <div class="field"><label for="con">Contractor</label><select id="con"></select></div>
+    </div>
+    <div class="row">
+      <div class="field"><label for="role">Role on this job</label>
+        <select id="role">
+          <option>Videographer</option><option>Photographer</option>
+          <option>Drone pilot</option><option>Editor</option><option>Social creator</option>
+        </select></div>
+      <div class="field"><label for="pay">Their pay ($)</label><input type="number" id="pay" step="0.01"></div>
+    </div>
+    <div class="row3">
+      <div class="field"><label for="wdate">Work date</label><input type="date" id="wdate"></div>
+      <div class="field"><label for="wstart">Start time</label><input type="time" id="wstart"></div>
+      <div class="field"><label for="wend">End time</label><input type="time" id="wend"></div>
+    </div>
+    <div class="field"><label for="loc">Location</label><input type="text" id="loc" placeholder="Address or site name"></div>
+    <div class="field"><label for="scope">Scope — what they are being asked to do</label>
+      <textarea id="scope" rows="3" placeholder="Half-day shoot. Interview setup plus b-roll of the workshop."></textarea></div>
+    <div class="field"><label for="deliv">Deliverables</label>
+      <input type="text" id="deliv" placeholder="5 edited vertical cuts, raw files delivered"></div>
+    <button class="btn" id="offerBtn">Send offer</button>
+    <p class="msg" id="offerMsg"></p>
+  </div>
+
+  <div class="card">
+    <h2 id="listTitle">Jobs</h2>
+    <div id="list"><div class="empty">Loading…</div></div>
+  </div>
+</div>
+
+<script>
+function $(i){return document.getElementById(i);}
+function esc(s){var d=document.createElement('div');d.textContent=s==null?'':s;return d.innerHTML;}
+function money(n){return '$'+(Number(n)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fdate(d){ if(!d) return 'Date TBC';
+  return new Date(d+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}); }
+function ftime(t){ return t ? t.slice(0,5) : ''; }
+function say(id,t,ok){var m=$(id);m.textContent=t;m.className='msg show '+(ok?'ok':'err');}
+var sb, me, role, contractors=[];
+
+async function loadJobs(){
+  var q = sb.from('assignments')
+    .select('*, engagements(title, clients(business_name))')
+    .order('work_date',{ascending:true});
+  if (role === 'contractor') q = q.eq('contractor_id', me.id);
+  var r = await q;
+  var el = $('list');
+
+  if (r.error) { el.innerHTML='<div class="empty">'+esc(r.error.message)+'</div>'; return; }
+  if (!r.data || !r.data.length) {
+    el.innerHTML = role==='contractor'
+      ? '<div class="empty"><b>No jobs yet</b>When work is offered to you it appears here, with the date, what is needed, and exactly what you are paid. You can accept or decline \u2014 declining costs you nothing.</div>'
+      : '<div class="empty"><b>No jobs offered yet</b>Use the form above to offer work to a contractor.</div>';
+    return;
+  }
+
+  el.innerHTML = r.data.map(function(a){
+    var biz = (a.engagements && a.engagements.clients && a.engagements.clients.business_name) || '';
+    var when = fdate(a.work_date) + (a.work_start ? ' \u00b7 ' + ftime(a.work_start) + (a.work_end ? '\u2013'+ftime(a.work_end) : '') : '');
+    var canRespond = role==='contractor' && a.status==='offered';
+    return '<div class="job '+a.status+'">'+
+      '<div class="job-h"><b>'+esc(a.role_on_job)+(role!=='contractor'&&biz?' \u2014 '+esc(biz):'')+'</b>'+
+        '<span class="pay">'+money(a.pay_amount)+'</span></div>'+
+      '<div class="meta"><span><b>'+esc(when)+'</b></span>'+
+        (a.location?'<span>'+esc(a.location)+'</span>':'')+
+        '<span class="st '+a.status+'">'+a.status+'</span></div>'+
+      '<div class="scope">'+esc(a.scope)+
+        (a.deliverables?'\n\nDeliverables: '+esc(a.deliverables):'')+'</div>'+
+      (canRespond
+        ? '<div class="acts"><button class="btn btn-sm accept" data-id="'+a.id+'">Accept this job</button>'+
+          '<button class="btn btn-2 btn-sm decline" data-id="'+a.id+'">Decline</button></div>'
+        : '')+
+      '</div>';
+  }).join('');
+
+  el.querySelectorAll('.accept').forEach(function(b){
+    b.addEventListener('click', function(){ respond(b.dataset.id, 'accepted'); });
+  });
+  el.querySelectorAll('.decline').forEach(function(b){
+    b.addEventListener('click', function(){
+      if(!window.confirm('Decline this job? That is completely fine \u2014 we would rather know now.')) return;
+      respond(b.dataset.id, 'declined');
+    });
+  });
+}
+
+async function respond(id, status){
+  var r = await sb.from('assignments')
+    .update({ status: status, responded_at: new Date().toISOString() })
+    .eq('id', id);
+  if (r.error) return alert(r.error.message);
+  loadJobs();
+}
+
+window.vcInit = async function(){
+  sb = window.__sb; me = window.__user; role = window.__role;
+
+  if (role === 'client') {
+    document.querySelector('.wrap').innerHTML =
+      '<h1>Jobs</h1><p class="lede">This page is for the production team.</p>';
+    return;
+  }
+
+  if (role === 'contractor') {
+    $('hd').textContent = 'My Jobs';
+    $('ld').textContent = 'Work offered to you. Accept or decline \u2014 declining is fine.';
+    $('listTitle').textContent = 'Your jobs';
+    await loadJobs();
+    return;
+  }
+
+  // staff
+  $('ld').textContent = 'Offer work to contractors and track who has accepted.';
+  $('offerCard').style.display = 'block';
+
+  var eq = await sb.from('engagements')
+    .select('id, title, clients(business_name)').order('updated_at',{ascending:false});
+  $('eng').innerHTML = (eq.data||[]).length
+    ? (eq.data||[]).map(function(e){
+        return '<option value="'+e.id+'">'+esc((e.clients&&e.clients.business_name)||e.title||'Untitled')+'</option>';
+      }).join('')
+    : '<option value="">No engagements yet</option>';
+
+  var cq = await sb.from('profiles')
+    .select('id, full_name, email, contractor_details(ica_signed_at, ip_assignment_signed_at, w9_on_file)')
+    .eq('role','contractor').eq('is_active', true);
+  contractors = cq.data || [];
+
+  $('con').innerHTML = contractors.length
+    ? contractors.map(function(c){
+        var d = (c.contractor_details && c.contractor_details[0]) || c.contractor_details || {};
+        var ok = d.ica_signed_at && d.ip_assignment_signed_at;
+        return '<option value="'+c.id+'">'+esc(c.full_name||c.email)+(ok?'':'  \u2014 paperwork incomplete')+'</option>';
+      }).join('')
+    : '<option value="">No contractors yet — invite one in People</option>';
+
+  function checkGate(){
+    var c = contractors.filter(function(x){return x.id===$('con').value;})[0];
+    var el = $('gateNote');
+    if (!c) { el.innerHTML=''; return true; }
+    var d = (c.contractor_details && c.contractor_details[0]) || c.contractor_details || {};
+    var missing = [];
+    if (!d.ica_signed_at) missing.push('Independent Contractor Agreement');
+    if (!d.ip_assignment_signed_at) missing.push('Confidentiality & IP Assignment');
+    if (!d.w9_on_file) missing.push('W-9');
+    if (!missing.length) {
+      el.innerHTML = '<div class="gate" style="background:#ecfdf5;border-color:#a7f3d0;color:#065f46">'+
+        '<b>Paperwork complete.</b> Safe to offer work.</div>';
+      return true;
+    }
+    var hard = !d.ip_assignment_signed_at;
+    el.innerHTML = '<div class="gate'+(hard?' blocked':'')+'"><b>Outstanding: </b>'+esc(missing.join(', '))+'. '+
+      (hard
+        ? 'Without a signed IP assignment you cannot legally license their footage to the client. Send it from Documents before offering work.'
+        : 'Send the remaining documents from Documents.')+'</div>';
+    return !hard;
+  }
+  $('con').addEventListener('change', checkGate);
+  checkGate();
+
+  $('offerBtn').addEventListener('click', async function(){
+    if (!$('eng').value)   return say('offerMsg','Pick an engagement.', false);
+    if (!$('con').value)   return say('offerMsg','Pick a contractor.', false);
+    if (!$('scope').value.trim()) return say('offerMsg','Describe the scope.', false);
+    if (!Number($('pay').value)) return say('offerMsg','Enter their pay.', false);
+    if (!checkGate()) return say('offerMsg','Cannot offer work until the IP assignment is signed.', false);
+
+    var d = $('wdate').value || null;
+    var btn=this; btn.disabled=true;
+    var r = await sb.from('assignments').insert({
+      engagement_id: $('eng').value,
+      contractor_id: $('con').value,
+      role_on_job: $('role').value,
+      scope: $('scope').value.trim(),
+      deliverables: $('deliv').value.trim() || null,
+      work_date: d,
+      work_start: (d && $('wstart').value) ? d+'T'+$('wstart').value+':00' : null,
+      work_end:   (d && $('wend').value)   ? d+'T'+$('wend').value+':00'   : null,
+      location: $('loc').value.trim() || null,
+      pay_amount: Number($('pay').value),
+      status: 'offered'
+    });
+    btn.disabled=false;
+    if (r.error) return say('offerMsg', r.error.message, false);
+    say('offerMsg','Offer sent. They see it on their Jobs page.', true);
+    $('scope').value=''; $('deliv').value=''; $('pay').value=''; $('loc').value='';
+    loadJobs();
+  });
+
+  await loadJobs();
+};
+</script>
+</body>
+</html>

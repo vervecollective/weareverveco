@@ -40,6 +40,7 @@ const NAV = [
     { href: '/hub',      label: 'Home',        icon: 'home',   roles: ['owner','account_owner','contractor','client'] },
     { href: '/console',  label: 'Call Console',icon: 'phone',  roles: ['owner','account_owner'] },
     { href: '/internal', label: 'Engagements', icon: 'folder', roles: ['owner','account_owner'] },
+    { href: '/audit', label: 'Audits', icon: 'chart', roles: ['owner','account_owner'] },
     { href: '/jobs',     label: 'My Jobs',     icon: 'check',  roles: ['contractor'] },
     { href: '/project',  label: 'My Project',  icon: 'chart',  roles: ['client'] },
   ]},

@@ -47,6 +47,22 @@
   .msg{font-size:13px;margin-top:11px;display:none;}
   .msg.show{display:block;} .msg.ok{color:#047857;} .msg.err{color:#b91c1c;}
   .empty{text-align:center;padding:34px 20px;color:#6b7280;font-size:13.5px;}
+  .logi{background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px;}
+  .logi-h{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#6b7280;margin-bottom:12px;}
+  .checks{display:flex;gap:16px;flex-wrap:wrap;margin-top:6px;}
+  .ck{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:500;color:#374151;cursor:pointer;}
+  .ck input{width:auto;margin:0;}
+  .totalbox{margin-top:14px;padding-top:12px;border-top:1px solid #e5e7eb;font-size:13.5px;color:#111827;}
+  .totalbox b{color:#047857;}
+  .dayrow{display:grid;grid-template-columns:1.1fr .8fr .8fr 1.4fr auto;gap:8px;margin-bottom:8px;align-items:center;}
+  @media(max-width:760px){.dayrow{grid-template-columns:1fr;}}
+  .sched{margin:10px 0 12px;}
+  .sched .d{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid #f3f4f6;font-size:13.5px;}
+  .sched .d:last-child{border-bottom:none;}
+  .sched .d b{font-weight:600;}
+  .perks{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0;}
+  .perk{font-size:11.5px;font-weight:600;padding:4px 9px;border-radius:20px;background:#ecfdf5;color:#047857;}
+  .perk.no{background:#f1f5f9;color:#64748b;}
   .empty b{display:block;color:#111827;font-size:15px;margin-bottom:5px;}
 
   .gate{background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:13px 15px;
@@ -82,12 +98,41 @@
         </select></div>
       <div class="field"><label for="pay">Their pay ($)</label><input type="number" id="pay" step="0.01"></div>
     </div>
-    <div class="row3">
-      <div class="field"><label for="wdate">Work date</label><input type="date" id="wdate"></div>
-      <div class="field"><label for="wstart">Start time</label><input type="time" id="wstart"></div>
-      <div class="field"><label for="wend">End time</label><input type="time" id="wend"></div>
-    </div>
+    <label style="margin-bottom:7px">Schedule</label>
+    <div id="dayRows"></div>
+    <button class="btn btn-2 btn-sm" id="addDay" type="button" style="margin:2px 0 16px">+ Add another day</button>
+
     <div class="field"><label for="loc">Location</label><input type="text" id="loc" placeholder="Address or site name"></div>
+    <div class="row">
+      <div class="field"><label for="arrival">Arrival &amp; parking notes</label>
+        <input type="text" id="arrival" placeholder="Park in the rear lot, enter through the side door"></div>
+      <div class="field"><label for="onsite">On-site contact</label>
+        <input type="text" id="onsite" placeholder="Name and mobile"></div>
+    </div>
+
+    <div class="logi">
+      <div class="logi-h">Travel, lodging &amp; meals</div>
+      <div class="row3">
+        <div class="field"><label for="miles">Round-trip miles</label><input type="number" id="miles" step="1" placeholder="0"></div>
+        <div class="field"><label for="mrate">Rate per mile ($)</label><input type="number" id="mrate" step="0.01" value="0.70"></div>
+        <div class="field"><label for="perdiem">Meal per diem ($)</label><input type="number" id="perdiem" step="0.01" placeholder="0"></div>
+      </div>
+      <div class="checks">
+        <label class="ck"><input type="checkbox" id="mpaid"> Mileage reimbursed</label>
+        <label class="ck"><input type="checkbox" id="lodge"> Lodging provided</label>
+        <label class="ck"><input type="checkbox" id="meals"> Meals provided on set</label>
+        <label class="ck"><input type="checkbox" id="parking"> Parking &amp; tolls covered</label>
+      </div>
+      <div class="field" style="margin-top:12px"><label for="lodgenote">Lodging detail</label>
+        <input type="text" id="lodgenote" placeholder="Hampton Inn, booked and paid by Verve — confirmation to follow"></div>
+      <div class="row">
+        <div class="field"><label for="gearReq">Gear they bring</label>
+          <input type="gearReq" type="text" id="gearReq" placeholder="Camera body, two lenses, lav mics"></div>
+        <div class="field"><label for="gearProv">Gear we provide</label>
+          <input type="text" id="gearProv" placeholder="Lighting kit, drone"></div>
+      </div>
+      <div class="totalbox" id="totalBox"></div>
+    </div>
     <div class="field"><label for="scope">Scope — what they are being asked to do</label>
       <textarea id="scope" rows="3" placeholder="Half-day shoot. Interview setup plus b-roll of the workshop."></textarea></div>
     <div class="field"><label for="deliv">Deliverables</label>
@@ -114,7 +159,7 @@ var sb, me, role, contractors=[];
 
 async function loadJobs(){
   var q = sb.from('assignments')
-    .select('*, engagements(title, clients(business_name))')
+    .select('*, assignment_days(*), engagements(title, clients(business_name))')
     .order('work_date',{ascending:true});
   if (role === 'contractor') q = q.eq('contractor_id', me.id);
   var r = await q;
@@ -130,16 +175,50 @@ async function loadJobs(){
 
   el.innerHTML = r.data.map(function(a){
     var biz = (a.engagements && a.engagements.clients && a.engagements.clients.business_name) || '';
-    var when = fdate(a.work_date) + (a.work_start ? ' \u00b7 ' + ftime(a.work_start) + (a.work_end ? '\u2013'+ftime(a.work_end) : '') : '');
+    var ds = (a.assignment_days || []).slice().sort(function(x,y){return (x.sort_order||0)-(y.sort_order||0);});
+    var when = ds.length
+      ? ds.length + (ds.length === 1 ? ' day' : ' days')
+      : fdate(a.work_date);
+
+    var sched = ds.length ? '<div class="sched">' + ds.map(function(x){
+      var t = x.call_time ? ftime(x.call_time) + (x.wrap_time ? '\u2013'+ftime(x.wrap_time) : '') : 'Time TBC';
+      return '<div class="d"><b>'+esc(fdate(x.work_date))+'</b><span>'+esc(t)+
+             (x.note ? ' \u00b7 '+esc(x.note) : '')+'</span></div>';
+    }).join('') + '</div>' : '';
+
+    var mileage = a.mileage_paid ? (Number(a.travel_miles)||0) * (Number(a.mileage_rate)||0) : 0;
+    var total = (Number(a.pay_amount)||0) + mileage + (Number(a.meals_per_diem)||0);
+
+    var perks = '<div class="perks">' +
+      (a.mileage_paid ? '<span class="perk">Mileage '+money(mileage)+'</span>' : '') +
+      (a.lodging_provided ? '<span class="perk">Lodging covered</span>' : '') +
+      (a.meals_provided ? '<span class="perk">Meals on set</span>' : '') +
+      (Number(a.meals_per_diem) ? '<span class="perk">Per diem '+money(a.meals_per_diem)+'</span>' : '') +
+      (a.parking_tolls_covered ? '<span class="perk">Parking covered</span>' : '') +
+      '</div>';
+
+    var logistics = '';
+    if (a.arrival_note || a.on_site_contact || a.gear_required || a.gear_provided || a.lodging_note) {
+      logistics = '<div style="font-size:13px;color:#4b5563;margin-top:10px;line-height:1.7">' +
+        (a.arrival_note ? '<div><b>Arrival:</b> '+esc(a.arrival_note)+'</div>' : '') +
+        (a.on_site_contact ? '<div><b>On site:</b> '+esc(a.on_site_contact)+'</div>' : '') +
+        (a.gear_required ? '<div><b>Bring:</b> '+esc(a.gear_required)+'</div>' : '') +
+        (a.gear_provided ? '<div><b>We provide:</b> '+esc(a.gear_provided)+'</div>' : '') +
+        (a.lodging_note ? '<div><b>Lodging:</b> '+esc(a.lodging_note)+'</div>' : '') +
+        '</div>';
+    }
     var canRespond = role==='contractor' && a.status==='offered';
     return '<div class="job '+a.status+'">'+
       '<div class="job-h"><b>'+esc(a.role_on_job)+(role!=='contractor'&&biz?' \u2014 '+esc(biz):'')+'</b>'+
-        '<span class="pay">'+money(a.pay_amount)+'</span></div>'+
+        '<span class="pay">'+money(total)+
+          (total !== Number(a.pay_amount) ? '<div style="font-size:11.5px;color:#6b7280;font-weight:500;text-align:right">fee '+money(a.pay_amount)+'</div>' : '')+
+        '</span></div>'+
       '<div class="meta"><span><b>'+esc(when)+'</b></span>'+
         (a.location?'<span>'+esc(a.location)+'</span>':'')+
         '<span class="st '+a.status+'">'+a.status+'</span></div>'+
+      sched + perks +
       '<div class="scope">'+esc(a.scope)+
-        (a.deliverables?'\n\nDeliverables: '+esc(a.deliverables):'')+'</div>'+
+        (a.deliverables?'\n\nDeliverables: '+esc(a.deliverables):'')+'</div>'+ logistics +
       (canRespond
         ? '<div class="acts"><button class="btn btn-sm accept" data-id="'+a.id+'">Accept this job</button>'+
           '<button class="btn btn-2 btn-sm decline" data-id="'+a.id+'">Decline</button></div>'
@@ -239,6 +318,61 @@ window.vcInit = async function(){
       }).join('')
     : '<option value="">No contractors yet — invite one in People</option>';
 
+  function addDayRow(d){
+    d = d || {};
+    var wrap = document.getElementById('dayRows');
+    var row = document.createElement('div');
+    row.className = 'dayrow';
+    row.innerHTML =
+      '<input type="date" class="dd">' +
+      '<input type="time" class="dc" title="Call time">' +
+      '<input type="time" class="dw" title="Wrap time">' +
+      '<input type="text" class="dn" placeholder="Note for this day">' +
+      '<button class="btn btn-danger btn-sm dx" type="button">\u00d7</button>';
+    wrap.appendChild(row);
+    if (d.work_date) row.querySelector('.dd').value = d.work_date;
+    if (d.call_time) row.querySelector('.dc').value = d.call_time;
+    row.querySelector('.dx').addEventListener('click', function(){
+      if (wrap.children.length > 1) { row.remove(); }
+    });
+  }
+
+  function collectDays(){
+    var out = [], i = 0;
+    document.querySelectorAll('#dayRows .dayrow').forEach(function(r){
+      var dt = r.querySelector('.dd').value;
+      if (!dt) return;
+      out.push({
+        work_date: dt,
+        call_time: r.querySelector('.dc').value || null,
+        wrap_time: r.querySelector('.dw').value || null,
+        note: r.querySelector('.dn').value.trim() || null,
+        sort_order: i++
+      });
+    });
+    return out;
+  }
+
+  /* Contractors decide on total compensation, not the day rate. Show it. */
+  function totalComp(){
+    var pay = Number($('pay').value) || 0;
+    var miles = Number($('miles').value) || 0;
+    var rate = Number($('mrate').value) || 0;
+    var diem = Number($('perdiem').value) || 0;
+    var mileage = $('mpaid').checked ? miles * rate : 0;
+    var total = pay + mileage + diem;
+    var bits = ['Fee ' + money(pay)];
+    if (mileage) bits.push('mileage ' + money(mileage));
+    if (diem) bits.push('per diem ' + money(diem));
+    var extras = [];
+    if ($('lodge').checked) extras.push('lodging');
+    if ($('meals').checked) extras.push('meals');
+    if ($('parking').checked) extras.push('parking');
+    document.getElementById('totalBox').innerHTML =
+      bits.join(' + ') + ' = <b>' + money(total) + '</b>' +
+      (extras.length ? '<div style="color:#6b7280;font-size:12.5px;margin-top:4px">Plus ' + extras.join(', ') + ' covered.</div>' : '');
+  }
+
   var lineItems = [];
 
   async function loadLineItems(){
@@ -319,7 +453,12 @@ window.vcInit = async function(){
     if (li && Number(li.contractor_cost)) $('pay').value = Number(li.contractor_cost);
     checkMargin();
   });
-  $('pay').addEventListener('input', checkMargin);
+  $('pay').addEventListener('input', function(){ checkMargin(); totalComp(); });
+  ['miles','mrate','perdiem'].forEach(function(id){ $(id).addEventListener('input', totalComp); });
+  ['mpaid','lodge','meals','parking'].forEach(function(id){ $(id).addEventListener('change', totalComp); });
+  document.getElementById('addDay').addEventListener('click', function(){ addDayRow(); });
+  addDayRow();
+  totalComp();
   checkGate();
   loadLineItems();
 
@@ -330,7 +469,10 @@ window.vcInit = async function(){
     if (!Number($('pay').value)) return say('offerMsg','Enter their pay.', false);
     if (!checkGate()) return say('offerMsg','Cannot offer work until the IP assignment is signed.', false);
 
-    var d = $('wdate').value || null;
+    var days = collectDays();
+    if (!days.length) return say('offerMsg','Add at least one work day.', false);
+    var d = days[0].work_date;
+
     var btn=this; btn.disabled=true;
     var r = await sb.from('assignments').insert({
       engagement_id: $('eng').value,
@@ -339,12 +481,28 @@ window.vcInit = async function(){
       scope: $('scope').value.trim(),
       deliverables: $('deliv').value.trim() || null,
       work_date: d,
-      work_start: (d && $('wstart').value) ? d+'T'+$('wstart').value+':00' : null,
-      work_end:   (d && $('wend').value)   ? d+'T'+$('wend').value+':00'   : null,
       location: $('loc').value.trim() || null,
       pay_amount: Number($('pay').value),
+      travel_miles: Number($('miles').value) || 0,
+      mileage_rate: Number($('mrate').value) || 0,
+      mileage_paid: $('mpaid').checked,
+      lodging_provided: $('lodge').checked,
+      lodging_note: $('lodgenote').value.trim() || null,
+      meals_provided: $('meals').checked,
+      meals_per_diem: Number($('perdiem').value) || 0,
+      parking_tolls_covered: $('parking').checked,
+      gear_required: $('gearReq').value.trim() || null,
+      gear_provided: $('gearProv').value.trim() || null,
+      arrival_note: $('arrival').value.trim() || null,
+      on_site_contact: $('onsite').value.trim() || null,
       status: 'offered'
-    });
+    }).select('id').single();
+
+    if (!r.error && r.data && days.length) {
+      await sb.from('assignment_days').insert(
+        days.map(function(x){ x.assignment_id = r.data.id; return x; })
+      );
+    }
     btn.disabled=false;
     if (r.error) return say('offerMsg', r.error.message, false);
 

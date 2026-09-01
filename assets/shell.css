@@ -728,3 +728,148 @@ body.vc-shelled .tag{
 body.vc-shelled .btn{
   letter-spacing:.02em !important; font-weight:700 !important;
 }
+
+
+/* ================= corrected direction =================
+   The previous pass went sharp, dense and monochrome. The references say the
+   opposite: Airbnb's roundness and air, Monday's colour-as-status. This
+   supersedes it. */
+
+/* Radii back up. 12px containers, 8px controls, pill-shaped status. */
+body.vc-shelled .card,
+body.vc-shelled .panel,
+body.vc-shelled .tile,
+body.vc-shelled .sec,
+body.vc-shelled .lst,
+body.vc-shelled .col,
+body.vc-shelled .it,
+body.vc-shelled .job,
+body.vc-shelled .inv,
+body.vc-shelled .eng-item,
+body.vc-shelled .step,
+body.vc-shelled .t{ border-radius:12px !important; }
+body.vc-shelled .btn,
+body.vc-shelled .btn-2,
+body.vc-shelled .btn-sec,
+body.vc-shelled input,
+body.vc-shelled select,
+body.vc-shelled textarea{ border-radius:8px !important; }
+.vc-navitem{ border-radius:8px !important; }
+
+/* Type: back to human scale, not micro-labels */
+body.vc-shelled h1{
+  font-size:26px !important; font-weight:700 !important;
+  letter-spacing:-.02em !important; line-height:1.2 !important;
+}
+body.vc-shelled .lede{
+  font-size:15px !important; font-weight:400 !important;
+  letter-spacing:0 !important; text-transform:none !important;
+  color:#5C6470 !important; margin-top:6px !important;
+}
+body.vc-shelled .card h2,
+body.vc-shelled .sec-hd h2{
+  font-size:16px !important; font-weight:600 !important;
+  letter-spacing:-.01em !important; text-transform:none !important;
+  color:#111827 !important;
+}
+body.vc-shelled .card .hint,
+body.vc-shelled .sec-hd p{ font-size:14px !important; color:#5C6470 !important; }
+
+/* Air. The references breathe; ours was cramped. */
+body.vc-shelled .card,
+body.vc-shelled .panel{ padding:26px !important; }
+body.vc-shelled .tile{ padding:22px !important; }
+body.vc-shelled .wrap,
+body.vc-shelled .page{ padding-top:38px !important; }
+body.vc-shelled .field{ margin-bottom:20px !important; }
+body.vc-shelled td{ padding:14px 12px !important; }
+
+/* Soft elevation instead of a hard hairline */
+body.vc-shelled .card,
+body.vc-shelled .panel,
+body.vc-shelled .tile{
+  border:1px solid #EBECEF !important;
+  box-shadow:0 1px 2px rgba(16,24,40,.04), 0 1px 3px rgba(16,24,40,.03) !important;
+}
+body.vc-shelled a.tile:hover,
+body.vc-shelled .card:hover{
+  box-shadow:0 4px 14px rgba(16,24,40,.08) !important;
+  transform:translateY(-1px);
+}
+body.vc-shelled a.tile,
+body.vc-shelled .card{ transition:box-shadow .18s, transform .18s; }
+
+/* ---- status as colour, Monday-style ----
+   Full block, white text, readable at a glance across a whole board. */
+body.vc-shelled .pill,
+body.vc-shelled .st,
+body.vc-shelled .tag,
+body.vc-shelled .lsel,
+body.vc-shelled .perk{
+  border-radius:999px !important;
+  font-size:11.5px !important; font-weight:700 !important;
+  letter-spacing:.01em !important; text-transform:none !important;
+  padding:5px 12px !important;
+}
+body.vc-shelled .st.paid, body.vc-shelled .pill.paid,
+body.vc-shelled .tag.live, body.vc-shelled .pill.approved{
+  background:#00A870 !important; color:#fff !important;
+}
+body.vc-shelled .st.invoiced, body.vc-shelled .tag.manual,
+body.vc-shelled .pill.submitted{ background:#FDAB3D !important; color:#fff !important; }
+body.vc-shelled .st.declined, body.vc-shelled .pill.disputed,
+body.vc-shelled .blk{ background:#E2445C !important; color:#fff !important; }
+body.vc-shelled .st.draft, body.vc-shelled .tag.soon{ background:#C4C7D0 !important; color:#fff !important; }
+body.vc-shelled .pill.owner{ background:#FF7575 !important; color:#fff !important; }
+body.vc-shelled .pill.account_owner{ background:#579BFC !important; color:#fff !important; }
+body.vc-shelled .pill.contractor{ background:#A25DDC !important; color:#fff !important; }
+body.vc-shelled .pill.client{ background:#00C875 !important; color:#fff !important; }
+body.vc-shelled .st.offered, body.vc-shelled .st.in_progress{ background:#FDAB3D !important; color:#fff !important; }
+body.vc-shelled .st.accepted, body.vc-shelled .st.signed{ background:#00A870 !important; color:#fff !important; }
+
+/* Board columns get a colour bar, not just a dot */
+body.vc-shelled .col{ background:#F6F7FB !important; padding:12px !important; }
+body.vc-shelled .col-h{ padding:2px 4px 12px !important; }
+body.vc-shelled .col-n{ background:#fff !important; border-radius:999px !important; }
+
+/* Task cards: rounder, softer, priority as a left bar still */
+body.vc-shelled .t{
+  box-shadow:0 1px 3px rgba(16,24,40,.07) !important;
+  border-left-width:4px !important; padding:13px 14px !important;
+}
+body.vc-shelled .t:hover{ box-shadow:0 4px 12px rgba(16,24,40,.13) !important; }
+
+/* Buttons: rounder, a little larger, with lift */
+body.vc-shelled .btn{
+  padding:11px 20px !important; font-size:14px !important;
+  font-weight:600 !important; letter-spacing:0 !important;
+  transition:transform .12s, box-shadow .12s, background .12s;
+}
+body.vc-shelled .btn:hover{ transform:translateY(-1px); box-shadow:0 3px 10px rgba(154,52,18,.28); }
+body.vc-shelled .btn:active{ transform:translateY(0); }
+
+/* Sidebar back to warm white with a soft active state */
+.vc-sidebar{ background:#FCFCFD !important; border-right:1px solid #EBECEF !important; }
+.vc-navitem{ font-size:14px !important; padding:9px 11px !important; }
+.vc-navgroup{ font-size:11px !important; letter-spacing:.06em !important; text-transform:uppercase; }
+
+/* Tables: quieter headers, roomier rows */
+body.vc-shelled thead th{
+  background:transparent !important; font-size:12px !important;
+  font-weight:600 !important; letter-spacing:0 !important;
+  text-transform:none !important; color:#5C6470 !important;
+  border-bottom:1px solid #EBECEF !important; padding:12px !important;
+}
+
+/* Empty states get room, like the references */
+body.vc-shelled .empty,
+body.vc-shelled .none{ padding:44px 24px !important; }
+
+/* Things appear rather than snap */
+@keyframes vcIn{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;} }
+body.vc-shelled .card,
+body.vc-shelled .tile{ animation:vcIn .26s ease both; }
+@media (prefers-reduced-motion: reduce){
+  body.vc-shelled .card, body.vc-shelled .tile{ animation:none; }
+  body.vc-shelled .btn:hover, body.vc-shelled .card:hover{ transform:none; }
+}

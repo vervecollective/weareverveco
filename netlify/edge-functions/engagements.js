@@ -1,7 +1,23 @@
 import { getStore } from '@netlify/blobs';
 
 
-function checkAuth(req, storedPassword) {
+// Accepts EITHER a Supabase session (normal path) or the legacy admin password
+// (recovery path, so a bad deploy can never lock everyone out).
+async function checkAuth(req, storedPassword) {
+  const bearer = req.headers.get('authorization');
+  if (bearer && bearer.startsWith('Bearer ')) {
+    const token = bearer.slice(7);
+    const base = Deno.env.get('SUPABASE_URL');
+    const anon = Deno.env.get('SUPABASE_ANON_KEY');
+    if (base && anon) {
+      try {
+        const res = await fetch(base + '/auth/v1/user', {
+          headers: { Authorization: 'Bearer ' + token, apikey: anon },
+        });
+        if (res.ok) return true;
+      } catch (_) { /* fall through to password */ }
+    }
+  }
   const supplied = req.headers.get('x-admin-password');
   return Boolean(supplied) && supplied === storedPassword;
 }
@@ -20,7 +36,7 @@ export default async (req) => {
 
   const cors = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type, x-admin-password',
+    'Access-Control-Allow-Headers': 'Content-Type, x-admin-password, authorization',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   };
 
@@ -28,7 +44,7 @@ export default async (req) => {
 
   // Single source of truth for the admin password — same one as the CMS
   const storedPassword = (await contentStore.get('admin_password')) || Deno.env.get('ADMIN_PASSWORD');
-  if (!checkAuth(req, storedPassword)) return json({ error: 'Unauthorized' }, 401, cors);
+  if (!(await checkAuth(req, storedPassword))) return json({ error: 'Unauthorized' }, 401, cors);
 
   if (req.method === 'GET') {
     const id = url.searchParams.get('id');

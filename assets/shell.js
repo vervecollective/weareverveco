@@ -120,9 +120,12 @@ shell.innerHTML =
         ? ' style="background-image:url(' + profile.avatar_url + ');background-size:cover"></span>'
         : '>' + initials + '</span>') +
     '<span class="vc-userinfo"><b>' + name + '</b><em>' + (ROLE_LABEL[role] || role) + '</em></span>' +
-    '<button class="vc-signout" id="vcSignOut" title="Sign out">' +
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">' +
-      '<path d="M15 17l5-5-5-5M20 12H9M12 20H5V4h7"/></svg></button>' +
+    '<button class="vc-signout" id="vcSignOut" title="Sign out" aria-label="Sign out">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" ' +
+      'stroke-linecap="round" stroke-linejoin="round">' +
+      '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>' +
+      '<path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>' +
+      '<span class="vc-signout-txt">Sign out</span></button>' +
   '</div>' +
   '<button class="vc-toggle" id="vcToggle" aria-label="Menu">☰</button>';
 
@@ -135,6 +138,18 @@ document.getElementById('vcSignOut').addEventListener('click', async () => {
 });
 document.getElementById('vcToggle').addEventListener('click', () => {
   shell.classList.toggle('open');
+});
+
+/* On a phone the drawer covers the page — close it as soon as a link is tapped,
+   and let a tap outside dismiss it. */
+shell.querySelectorAll('.vc-navitem').forEach((a) => {
+  a.addEventListener('click', () => shell.classList.remove('open'));
+});
+document.addEventListener('click', (e) => {
+  if (window.innerWidth > 860) return;
+  if (!shell.classList.contains('open')) return;
+  if (shell.contains(e.target) || e.target.closest('#vcToggle')) return;
+  shell.classList.remove('open');
 });
 
 /* Hide anything a contractor or client must never see, belt-and-braces on top of RLS */

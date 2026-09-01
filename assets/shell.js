@@ -135,24 +135,49 @@ shell.innerHTML =
 document.body.appendChild(shell);
 document.body.classList.add('vc-shelled');
 
+/* Top bar lives on <body>, outside the sidebar, so it stays put when the
+   drawer slides. Inside the sidebar it inherited the transform and vanished. */
+const topbar = document.createElement('div');
+topbar.className = 'vc-topbar';
+topbar.innerHTML =
+  '<button class="vc-toggle" id="vcToggle" aria-label="Open menu">' +
+    '<span></span><span></span><span></span></button>' +
+  '<span class="vc-topbar-title">Verve Collective</span>' +
+  '<a class="vc-topbar-me" href="/settings" aria-label="Settings"></a>';
+document.body.appendChild(topbar);
+
+const scrim = document.createElement('div');
+scrim.className = 'vc-scrim';
+scrim.addEventListener('click', () => shell.classList.remove('open'));
+document.body.appendChild(scrim);
+
+const me = document.querySelector('.vc-topbar-me');
+if (me) me.textContent = initials;
+
 document.getElementById('vcSignOut').addEventListener('click', async () => {
   await sb.auth.signOut();
   location.href = '/login.html';
 });
-document.getElementById('vcToggle').addEventListener('click', () => {
+document.getElementById('vcToggle').addEventListener('click', (e) => {
+  e.stopPropagation();
   shell.classList.toggle('open');
+  document.body.classList.toggle('vc-locked', shell.classList.contains('open'));
 });
 
 /* On a phone the drawer covers the page — close it as soon as a link is tapped,
    and let a tap outside dismiss it. */
 shell.querySelectorAll('.vc-navitem').forEach((a) => {
-  a.addEventListener('click', () => shell.classList.remove('open'));
+  a.addEventListener('click', () => {
+    shell.classList.remove('open');
+    document.body.classList.remove('vc-locked');
+  });
 });
 document.addEventListener('click', (e) => {
   if (window.innerWidth > 860) return;
   if (!shell.classList.contains('open')) return;
   if (shell.contains(e.target) || e.target.closest('#vcToggle')) return;
   shell.classList.remove('open');
+  document.body.classList.remove('vc-locked');
 });
 
 /* Hide anything a contractor or client must never see, belt-and-braces on top of RLS */

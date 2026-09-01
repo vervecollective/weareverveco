@@ -133,3 +133,8 @@
   from = "/welcome"
   to = "/welcome.html"
   status = 200
+
+[[redirects]]
+  from = "/messages"
+  to = "/messages.html"
+  status = 200

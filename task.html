@@ -10,116 +10,139 @@
 <script type="module" src="/assets/shell.js"></script>
 <style>
   *{box-sizing:border-box;margin:0;padding:0;}
-  body{font-family:'Inter',system-ui,sans-serif;color:#111827;line-height:1.55;-webkit-font-smoothing:antialiased;}
+  body{font-family:'Inter',system-ui,sans-serif;color:#111827;line-height:1.55;
+    -webkit-font-smoothing:antialiased;background:#F6F7F9;}
   .wrap{max-width:1180px;margin:0;padding:26px 34px 90px;}
 
-  .crumbs{display:flex;align-items:center;gap:8px;font-size:13px;color:#5C6470;margin-bottom:18px;flex-wrap:wrap;}
-  .crumbs a{color:#5C6470;text-decoration:none;}
+  .crumbs{display:flex;align-items:center;gap:8px;font-size:13px;color:#5C6470;margin-bottom:16px;flex-wrap:wrap;}
+  .crumbs a{color:#5C6470;text-decoration:none;font-weight:500;}
   .crumbs a:hover{color:#9A3412;}
   .crumbs span{color:#C4C7D0;}
 
-  .cols{display:grid;grid-template-columns:1fr 296px;gap:30px;align-items:start;}
-  @media(max-width:960px){.cols{grid-template-columns:1fr;gap:20px;}}
+  .cols{display:grid;grid-template-columns:1fr 300px;gap:24px;align-items:start;}
+  @media(max-width:960px){.cols{grid-template-columns:1fr;gap:18px;}}
 
-  /* ---- title ---- */
-  .t-title{font-size:27px;font-weight:700;letter-spacing:-.025em;line-height:1.25;
-    border:none;width:100%;font-family:inherit;color:#111827;padding:2px 0;background:none;resize:none;}
-  .t-title:focus{outline:none;}
+  /* ---- main card, with a status-coloured top edge ---- */
+  .main{background:#fff;border-radius:14px;padding:28px 30px;border:1px solid #EBECEF;
+    box-shadow:0 1px 2px rgba(16,24,40,.04);position:relative;overflow:hidden;}
+  .main:before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:var(--stc,#94A3B8);}
+
   .t-parent{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;
-    color:#5C6470;background:#F1F2F4;padding:4px 10px;border-radius:6px;text-decoration:none;margin-bottom:10px;}
-  .t-parent:hover{color:#9A3412;}
+    color:#5C6470;background:#F1F2F4;padding:5px 11px;border-radius:999px;text-decoration:none;margin-bottom:12px;}
+  .t-parent:hover{background:#FDF0EB;color:#9A3412;}
 
-  .detail{margin-top:14px;font-size:15px;line-height:1.7;color:#374151;width:100%;
-    border:1px solid transparent;border-radius:9px;padding:11px 13px;font-family:inherit;
-    resize:vertical;min-height:96px;background:none;}
-  .detail:hover{border-color:#EBECEF;}
-  .detail:focus{outline:none;border-color:#9A3412;background:#fff;box-shadow:0 0 0 3px rgba(154,52,18,.08);}
-  .detail::placeholder{color:#9CA3AF;}
+  .t-title{font-size:28px;font-weight:700;letter-spacing:-.028em;line-height:1.25;
+    border:none;width:100%;font-family:inherit;color:#111827;padding:0;background:none;resize:none;}
+  .t-title:focus{outline:none;}
 
-  .saveline{font-size:12px;color:#9CA3AF;margin-top:6px;height:16px;}
-  .saveline.on{color:#065F46;}
+  /* No boxes around editable text until you are actually in them. */
+  .detail{margin-top:12px;font-size:15.5px;line-height:1.7;color:#374151;width:100%;
+    border:none;border-radius:0;padding:0;font-family:inherit;resize:none;min-height:52px;
+    background:none;overflow:hidden;}
+  .detail:focus{outline:none;}
+  .detail::placeholder{color:#B4B9C2;}
+  .saveline{font-size:12px;color:#9CA3AF;margin-top:10px;height:15px;}
+  .saveline.on{color:#00875A;}
 
-  /* ---- section ---- */
-  .sec{margin-top:32px;}
-  .sec-h{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;}
-  .sec-h h2{font-size:13px;font-weight:700;letter-spacing:.02em;color:#111827;}
-  .sec-h .cnt{font-size:12px;color:#5C6470;font-weight:500;}
+  .sec{margin-top:30px;padding-top:24px;border-top:1px solid #F1F2F4;}
+  .sec-h{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+  .sec-h h2{font-size:13.5px;font-weight:700;letter-spacing:-.01em;}
+  .sec-h .cnt{font-size:12.5px;color:#5C6470;font-weight:500;}
 
   /* ---- subtasks ---- */
-  .prog{height:5px;background:#EDEEF1;border-radius:999px;overflow:hidden;margin-bottom:12px;}
-  .prog i{display:block;height:100%;background:#00A870;border-radius:999px;transition:width .3s;}
-  .st{display:flex;align-items:center;gap:11px;padding:11px 12px;border:1px solid #EBECEF;
-    border-radius:9px;margin-bottom:7px;background:#fff;cursor:grab;transition:box-shadow .14s,border-color .14s;}
-  .st:hover{border-color:#D8DAE0;box-shadow:0 1px 4px rgba(16,24,40,.06);}
-  .st.dragging{opacity:.4;}
-  .st.over{border-color:#9A3412;box-shadow:0 0 0 2px rgba(154,52,18,.15);}
-  .st .grip{color:#C4C7D0;cursor:grab;flex-shrink:0;}
+  .prog{height:6px;background:#EDEEF1;border-radius:999px;overflow:hidden;margin-bottom:14px;}
+  .prog i{display:block;height:100%;background:linear-gradient(90deg,#00A870,#00C875);
+    border-radius:999px;transition:width .35s cubic-bezier(.32,.72,0,1);}
+  .st{display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:10px;
+    margin-bottom:5px;background:#FAFBFC;transition:background .14s,box-shadow .14s;}
+  .st:hover{background:#F1F3F6;}
+  .st.drag{opacity:.4;}
+  .st.over{box-shadow:inset 0 2px 0 #9A3412;}
+  .st .grip{color:#C4C7D0;cursor:grab;flex-shrink:0;display:flex;}
   .st .grip svg{width:13px;height:13px;}
-  .cbox{width:19px;height:19px;border-radius:5px;border:2px solid #C4C7D0;flex-shrink:0;
+  .cbox{width:20px;height:20px;border-radius:6px;border:2px solid #C4C7D0;flex-shrink:0;
     cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .14s;background:#fff;}
   .cbox.on{background:#00A870;border-color:#00A870;}
   .cbox svg{width:11px;height:11px;color:#fff;opacity:0;}
   .cbox.on svg{opacity:1;}
-  .st .txt{flex:1;font-size:14px;border:none;background:none;font-family:inherit;color:#111827;padding:0;}
+  .st .txt{flex:1;font-size:14.5px;border:none;background:none;font-family:inherit;color:#111827;padding:0;}
   .st .txt:focus{outline:none;}
   .st.done .txt{text-decoration:line-through;color:#9CA3AF;}
-  .st .when{font-size:12px;color:#5C6470;white-space:nowrap;}
-  .st .when.late{color:#991B1B;font-weight:600;}
-  .st .x{background:none;border:none;color:#C4C7D0;cursor:pointer;font-size:17px;line-height:1;
+  .st .when{font-size:12px;color:#5C6470;white-space:nowrap;font-weight:500;}
+  .st .when.late{color:#991B1B;font-weight:700;}
+  .st .x{background:none;border:none;color:#C4C7D0;cursor:pointer;font-size:18px;line-height:1;
     padding:2px 4px;opacity:0;}
-  .st:hover .x{opacity:1;}
-  .st .x:hover{color:#991B1B;}
-  .addst{display:flex;gap:9px;margin-top:9px;}
-  .addst input[type=text]{flex:1;padding:11px 13px;font-size:14px;font-family:inherit;
-    border:1px dashed #D8DAE0;border-radius:9px;}
-  .addst input[type=text]:focus{outline:none;border-style:solid;border-color:#9A3412;}
-  .addst input[type=date]{width:140px;padding:11px;font-size:13px;font-family:inherit;
-    border:1px solid #D8DAE0;border-radius:9px;}
+  .st:hover .x{opacity:1;} .st .x:hover{color:#991B1B;}
+  .addst{display:flex;gap:9px;margin-top:10px;align-items:center;}
+  .addst input[type=text]{flex:1;padding:11px 13px;font-size:14.5px;font-family:inherit;
+    border:none;border-radius:10px;background:#F1F3F6;}
+  .addst input[type=text]:focus{outline:none;background:#fff;box-shadow:0 0 0 2px #9A3412;}
+  .addst input[type=date]{width:140px;padding:10px;font-size:13px;font-family:inherit;
+    border:none;border-radius:10px;background:#F1F3F6;color:#5C6470;}
 
   /* ---- discussion ---- */
-  .cm{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid #F4F5F7;}
-  .cm:last-of-type{border-bottom:none;}
-  .cm .av{width:32px;height:32px;border-radius:50%;background:#111827;color:#fff;flex-shrink:0;
-    display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;background-size:cover;}
+  .cm{display:flex;gap:12px;padding:14px 0;}
+  .cm + .cm{border-top:1px solid #F4F5F7;}
+  .cm .av{width:34px;height:34px;border-radius:50%;background:#111827;color:#fff;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:700;background-size:cover;}
   .cm .b{flex:1;min-width:0;}
   .cm .hd{display:flex;align-items:baseline;gap:9px;margin-bottom:3px;}
   .cm .hd b{font-size:13.5px;font-weight:700;}
   .cm .hd em{font-size:11.5px;font-style:normal;color:#9CA3AF;}
   .cm .tx{font-size:14.5px;color:#242830;white-space:pre-wrap;line-height:1.6;}
-  .cm-rx{display:flex;gap:5px;margin-top:7px;flex-wrap:wrap;}
-  .cm-rx button{border:1px solid #E4E6EA;background:#fff;border-radius:999px;padding:2px 9px;
-    font-size:12.5px;cursor:pointer;font-family:inherit;line-height:1.7;}
+  .cm-rx{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap;}
+  .cm-rx button{border:1px solid #E4E6EA;background:#fff;border-radius:999px;padding:2px 10px;
+    font-size:13px;cursor:pointer;font-family:inherit;line-height:1.7;}
   .cm-rx button.mine{background:#FDF0EB;border-color:#9A3412;}
   .cm-rx .addr{border-style:dashed;color:#9CA3AF;opacity:0;}
   .cm:hover .cm-rx .addr{opacity:1;}
-  .cbox-w{display:flex;gap:12px;margin-top:16px;}
-  .cbox-w textarea{flex:1;border:1px solid #D8DAE0;border-radius:10px;padding:12px 14px;
-    font:400 14.5px/1.6 'Inter',sans-serif;resize:vertical;min-height:78px;}
-  .cbox-w textarea:focus{outline:none;border-color:#9A3412;box-shadow:0 0 0 3px rgba(154,52,18,.08);}
+  .cbox-w{margin-top:16px;}
+  .cbox-w textarea{width:100%;border:none;border-radius:12px;padding:14px 16px;background:#F1F3F6;
+    font:400 14.5px/1.6 'Inter',sans-serif;resize:vertical;min-height:84px;}
+  .cbox-w textarea:focus{outline:none;background:#fff;box-shadow:0 0 0 2px #9A3412;}
+  .send{background:#9A3412;color:#fff;border:none;border-radius:10px;padding:11px 22px;
+    font:600 14px/1 'Inter',sans-serif;cursor:pointer;margin-top:10px;}
+  .send:hover{background:#7C2D12;}
 
-  /* ---- right rail ---- */
-  .rail{background:#fff;border:1px solid #EBECEF;border-radius:12px;padding:18px;position:sticky;top:22px;}
-  .f{padding:11px 0;border-bottom:1px solid #F4F5F7;}
-  .f:last-child{border-bottom:none;}
-  .f label{display:block;font-size:11.5px;font-weight:600;color:#5C6470;margin-bottom:6px;}
-  .f select,.f input{width:100%;padding:9px 11px;font-size:13.5px;font-family:inherit;
-    border:1px solid #E4E6EA;border-radius:8px;background:#fff;color:#111827;}
-  .f select:focus,.f input:focus{outline:none;border-color:#9A3412;}
-  .swatch{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;}
-  .t-rx{display:flex;gap:6px;flex-wrap:wrap;margin-top:14px;}
-  .t-rx button{border:1px solid #E4E6EA;background:#fff;border-radius:999px;padding:4px 11px;
-    font-size:13.5px;cursor:pointer;font-family:inherit;}
+  /* ---- right rail, with colour per field group ---- */
+  .rail{background:#fff;border:1px solid #EBECEF;border-radius:14px;padding:6px 18px 18px;
+    position:sticky;top:22px;box-shadow:0 1px 2px rgba(16,24,40,.04);}
+  .f{padding:13px 0;border-bottom:1px solid #F4F5F7;}
+  .f:last-of-type{border-bottom:none;}
+  .f label{display:block;font-size:11.5px;font-weight:600;color:#5C6470;margin-bottom:7px;}
+  .f select,.f input{width:100%;padding:10px 12px;font-size:13.5px;font-family:inherit;
+    border:none;border-radius:9px;background:#F1F3F6;color:#111827;}
+  .f select:focus,.f input:focus{outline:none;background:#fff;box-shadow:0 0 0 2px #9A3412;}
+  .rail-h{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;
+    color:#9CA3AF;padding:16px 0 4px;}
+
+  .t-rx{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;align-items:center;}
+  .t-rx button{border:1px solid #E4E6EA;background:#fff;border-radius:999px;padding:5px 12px;
+    font-size:14px;cursor:pointer;font-family:inherit;line-height:1.3;}
   .t-rx button.mine{background:#FDF0EB;border-color:#9A3412;}
-  .t-rx .addr{border-style:dashed;color:#9CA3AF;}
-  .danger{width:100%;margin-top:16px;background:none;border:1px solid #F0A9A9;color:#991B1B;
-    border-radius:8px;padding:10px;font:600 13px/1 'Inter',sans-serif;cursor:pointer;}
+  .t-rx .more{border-style:dashed;color:#9CA3AF;font-size:13px;}
+  .danger{width:100%;margin-top:18px;background:none;border:1px solid #F0A9A9;color:#991B1B;
+    border-radius:10px;padding:11px;font:600 13px/1 'Inter',sans-serif;cursor:pointer;}
   .danger:hover{background:#FEF2F2;}
-  .none{font-size:13.5px;color:#9CA3AF;padding:14px 0;}
+  .none{font-size:13.5px;color:#9CA3AF;padding:12px 0;}
   .loading{padding:60px;text-align:center;color:#9CA3AF;}
+
+  /* ---- emoji picker, same as messages ---- */
+  .epick{position:fixed;background:#fff;border:1px solid #EBECEF;border-radius:14px;
+    box-shadow:0 16px 42px rgba(16,24,40,.2);display:none;width:330px;z-index:60;overflow:hidden;}
+  .epick.on{display:block;}
+  .epick-b{max-height:270px;overflow-y:auto;padding:10px;}
+  .ecat{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;
+    color:#9CA3AF;padding:8px 4px 6px;}
+  .egrid{display:grid;grid-template-columns:repeat(8,1fr);gap:2px;}
+  .egrid button{border:none;background:none;font-size:20px;cursor:pointer;padding:5px;
+    border-radius:8px;line-height:1.25;}
+  .egrid button:hover{background:#F3F4F6;transform:scale(1.18);}
 </style>
 </head>
 <body>
 <div class="wrap" id="wrap"><p class="loading">Loading…</p></div>
+<div class="epick" id="epick"><div class="epick-b" id="epickB"></div></div>
 
 <script>
 function $(i){return document.getElementById(i);}
@@ -127,6 +150,34 @@ function esc(s){var d=document.createElement('div');d.textContent=s==null?'':s;r
 function ini(n){return (n||'?').split(' ').map(function(p){return p[0];}).filter(Boolean).join('').slice(0,2).toUpperCase();}
 var sb, me, T = null, COLS = [], DONE = [], people = [], rxMap = {}, cmRx = {}, saveTimer = null;
 var QUICK = ['\u{1F44D}','\u{1F525}','\u2705','\u{1F440}','\u{1F389}','\u{1F914}'];
+var CATS = [
+  ['Reactions', ['\u{1F44D}','\u{1F44E}','\u{1F525}','\u2764\uFE0F','\u{1F602}','\u{1F62D}','\u{1F389}','\u2705',
+    '\u274C','\u{1F440}','\u{1F64C}','\u{1F4AF}','\u{1F914}','\u{1F605}','\u{1F64F}','\u26A1',
+    '\u{1F91D}','\u{1F4A1}','\u{1F6A8}','\u2B50','\u{1F947}','\u{1F44F}','\u{1F9E0}','\u{1F480}']],
+  ['Faces', ['\u{1F600}','\u{1F603}','\u{1F609}','\u{1F60A}','\u{1F60D}','\u{1F60E}','\u{1F929}','\u{1F61C}',
+    '\u{1F92A}','\u{1F610}','\u{1F644}','\u{1F62C}','\u{1F613}','\u{1F624}','\u{1F621}','\u{1F92F}',
+    '\u{1F628}','\u{1F975}','\u{1F976}','\u{1F910}','\u{1F928}','\u{1F612}','\u{1F634}','\u{1F92B}']],
+  ['Work', ['\u{1F3AC}','\u{1F4F8}','\u{1F3A5}','\u{1F5A5}\uFE0F','\u{1F4C8}','\u{1F4C9}','\u{1F4CA}','\u{1F4B0}',
+    '\u{1F4B8}','\u{1F9FE}','\u{1F4C5}','\u23F0','\u23F3','\u{1F4CC}','\u{1F4CE}','\u270F\uFE0F',
+    '\u{1F680}','\u{1F3AF}','\u{1F50D}','\u{1F6E0}\uFE0F','\u{1F4E3}','\u{1F514}','\u{1F4DD}','\u{1F4C1}']],
+  ['Life', ['\u2615','\u{1F355}','\u{1F354}','\u{1F37B}','\u{1F382}','\u{1F308}','\u2600\uFE0F','\u2744\uFE0F',
+    '\u{1F33F}','\u{1F415}','\u{1F408}','\u{1F697}','\u2708\uFE0F','\u{1F3E0}','\u{1F3B5}','\u{1F3AE}',
+    '\u26BD','\u{1F3C3}','\u{1F6CC}','\u{1F973}','\u{1F3C6}','\u{1F381}','\u{1F30D}','\u{1F52E}']]
+];
+var pickTarget = null;
+
+function openPicker(anchor, cb){
+  var p = document.getElementById('epick');
+  pickTarget = cb;
+  var r = anchor.getBoundingClientRect();
+  p.style.top  = Math.min(r.bottom + 8, window.innerHeight - 300) + 'px';
+  p.style.left = Math.max(Math.min(r.left, window.innerWidth - 344), 10) + 'px';
+  p.classList.add('on');
+}
+document.addEventListener('click', function(e){
+  var p = document.getElementById('epick');
+  if (p && !p.contains(e.target) && !e.target.closest('[data-pick]')) p.classList.remove('on');
+});
 
 function rel(d){
   if (!d) return '';
@@ -275,7 +326,14 @@ async function loadComments(){
   $('cmList').querySelectorAll('.cm-rx button').forEach(function(b){
     b.addEventListener('click', async function(){
       var e = b.dataset.e;
-      if (e === 'pick') { e = window.prompt('Reaction? Paste an emoji.', '\u{1F44D}'); if (!e) return; }
+      if (e === 'pick') {
+        var cid = b.dataset.c;
+        openPicker(b, async function(emo){
+          await sb.from('comment_reactions').insert({ comment_id:cid, profile_id:me.id, emoji:emo });
+          loadComments();
+        });
+        return;
+      }
       var ex = (cmRx[b.dataset.c]||{})[e];
       if (ex && ex.mine) {
         await sb.from('comment_reactions').delete()
@@ -298,11 +356,19 @@ async function loadTaskReactions(){
   $('tRx').innerHTML = Object.keys(rxMap).map(function(e){
     return '<button class="'+(rxMap[e].mine?'mine':'')+'" data-e="'+e+'">'+e+' '+rxMap[e].n+'</button>';
   }).join('') + QUICK.filter(function(q){ return !rxMap[q]; }).slice(0,3).map(function(q){
-    return '<button class="addr" data-e="'+q+'">'+q+'</button>';
-  }).join('');
+    return '<button data-e="'+q+'">'+q+'</button>';
+  }).join('') + '<button class="more" data-pick="task">+</button>';
 
   $('tRx').querySelectorAll('button').forEach(function(b){
-    b.addEventListener('click', async function(){
+    b.addEventListener('click', async function(ev){
+      if (b.dataset.pick) {
+        ev.stopPropagation();
+        openPicker(b, async function(emo){
+          await sb.from('task_reactions').insert({ task_id:T.id, profile_id:me.id, emoji:emo });
+          loadTaskReactions();
+        });
+        return;
+      }
       var e = b.dataset.e, ex = rxMap[e];
       if (ex && ex.mine) {
         await sb.from('task_reactions').delete()
@@ -344,7 +410,7 @@ window.vcInit = async function(){
   $('wrap').innerHTML =
     '<div class="crumbs"><a href="/board">Board</a><span>/</span>'+
       '<a href="/internal">'+esc(biz)+'</a><span>/</span><span>Task</span></div>'+
-    '<div class="cols"><div>'+
+    '<div class="cols"><div class="main" id="main">'+
       (T.parent ? '<a class="t-parent" href="/task?id='+T.parent.id+'">&larr; '+esc(T.parent.title)+'</a>' : '')+
       '<textarea class="t-title" id="title" rows="1">'+esc(T.title)+'</textarea>'+
       '<textarea class="detail" id="detail" placeholder="Add detail. What does done look like?">'+esc(T.detail||'')+'</textarea>'+
@@ -360,7 +426,7 @@ window.vcInit = async function(){
       '<div class="sec"><div class="sec-h"><h2>Discussion</h2><span class="cnt" id="cmCount"></span></div>'+
         '<div id="cmList"></div>'+
         '<div class="cbox-w"><textarea id="cmNew" placeholder="Add a comment. Use @ to pull someone in."></textarea></div>'+
-        '<button class="btn" id="cmSend" style="margin-top:10px">Comment</button>'+
+        '<button class="send" id="cmSend">Comment</button>'+
       '</div>'+
     '</div>'+
 
@@ -387,6 +453,19 @@ window.vcInit = async function(){
       '<button class="danger" id="del">Delete task</button>'+
     '</div></div>';
 
+  function paintEdge(){
+    var c = COLS.filter(function(x){ return x[0] === T.status; })[0];
+    var el = document.getElementById('main');
+    if (el && c) el.style.setProperty('--stc', c[2]);
+  }
+  paintEdge();
+
+  // detail grows instead of scrolling in a fixed box
+  var dt = $('detail');
+  function sizeDetail(){ dt.style.height='auto'; dt.style.height=Math.max(dt.scrollHeight,52)+'px'; }
+  sizeDetail();
+  dt.addEventListener('input', sizeDetail);
+
   // auto-size the title
   var ti = $('title');
   function sizeTitle(){ ti.style.height='auto'; ti.style.height=ti.scrollHeight+'px'; }
@@ -397,6 +476,7 @@ window.vcInit = async function(){
 
   $('fStatus').addEventListener('change', function(){
     patch({ status:this.value, completed_at: DONE.indexOf(this.value)>-1 ? new Date().toISOString() : null });
+    paintEdge();
   });
   $('fPri').addEventListener('change', function(){ patch({ priority:this.value }); });
   $('fWho').addEventListener('change', function(){ patch({ assignee_id:this.value||null }); });
@@ -414,6 +494,18 @@ window.vcInit = async function(){
     if (!ok) return;
     await sb.from('tasks').delete().eq('id', T.id);
     location.href = '/board';
+  });
+
+  // one picker, used by task and comment reactions alike
+  $('epickB').innerHTML = CATS.map(function(c){
+    return '<div class="ecat">'+c[0]+'</div><div class="egrid">'+
+      c[1].map(function(e){ return '<button data-e="'+e+'">'+e+'</button>'; }).join('')+'</div>';
+  }).join('');
+  $('epickB').addEventListener('click', function(e){
+    var b = e.target.closest('button'); if (!b) return;
+    e.stopPropagation();
+    $('epick').classList.remove('on');
+    if (pickTarget) pickTarget(b.dataset.e);
   });
 
   $('stNew').addEventListener('keydown', async function(e){

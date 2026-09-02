@@ -710,15 +710,9 @@ if (role !== 'client') {
    Reachable from every page. Without this, someone who hits a bug has no
    route other than texting Trae, and most people just stop using the thing. */
 (function(){
-  const btn = document.createElement('button');
-  btn.className = 'vc-report';
-  btn.id = 'vcReport';
-  btn.title = 'Report a problem';
-  btn.innerHTML =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" ' +
-    'stroke-linecap="round"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>' +
-    '<span>Report</span>';
-  document.body.appendChild(btn);
+  /* No floating button: it sat on top of the chat compose bar. It lives in the
+     profile menu instead, which is where people already look and is never in
+     front of anything. */
 
   const veil = document.createElement('div');
   veil.className = 'vc-rep-veil';
@@ -755,7 +749,21 @@ if (role !== 'client') {
   function shut(){ veil.classList.remove('on'); box.classList.remove('on');
     document.getElementById('vcRepMsg').className = 'vc-rep-msg'; }
 
-  btn.addEventListener('click', open);
+  const menuItem = document.getElementById('vcIdReport');
+  if (menuItem) {
+    menuItem.addEventListener('click', (e) => {
+      e.stopPropagation();
+      document.getElementById('vcIdMenu').classList.remove('on');
+      open();
+    });
+  }
+
+  // Keyboard shortcut for anyone who reports often.
+  document.addEventListener('keydown', (e) => {
+    if (e.key === '?' && e.shiftKey && !/input|textarea/i.test((e.target.tagName || ''))) {
+      e.preventDefault(); open();
+    }
+  });
   veil.addEventListener('click', shut);
   document.getElementById('vcRepCancel').addEventListener('click', shut);
 

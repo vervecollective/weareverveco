@@ -752,248 +752,250 @@ try {
    Your avatar top-right, and a profile card for anyone whose avatar is
    clicked. Identity should be reachable from every screen, not buried. */
 try {
+try {
 (function(){
-    const escv = (v) => { const d = document.createElement('div'); d.textContent = v == null ? '' : v; return d.innerHTML; };
-    const initialsOf = (n) => (n || '?').split(' ').map(x => x[0]).filter(Boolean).join('').slice(0,2).toUpperCase();
-    const avatarHtml = (p, cls) => (p && p.avatar_url)
-      ? `<span class="${cls}" style="background-image:url(${escv(p.avatar_url)})"></span>`
-      : `<span class="${cls}">${initialsOf(p && (p.full_name || p.email))}</span>`;
-  
-    const ROLE = { owner:'Owner', account_owner:'Account owner', contractor:'Contractor', client:'Client' };
-  
-    // ---- top-right identity ----
-    const bar = document.createElement('div');
-    bar.className = 'vc-idbar';
-    bar.innerHTML = `<button class="vc-id" id="vcId" aria-label="Your account">
-        ${avatarHtml(profile || { full_name: name }, 'vc-id-av')}
-        <span class="vc-id-t"><b>${escv(name)}</b><em>${ROLE[role] || role}</em></span>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-          stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>
-      </button>
-      <div class="vc-idmenu" id="vcIdMenu">
-        <a href="/settings">Your profile</a>
-        <a href="/settings">Settings</a>
-        <a href="/help">Help</a>
-        <button id="vcIdReport">Report a problem</button>
-        <button id="vcIdOut">Sign out</button>
-      </div>`;
-    document.body.appendChild(bar);
-  
-    document.getElementById('vcId').addEventListener('click', (e) => {
-      e.stopPropagation();
-      document.getElementById('vcIdMenu').classList.toggle('on');
-    });
-    document.addEventListener('click', () => {
-      document.getElementById('vcIdMenu').classList.remove('on');
-    });
-    document.getElementById('vcIdOut').addEventListener('click', async () => {
-      await sb.auth.signOut();
-      location.href = '/login.html';
-    });
-  
-    // ---- profile card for anyone ----
-    const card = document.createElement('div');
-    card.className = 'vc-pcard';
-    card.innerHTML = '<div id="vcPcBody"></div>';
-    const cardVeil = document.createElement('div');
-    cardVeil.className = 'vc-pcard-veil';
-    cardVeil.addEventListener('click', () => {
-      card.classList.remove('on'); cardVeil.classList.remove('on');
-    });
-    document.body.append(cardVeil, card);
-  
-    const thread = document.createElement('div');
-    thread.className = 'vc-thread';
-    thread.innerHTML = '<div class="vc-thread-h"><b>Thread</b>' +
-      '<button class="vc-peek-x" id="vcThreadX" aria-label="Close">&times;</button></div>' +
-      '<div class="vc-thread-b" id="vcThreadB"></div>';
-    document.body.appendChild(thread);
-    document.getElementById('vcThreadX').addEventListener('click', () => {
-      thread.classList.remove('on'); panel.classList.remove('pushed');
-    });
-  
-    async function openThread(commentId, taskId){
-      thread.classList.add('on');
-      panel.classList.add('pushed');
-      const b = document.getElementById('vcThreadB');
-      b.innerHTML = '<p class="vc-peek-load">Loading\u2026</p>';
-  
-      const { data: root } = await sb.from('comments')
-        .select('*, profiles:author_id(full_name)').eq('id', commentId).single();
-      const { data: kids } = await sb.from('comments')
-        .select('*, profiles:author_id(full_name)')
-        .eq('parent_comment_id', commentId).order('created_at');
-  
-      const row = (c, isReply) => {
-        const nm = (c.profiles && c.profiles.full_name) || 'Someone';
-        const iv = nm.split(' ').map(x => x[0]).filter(Boolean).join('').slice(0,2).toUpperCase();
-        const when = new Date(c.created_at).toLocaleString('en-US',
-          { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
-        return '<div class="vc-peek-c' + (isReply ? ' reply' : '') + '">' +
-          '<span class="vc-peek-av">' + iv + '</span>' +
-          '<span class="vc-peek-cb"><em>' + esc(nm) + ' \u00b7 <i>' + when + '</i></em>' +
-          esc(c.body) + '</span></div>';
-      };
-  
-      const who = ((root && root.profiles && root.profiles.full_name) || 'them').split(' ')[0];
-      b.innerHTML = (root ? row(root, false) : '') +
-        ((kids && kids.length)
-          ? '<div class="vc-thread-sep">' + kids.length +
-            (kids.length === 1 ? ' reply' : ' replies') + '</div>' +
-            kids.map((k) => row(k, true)).join('')
-          : '<p class="vc-thread-none">No replies yet.</p>') +
-        '<div class="vc-peek-add">' +
-          '<textarea id="vcThreadNew" rows="2" placeholder="Reply to ' + esc(who) + '\u2026"></textarea>' +
-          '<button id="vcThreadSend">Reply</button></div>';
-  
-      const send = document.getElementById('vcThreadSend');
-      const ta = document.getElementById('vcThreadNew');
-      const post = async () => {
-        const body = ta.value.trim(); if (!body) return;
-        send.disabled = true;
-        const { data: t } = await sb.from('tasks').select('engagement_id').eq('id', taskId).single();
-        const { error } = await sb.from('comments').insert({
-          engagement_id: t && t.engagement_id, task_id: taskId,
-          author_id: session.user.id, parent_comment_id: commentId, body
-        });
-        send.disabled = false;
-        if (error) { alert(error.message); return; }
-        openThread(commentId, taskId);
-        window.vcPeek('task', taskId);
-      };
-      send.addEventListener('click', post);
-      ta.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); post(); }
+      const escv = (v) => { const d = document.createElement('div'); d.textContent = v == null ? '' : v; return d.innerHTML; };
+      const initialsOf = (n) => (n || '?').split(' ').map(x => x[0]).filter(Boolean).join('').slice(0,2).toUpperCase();
+      const avatarHtml = (p, cls) => (p && p.avatar_url)
+        ? `<span class="${cls}" style="background-image:url(${escv(p.avatar_url)})"></span>`
+        : `<span class="${cls}">${initialsOf(p && (p.full_name || p.email))}</span>`;
+    
+      const ROLE = { owner:'Owner', account_owner:'Account owner', contractor:'Contractor', client:'Client' };
+    
+      // ---- top-right identity ----
+      const bar = document.createElement('div');
+      bar.className = 'vc-idbar';
+      bar.innerHTML = `<button class="vc-id" id="vcId" aria-label="Your account">
+          ${avatarHtml(profile || { full_name: name }, 'vc-id-av')}
+          <span class="vc-id-t"><b>${escv(name)}</b><em>${ROLE[role] || role}</em></span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <div class="vc-idmenu" id="vcIdMenu">
+          <a href="/settings">Your profile</a>
+          <a href="/settings">Settings</a>
+          <a href="/help">Help</a>
+          <button id="vcIdReport">Report a problem</button>
+          <button id="vcIdOut">Sign out</button>
+        </div>`;
+      document.body.appendChild(bar);
+    
+      document.getElementById('vcId').addEventListener('click', (e) => {
+        e.stopPropagation();
+        document.getElementById('vcIdMenu').classList.toggle('on');
       });
-      setTimeout(() => ta.focus(), 140);
-    }
-  
-    /* Delegated once. Re-rendering the drawer used to drop these listeners,
-       which is why replies stopped opening. */
-    document.addEventListener('click', (e) => {
-      const b = e.target.closest('[data-thread]');
-      if (!b) return;
-      e.preventDefault();
-      e.stopPropagation();
-      const taskId = (document.getElementById('vcPeekOpen') || {}).href || '';
-      const m = taskId.match(/id=([0-9a-f-]{36})/i);
-      openThread(b.dataset.thread, m ? m[1] : null);
-    });
-  
-    window.vcProfile = async function(profileId){
-      if (!profileId) return;
-      card.classList.add('on'); cardVeil.classList.add('on');
-      document.getElementById('vcPcBody').innerHTML = '<p class="vc-pc-load">Loading\u2026</p>';
-  
-      const { data: p } = await sb.from('profiles')
-        .select('*, contractor_details(crafts, part_107, gear, home_city)')
-        .eq('id', profileId).single();
-      if (!p) {
-        document.getElementById('vcPcBody').innerHTML = '<p class="vc-pc-load">Could not load that profile.</p>';
-        return;
-      }
-  
-      const since = new Date(Date.now() - 5 * 60000).toISOString();
-      const { data: pr } = await sb.from('presence')
-        .select('current_page,last_seen_at').eq('profile_id', profileId).gte('last_seen_at', since).maybeSingle();
-  
-      const cd = (p.contractor_details && p.contractor_details[0]) || p.contractor_details || {};
-      const crafts = (cd.crafts || []).join(' \u00b7 ');
-      const days = (p.available_days || []).join(', ');
-  
-      const row = (k, v) => v ? `<div class="vc-pc-f"><span>${escv(k)}</span><b>${escv(v)}</b></div>` : '';
-  
-      document.getElementById('vcPcBody').innerHTML =
-        `<div class="vc-pc-top">
-          ${avatarHtml(p, 'vc-pc-av')}
-          <div class="vc-pc-who">
-            <b>${escv(p.full_name || p.email)}</b>
-            <em>${ROLE[p.role] || p.role}${p.title ? ' \u00b7 ' + escv(p.title) : ''}</em>
-            ${pr ? `<span class="vc-pc-on">Active now${pr.current_page ? ' \u00b7 ' + escv(pr.current_page) : ''}</span>` : ''}
-          </div>
-        </div>
-        ${p.bio ? `<p class="vc-pc-bio">${escv(p.bio)}</p>` : ''}
-        ${row('Does', crafts)}
-        ${row('Part 107', cd.part_107 ? 'Certified' : '')}
-        ${row('Gear', cd.gear)}
-        ${row('Usually works', days)}
-        ${row('Note', p.availability_note)}
-        ${row('Email', p.email)}
-        ${row('Phone', p.phone)}
-        ${p.accepting_work === false ? '<div class="vc-pc-off">Not taking new work right now</div>' : ''}
-        ${profileId !== session.user.id
-          ? `<button class="vc-pc-msg" id="vcPcMsg">Message ${escv((p.full_name || '').split(' ')[0] || 'them')}</button>`
-          : '<a class="vc-pc-msg" href="/settings">Edit your profile</a>'}`;
-  
-      /* Commenting from the drawer, so a quick answer does not need a page load. */
-      const send = document.getElementById('vcPeekSend');
-      if (send) {
-        const ta = document.getElementById('vcPeekNew');
+      document.addEventListener('click', () => {
+        document.getElementById('vcIdMenu').classList.remove('on');
+      });
+      document.getElementById('vcIdOut').addEventListener('click', async () => {
+        await sb.auth.signOut();
+        location.href = '/login.html';
+      });
+    
+      // ---- profile card for anyone ----
+      const card = document.createElement('div');
+      card.className = 'vc-pcard';
+      card.innerHTML = '<div id="vcPcBody"></div>';
+      const cardVeil = document.createElement('div');
+      cardVeil.className = 'vc-pcard-veil';
+      cardVeil.addEventListener('click', () => {
+        card.classList.remove('on'); cardVeil.classList.remove('on');
+      });
+      document.body.append(cardVeil, card);
+    
+      const thread = document.createElement('div');
+      thread.className = 'vc-thread';
+      thread.innerHTML = '<div class="vc-thread-h"><b>Thread</b>' +
+        '<button class="vc-peek-x" id="vcThreadX" aria-label="Close">&times;</button></div>' +
+        '<div class="vc-thread-b" id="vcThreadB"></div>';
+      document.body.appendChild(thread);
+      document.getElementById('vcThreadX').addEventListener('click', () => {
+        thread.classList.remove('on'); panel.classList.remove('pushed');
+      });
+    
+      async function openThread(commentId, taskId){
+        thread.classList.add('on');
+        panel.classList.add('pushed');
+        const b = document.getElementById('vcThreadB');
+        b.innerHTML = '<p class="vc-peek-load">Loading\u2026</p>';
+    
+        const { data: root } = await sb.from('comments')
+          .select('*, profiles:author_id(full_name)').eq('id', commentId).single();
+        const { data: kids } = await sb.from('comments')
+          .select('*, profiles:author_id(full_name)')
+          .eq('parent_comment_id', commentId).order('created_at');
+    
+        const row = (c, isReply) => {
+          const nm = (c.profiles && c.profiles.full_name) || 'Someone';
+          const iv = nm.split(' ').map(x => x[0]).filter(Boolean).join('').slice(0,2).toUpperCase();
+          const when = new Date(c.created_at).toLocaleString('en-US',
+            { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
+          return '<div class="vc-peek-c' + (isReply ? ' reply' : '') + '">' +
+            '<span class="vc-peek-av">' + iv + '</span>' +
+            '<span class="vc-peek-cb"><em>' + esc(nm) + ' \u00b7 <i>' + when + '</i></em>' +
+            esc(c.body) + '</span></div>';
+        };
+    
+        const who = ((root && root.profiles && root.profiles.full_name) || 'them').split(' ')[0];
+        b.innerHTML = (root ? row(root, false) : '') +
+          ((kids && kids.length)
+            ? '<div class="vc-thread-sep">' + kids.length +
+              (kids.length === 1 ? ' reply' : ' replies') + '</div>' +
+              kids.map((k) => row(k, true)).join('')
+            : '<p class="vc-thread-none">No replies yet.</p>') +
+          '<div class="vc-peek-add">' +
+            '<textarea id="vcThreadNew" rows="2" placeholder="Reply to ' + esc(who) + '\u2026"></textarea>' +
+            '<button id="vcThreadSend">Reply</button></div>';
+    
+        const send = document.getElementById('vcThreadSend');
+        const ta = document.getElementById('vcThreadNew');
         const post = async () => {
-          const body = ta.value.trim();
-          if (!body) return;
+          const body = ta.value.trim(); if (!body) return;
           send.disabled = true;
-          const { data: t } = await sb.from('tasks').select('engagement_id').eq('id', id).single();
+          const { data: t } = await sb.from('tasks').select('engagement_id').eq('id', taskId).single();
           const { error } = await sb.from('comments').insert({
-            engagement_id: t && t.engagement_id, task_id: id, author_id: session.user.id, body
+            engagement_id: t && t.engagement_id, task_id: taskId,
+            author_id: session.user.id, parent_comment_id: commentId, body
           });
           send.disabled = false;
           if (error) { alert(error.message); return; }
-          ta.value = '';
-          window.vcPeek('task', id);
+          openThread(commentId, taskId);
+          window.vcPeek('task', taskId);
         };
         send.addEventListener('click', post);
         ta.addEventListener('keydown', (e) => {
           if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); post(); }
         });
+        setTimeout(() => ta.focus(), 140);
       }
-  
-      /* A thread opens a second panel to the left rather than replacing what you
-         were looking at, so the task stays in view while you read the replies. */
-      document.querySelectorAll('[data-thread]').forEach((b) => {
-        b.addEventListener('click', () => openThread(b.dataset.thread, id));
+    
+      /* Delegated once. Re-rendering the drawer used to drop these listeners,
+         which is why replies stopped opening. */
+      document.addEventListener('click', (e) => {
+        const b = e.target.closest('[data-thread]');
+        if (!b) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const taskId = (document.getElementById('vcPeekOpen') || {}).href || '';
+        const m = taskId.match(/id=([0-9a-f-]{36})/i);
+        openThread(b.dataset.thread, m ? m[1] : null);
       });
-  
-      const quick = document.getElementById('vcPeekStatus');
-      if (quick) {
-        quick.addEventListener('change', async () => {
-          await sb.from('tasks').update({ status: quick.value }).eq('id', id);
-          // Repaint whatever page is underneath so the change is visible at once.
-          if (typeof window.vcInit === 'function') window.vcInit();
-          window.vcPeek(kind, id);
+    
+      window.vcProfile = async function(profileId){
+        if (!profileId) return;
+        card.classList.add('on'); cardVeil.classList.add('on');
+        document.getElementById('vcPcBody').innerHTML = '<p class="vc-pc-load">Loading\u2026</p>';
+    
+        const { data: p } = await sb.from('profiles')
+          .select('*, contractor_details(crafts, part_107, gear, home_city)')
+          .eq('id', profileId).single();
+        if (!p) {
+          document.getElementById('vcPcBody').innerHTML = '<p class="vc-pc-load">Could not load that profile.</p>';
+          return;
+        }
+    
+        const since = new Date(Date.now() - 5 * 60000).toISOString();
+        const { data: pr } = await sb.from('presence')
+          .select('current_page,last_seen_at').eq('profile_id', profileId).gte('last_seen_at', since).maybeSingle();
+    
+        const cd = (p.contractor_details && p.contractor_details[0]) || p.contractor_details || {};
+        const crafts = (cd.crafts || []).join(' \u00b7 ');
+        const days = (p.available_days || []).join(', ');
+    
+        const row = (k, v) => v ? `<div class="vc-pc-f"><span>${escv(k)}</span><b>${escv(v)}</b></div>` : '';
+    
+        document.getElementById('vcPcBody').innerHTML =
+          `<div class="vc-pc-top">
+            ${avatarHtml(p, 'vc-pc-av')}
+            <div class="vc-pc-who">
+              <b>${escv(p.full_name || p.email)}</b>
+              <em>${ROLE[p.role] || p.role}${p.title ? ' \u00b7 ' + escv(p.title) : ''}</em>
+              ${pr ? `<span class="vc-pc-on">Active now${pr.current_page ? ' \u00b7 ' + escv(pr.current_page) : ''}</span>` : ''}
+            </div>
+          </div>
+          ${p.bio ? `<p class="vc-pc-bio">${escv(p.bio)}</p>` : ''}
+          ${row('Does', crafts)}
+          ${row('Part 107', cd.part_107 ? 'Certified' : '')}
+          ${row('Gear', cd.gear)}
+          ${row('Usually works', days)}
+          ${row('Note', p.availability_note)}
+          ${row('Email', p.email)}
+          ${row('Phone', p.phone)}
+          ${p.accepting_work === false ? '<div class="vc-pc-off">Not taking new work right now</div>' : ''}
+          ${profileId !== session.user.id
+            ? `<button class="vc-pc-msg" id="vcPcMsg">Message ${escv((p.full_name || '').split(' ')[0] || 'them')}</button>`
+            : '<a class="vc-pc-msg" href="/settings">Edit your profile</a>'}`;
+    
+        /* Commenting from the drawer, so a quick answer does not need a page load. */
+        const send = document.getElementById('vcPeekSend');
+        if (send) {
+          const ta = document.getElementById('vcPeekNew');
+          const post = async () => {
+            const body = ta.value.trim();
+            if (!body) return;
+            send.disabled = true;
+            const { data: t } = await sb.from('tasks').select('engagement_id').eq('id', id).single();
+            const { error } = await sb.from('comments').insert({
+              engagement_id: t && t.engagement_id, task_id: id, author_id: session.user.id, body
+            });
+            send.disabled = false;
+            if (error) { alert(error.message); return; }
+            ta.value = '';
+            window.vcPeek('task', id);
+          };
+          send.addEventListener('click', post);
+          ta.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); post(); }
+          });
+        }
+    
+        /* A thread opens a second panel to the left rather than replacing what you
+           were looking at, so the task stays in view while you read the replies. */
+        document.querySelectorAll('[data-thread]').forEach((b) => {
+          b.addEventListener('click', () => openThread(b.dataset.thread, id));
         });
-      }
-  
-      const msgBtn = document.getElementById('vcPcMsg');
-      if (msgBtn) msgBtn.addEventListener('click', async () => {
-        const r = await sb.rpc('open_dm', { other: profileId });
-        if (r.error) return alert(r.error.message);
-        location.href = '/messages?c=' + r.data;
+    
+        const quick = document.getElementById('vcPeekStatus');
+        if (quick) {
+          quick.addEventListener('change', async () => {
+            await sb.from('tasks').update({ status: quick.value }).eq('id', id);
+            // Repaint whatever page is underneath so the change is visible at once.
+            if (typeof window.vcInit === 'function') window.vcInit();
+            window.vcPeek(kind, id);
+          });
+        }
+    
+        const msgBtn = document.getElementById('vcPcMsg');
+        if (msgBtn) msgBtn.addEventListener('click', async () => {
+          const r = await sb.rpc('open_dm', { other: profileId });
+          if (r.error) return alert(r.error.message);
+          location.href = '/messages?c=' + r.data;
+        });
+      };
+    
+      /* Any avatar carrying data-profile becomes clickable, including ones added
+         to the page later. */
+      document.addEventListener('click', (e) => {
+        const t = e.target.closest('[data-profile]');
+        if (!t) return;
+        e.stopPropagation();
+        window.vcProfile(t.dataset.profile);
       });
-    };
-  
-    /* Any avatar carrying data-profile becomes clickable, including ones added
-       to the page later. */
-    document.addEventListener('click', (e) => {
-      const t = e.target.closest('[data-profile]');
-      if (!t) return;
-      e.stopPropagation();
-      window.vcProfile(t.dataset.profile);
-    });
-  
-    /* Every peek target, everywhere, handled once. Pages used to bind these per
-       render, so any repaint silently dropped them — which is how the timeline
-       stopped opening tasks. */
-    document.addEventListener('click', (e) => {
-      const el = e.target.closest('[data-k][data-r]');
-      if (!el) return;
-      const kind = el.dataset.k, ref = el.dataset.r;
-      if (!kind || !ref) return;
-      e.preventDefault();
-      e.stopPropagation();
-      window.vcPeek(kind, ref);
-    });
-  })();
+    
+      /* Every peek target, everywhere, handled once. Pages used to bind these per
+         render, so any repaint silently dropped them — which is how the timeline
+         stopped opening tasks. */
+      document.addEventListener('click', (e) => {
+        const el = e.target.closest('[data-k][data-r]');
+        if (!el) return;
+        const kind = el.dataset.k, ref = el.dataset.r;
+        if (!kind || !ref) return;
+        e.preventDefault();
+        e.stopPropagation();
+        window.vcPeek(kind, ref);
+      });
+    })();
+} catch (vcErr) { console.error("shell feature failed:", vcErr); }
   
   
   /* ── Report a problem ──────────────────────────────────────────────────────
@@ -1087,83 +1089,85 @@ try {
    not "are you sure", and the heaviest deletions ask you to type the name so
    a stray click cannot take an account with it. */
 try {
+try {
 (function(){
-    const veil = document.createElement('div');
-    veil.className = 'vc-cf-veil';
-    const box = document.createElement('div');
-    box.className = 'vc-cf';
-    box.setAttribute('role', 'dialog');
-    box.setAttribute('aria-modal', 'true');
-    document.body.append(veil, box);
-  
-    let resolver = null;
-  
-    function shut(v){
-      box.classList.remove('on'); veil.classList.remove('on');
-      document.body.classList.remove('vc-locked');
-      if (resolver) { resolver(v); resolver = null; }
-    }
-    veil.addEventListener('click', () => shut(false));
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && box.classList.contains('on')) shut(false);
-    });
-  
-    /* opts: { title, body, list, confirm, cancel, danger, typeToConfirm } */
-    window.vcConfirm = function(opts){
-      opts = opts || {};
-      const danger = opts.danger !== false;
-      const needType = opts.typeToConfirm;
-  
-      box.innerHTML =
-        '<div class="vc-cf-h">' +
-          '<span class="vc-cf-icon' + (danger ? ' danger' : '') + '">' +
-            (danger
-              ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">' +
-                '<path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>'
-              : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">' +
-                '<circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>') +
-          '</span>' +
-          '<b>' + escv(opts.title || 'Are you sure?') + '</b>' +
-        '</div>' +
-        '<div class="vc-cf-b">' +
-          (opts.body ? '<p>' + escv(opts.body) + '</p>' : '') +
-          (opts.list && opts.list.length
-            ? '<ul class="vc-cf-list">' + opts.list.map(x => '<li>' + escv(x) + '</li>').join('') + '</ul>'
-            : '') +
-          (needType
-            ? '<label class="vc-cf-type">Type <b>' + escv(needType) + '</b> to confirm' +
-              '<input type="text" id="vcCfType" autocomplete="off" spellcheck="false"></label>'
-            : '') +
-          '<div class="vc-cf-f">' +
-            '<button class="vc-cf-no" id="vcCfNo">' + escv(opts.cancel || 'Cancel') + '</button>' +
-            '<button class="vc-cf-yes' + (danger ? ' danger' : '') + '" id="vcCfYes"' +
-              (needType ? ' disabled' : '') + '>' + escv(opts.confirm || 'Delete') + '</button>' +
-          '</div>' +
-        '</div>';
-  
-      veil.classList.add('on'); box.classList.add('on');
-      document.body.classList.add('vc-locked');
-  
-      document.getElementById('vcCfNo').addEventListener('click', () => shut(false));
-      document.getElementById('vcCfYes').addEventListener('click', () => shut(true));
-  
-      if (needType) {
-        const inp = document.getElementById('vcCfType');
-        const yes = document.getElementById('vcCfYes');
-        inp.addEventListener('input', () => {
-          yes.disabled = inp.value.trim().toLowerCase() !== String(needType).trim().toLowerCase();
-        });
-        inp.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter' && !yes.disabled) shut(true);
-        });
-        setTimeout(() => inp.focus(), 120);
-      } else {
-        setTimeout(() => document.getElementById('vcCfNo').focus(), 120);
+      const veil = document.createElement('div');
+      veil.className = 'vc-cf-veil';
+      const box = document.createElement('div');
+      box.className = 'vc-cf';
+      box.setAttribute('role', 'dialog');
+      box.setAttribute('aria-modal', 'true');
+      document.body.append(veil, box);
+    
+      let resolver = null;
+    
+      function shut(v){
+        box.classList.remove('on'); veil.classList.remove('on');
+        document.body.classList.remove('vc-locked');
+        if (resolver) { resolver(v); resolver = null; }
       }
-  
-      return new Promise((res) => { resolver = res; });
-    };
-  })();
+      veil.addEventListener('click', () => shut(false));
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && box.classList.contains('on')) shut(false);
+      });
+    
+      /* opts: { title, body, list, confirm, cancel, danger, typeToConfirm } */
+      window.vcConfirm = function(opts){
+        opts = opts || {};
+        const danger = opts.danger !== false;
+        const needType = opts.typeToConfirm;
+    
+        box.innerHTML =
+          '<div class="vc-cf-h">' +
+            '<span class="vc-cf-icon' + (danger ? ' danger' : '') + '">' +
+              (danger
+                ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">' +
+                  '<path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>'
+                : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">' +
+                  '<circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>') +
+            '</span>' +
+            '<b>' + escv(opts.title || 'Are you sure?') + '</b>' +
+          '</div>' +
+          '<div class="vc-cf-b">' +
+            (opts.body ? '<p>' + escv(opts.body) + '</p>' : '') +
+            (opts.list && opts.list.length
+              ? '<ul class="vc-cf-list">' + opts.list.map(x => '<li>' + escv(x) + '</li>').join('') + '</ul>'
+              : '') +
+            (needType
+              ? '<label class="vc-cf-type">Type <b>' + escv(needType) + '</b> to confirm' +
+                '<input type="text" id="vcCfType" autocomplete="off" spellcheck="false"></label>'
+              : '') +
+            '<div class="vc-cf-f">' +
+              '<button class="vc-cf-no" id="vcCfNo">' + escv(opts.cancel || 'Cancel') + '</button>' +
+              '<button class="vc-cf-yes' + (danger ? ' danger' : '') + '" id="vcCfYes"' +
+                (needType ? ' disabled' : '') + '>' + escv(opts.confirm || 'Delete') + '</button>' +
+            '</div>' +
+          '</div>';
+    
+        veil.classList.add('on'); box.classList.add('on');
+        document.body.classList.add('vc-locked');
+    
+        document.getElementById('vcCfNo').addEventListener('click', () => shut(false));
+        document.getElementById('vcCfYes').addEventListener('click', () => shut(true));
+    
+        if (needType) {
+          const inp = document.getElementById('vcCfType');
+          const yes = document.getElementById('vcCfYes');
+          inp.addEventListener('input', () => {
+            yes.disabled = inp.value.trim().toLowerCase() !== String(needType).trim().toLowerCase();
+          });
+          inp.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !yes.disabled) shut(true);
+          });
+          setTimeout(() => inp.focus(), 120);
+        } else {
+          setTimeout(() => document.getElementById('vcCfNo').focus(), 120);
+        }
+    
+        return new Promise((res) => { resolver = res; });
+      };
+    })();
+} catch (vcErr) { console.error("shell feature failed:", vcErr); }
   
   
   /* ── Loading states ────────────────────────────────────────────────────────
@@ -1267,289 +1271,291 @@ try {
    unread count; click it for a compact list, click a conversation for a small
    window you can type in without leaving the page you are working on. */
 try {
+try {
 (function(){
-    if (role === 'client') return;   // clients use the request channel instead
-  
-    const dock = document.createElement('div');
-    dock.className = 'vc-dock';
-    dock.innerHTML =
-      '<button class="vc-dock-btn" id="vcDockBtn" aria-label="Open messages" title="Messages">' +
-        '<svg viewBox="0 0 24 24" fill="currentColor">' +
-          '<path d="M12 3C6.9 3 3 6.6 3 11c0 2.3 1.1 4.4 2.9 5.8v3.4c0 .5.6.8 1 .5l2.9-2a11 11 0 0 0 2.2.2' +
-          'c5.1 0 9-3.6 9-8s-3.9-8-9-8z"/>' +
-          '<circle cx="8.2" cy="11" r="1.15" fill="#fff"/>' +
-          '<circle cx="12" cy="11" r="1.15" fill="#fff"/>' +
-          '<circle cx="15.8" cy="11" r="1.15" fill="#fff"/></svg>' +
-        '<span class="vc-dock-label">Messages</span>' +
-        '<span class="vc-dock-n" id="vcDockN"></span>' +
-      '</button>' +
-      '<div class="vc-dock-panel" id="vcDockPanel">' +
-        '<div class="vc-dock-h">' +
-          '<b id="vcDockTitle">Messages</b>' +
-          '<span class="vc-dock-acts">' +
-            '<a href="/messages" title="Open full">' +
+      if (role === 'client') return;   // clients use the request channel instead
+    
+      const dock = document.createElement('div');
+      dock.className = 'vc-dock';
+      dock.innerHTML =
+        '<button class="vc-dock-btn" id="vcDockBtn" aria-label="Open messages" title="Messages">' +
+          '<svg viewBox="0 0 24 24" fill="currentColor">' +
+            '<path d="M12 3C6.9 3 3 6.6 3 11c0 2.3 1.1 4.4 2.9 5.8v3.4c0 .5.6.8 1 .5l2.9-2a11 11 0 0 0 2.2.2' +
+            'c5.1 0 9-3.6 9-8s-3.9-8-9-8z"/>' +
+            '<circle cx="8.2" cy="11" r="1.15" fill="#fff"/>' +
+            '<circle cx="12" cy="11" r="1.15" fill="#fff"/>' +
+            '<circle cx="15.8" cy="11" r="1.15" fill="#fff"/></svg>' +
+          '<span class="vc-dock-label">Messages</span>' +
+          '<span class="vc-dock-n" id="vcDockN"></span>' +
+        '</button>' +
+        '<div class="vc-dock-panel" id="vcDockPanel">' +
+          '<div class="vc-dock-h">' +
+            '<b id="vcDockTitle">Messages</b>' +
+            '<span class="vc-dock-acts">' +
+              '<a href="/messages" title="Open full">' +
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+                'stroke-linecap="round"><path d="M15 3h6v6M21 3l-9 9M10 5H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5"/></svg></a>' +
+              '<button id="vcDockBack" style="display:none" title="Back">' +
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+                'stroke-linecap="round"><path d="m15 18-6-6 6-6"/></svg></button>' +
+              '<button id="vcDockX" title="Close">&times;</button>' +
+            '</span>' +
+          '</div>' +
+          '<div class="vc-dock-b" id="vcDockB"></div>' +
+          '<div class="vc-dock-c" id="vcDockC" style="display:none">' +
+            '<textarea id="vcDockNew" rows="1" placeholder="Write a message"></textarea>' +
+            '<button id="vcDockSend" aria-label="Send">' +
               '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
-              'stroke-linecap="round"><path d="M15 3h6v6M21 3l-9 9M10 5H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5"/></svg></a>' +
-            '<button id="vcDockBack" style="display:none" title="Back">' +
-              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
-              'stroke-linecap="round"><path d="m15 18-6-6 6-6"/></svg></button>' +
-            '<button id="vcDockX" title="Close">&times;</button>' +
-          '</span>' +
-        '</div>' +
-        '<div class="vc-dock-b" id="vcDockB"></div>' +
-        '<div class="vc-dock-c" id="vcDockC" style="display:none">' +
-          '<textarea id="vcDockNew" rows="1" placeholder="Write a message"></textarea>' +
-          '<button id="vcDockSend" aria-label="Send">' +
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
-            'stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg>' +
-          '</button>' +
-        '</div>' +
-      '</div>';
-    document.body.appendChild(dock);
-  
-    const $d = (i) => document.getElementById(i);
-    const escd = (v) => { const x = document.createElement('div'); x.textContent = v == null ? '' : v; return x.innerHTML; };
-    const inid = (n) => (n || '?').split(' ').map(x => x[0]).filter(Boolean).join('').slice(0,2).toUpperCase();
-  
-    let chans = [], openChan = null, people = {}, dockSub = null;
-  
-    async function loadPeople(){
-      const { data } = await sb.from('profiles')
-        .select('id, full_name, email, avatar_url').eq('is_active', true);
-      (data || []).forEach(p => { people[p.id] = p; });
-    }
-  
-    function titleOf(c){
-      if (c.name) return c.name;
-      const ids = (c.channel_members || []).map(m => m.profile_id).filter(x => x !== session.user.id);
-      const p = people[ids[0]];
-      return p ? (p.full_name || p.email) : 'Conversation';
-    }
-  
-    /* Describe the current page well enough that a message about it makes sense
-       to whoever receives it. */
-    function pageContext(){
-      const p = location.pathname;
-      const q = new URLSearchParams(location.search);
-      const title = (document.querySelector('h1') || {}).textContent || '';
-  
-      if (p.indexOf('/task') === 0 && q.get('id'))
-        return { label: title.trim() || 'this task', url: location.href, kind: 'task' };
-      if (p.indexOf('/internal') === 0)
-        return { label: 'an engagement', url: location.origin + '/internal', kind: 'engagement' };
-      if (p.indexOf('/board') === 0)
-        return { label: 'the board', url: location.origin + '/board', kind: 'board' };
-      if (p.indexOf('/timeline') === 0)
-        return { label: 'the timeline', url: location.origin + '/timeline', kind: 'timeline' };
-      if (p.indexOf('/jobs') === 0)
-        return { label: 'a job', url: location.origin + '/jobs', kind: 'job' };
-      if (p.indexOf('/capacity') === 0)
-        return { label: 'capacity', url: location.origin + '/capacity', kind: 'capacity' };
-      return null;
-    }
-  
-    /* Sharing drops a link into a conversation you pick, rather than making you
-       copy a URL, open chat, find the person and paste. */
-    function sharePage(ctx){
-      if (!ctx) return;
-      const b = $d('vcDockB');
-      $d('vcDockTitle').textContent = 'Share ' + ctx.label;
-      $d('vcDockBack').style.display = '';
-      $d('vcDockC').style.display = 'none';
-  
-      b.innerHTML = '<p class="vc-dock-hint">Pick a conversation to send it to.</p>' +
-        chans.map(c =>
-          '<div class="vc-dock-row" data-share="' + c.id + '">' +
-            '<span class="vc-dock-av">' + inid(titleOf(c)) + '</span>' +
-            '<span class="vc-dock-t"><b>' + escd(titleOf(c)) + '</b></span></div>').join('');
-  
-      b.querySelectorAll('[data-share]').forEach(el => {
-        el.addEventListener('click', async () => {
-          const body = 'Have a look at ' + ctx.label + ': ' + ctx.url;
-          await sb.from('messages').insert({
-            channel_id: el.dataset.share, author_id: session.user.id, body
-          });
-          openConversation(el.dataset.share);
-        });
-      });
-    }
-  
-    async function loadList(){
-      const { data } = await sb.from('channels')
-        .select('*, channel_members(profile_id, last_read_at, muted, pinned, manually_unread), messages(body, created_at, author_id)')
-        .order('last_message_at', { ascending:false });
-      chans = (data || []).filter(c =>
-        (c.channel_members || []).some(m => m.profile_id === session.user.id));
-  
-      let total = 0;
-      chans.forEach(c => {
-        const mine = (c.channel_members || []).filter(m => m.profile_id === session.user.id)[0];
-        c._unread = (c.messages || []).filter(m =>
-          m.author_id !== session.user.id && mine &&
-          new Date(m.created_at) > new Date(mine.last_read_at || 0)).length;
-        c._pinned = !!(mine && mine.pinned);
-        c._muted  = !!(mine && mine.muted);
-        if (!c._muted) total += c._unread;
-      });
-  
-      const badge = $d('vcDockN');
-      badge.textContent = total > 9 ? '9+' : (total || '');
-      badge.style.display = total ? 'flex' : 'none';
-      if (total) dock.classList.add('has'); else dock.classList.remove('has');
-  
-      const btn = $d('vcDockBtn');
-      const lbl = dock.querySelector('.vc-dock-label');
-      if (lbl) lbl.textContent = total
-        ? total + (total === 1 ? ' new message' : ' new messages')
-        : 'Messages';
-      if (btn) btn.title = total
-        ? total + ' unread \u2014 click to read'
-        : 'Messages \u2014 click to open';
-  
-      if (!openChan) paintList();
-    }
-  
-    function paintList(){
-      const sorted = chans.slice().sort((a, b) => {
-        if (a._pinned !== b._pinned) return a._pinned ? -1 : 1;
-        return (a.last_message_at < b.last_message_at) ? 1 : -1;
-      });
-  
-      $d('vcDockTitle').textContent = 'Messages';
-      $d('vcDockBack').style.display = 'none';
-      $d('vcDockC').style.display = 'none';
-  
-      /* Two things you nearly always want from a chat list: start something, or
-         point at whatever you are currently looking at. */
-      const here = pageContext();
-      const actions =
-        '<div class="vc-dock-acts-row">' +
-          '<button class="vc-dock-act" id="vcDockNewBtn">' +
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
-            'stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New message</button>' +
-          (here ? '<button class="vc-dock-act" id="vcDockShare">' +
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
-            'stroke-linecap="round" stroke-linejoin="round">' +
-            '<path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7M16 6l-4-4-4 4M12 2v14"/></svg>' +
-            'Share this page</button>' : '') +
+              'stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg>' +
+            '</button>' +
+          '</div>' +
         '</div>';
-  
-      $d('vcDockB').innerHTML = actions + (sorted.length ? sorted.map(c => {
-        const last = (c.messages || []).slice().sort((x, y) => x.created_at < y.created_at ? 1 : -1)[0];
-        return '<div class="vc-dock-row' + (c._muted ? ' muted' : '') + '" data-c="' + c.id + '">' +
-          '<span class="vc-dock-av">' + inid(titleOf(c)) + '</span>' +
-          '<span class="vc-dock-t"><b>' + (c._pinned ? '\u2022 ' : '') + escd(titleOf(c)) + '</b>' +
-          '<em>' + escd(last ? (last.body || 'Sent a file').slice(0, 34) : 'No messages') + '</em></span>' +
-          (c._unread && !c._muted ? '<span class="vc-dock-u">' + c._unread + '</span>' : '') +
+      document.body.appendChild(dock);
+    
+      const $d = (i) => document.getElementById(i);
+      const escd = (v) => { const x = document.createElement('div'); x.textContent = v == null ? '' : v; return x.innerHTML; };
+      const inid = (n) => (n || '?').split(' ').map(x => x[0]).filter(Boolean).join('').slice(0,2).toUpperCase();
+    
+      let chans = [], openChan = null, people = {}, dockSub = null;
+    
+      async function loadPeople(){
+        const { data } = await sb.from('profiles')
+          .select('id, full_name, email, avatar_url').eq('is_active', true);
+        (data || []).forEach(p => { people[p.id] = p; });
+      }
+    
+      function titleOf(c){
+        if (c.name) return c.name;
+        const ids = (c.channel_members || []).map(m => m.profile_id).filter(x => x !== session.user.id);
+        const p = people[ids[0]];
+        return p ? (p.full_name || p.email) : 'Conversation';
+      }
+    
+      /* Describe the current page well enough that a message about it makes sense
+         to whoever receives it. */
+      function pageContext(){
+        const p = location.pathname;
+        const q = new URLSearchParams(location.search);
+        const title = (document.querySelector('h1') || {}).textContent || '';
+    
+        if (p.indexOf('/task') === 0 && q.get('id'))
+          return { label: title.trim() || 'this task', url: location.href, kind: 'task' };
+        if (p.indexOf('/internal') === 0)
+          return { label: 'an engagement', url: location.origin + '/internal', kind: 'engagement' };
+        if (p.indexOf('/board') === 0)
+          return { label: 'the board', url: location.origin + '/board', kind: 'board' };
+        if (p.indexOf('/timeline') === 0)
+          return { label: 'the timeline', url: location.origin + '/timeline', kind: 'timeline' };
+        if (p.indexOf('/jobs') === 0)
+          return { label: 'a job', url: location.origin + '/jobs', kind: 'job' };
+        if (p.indexOf('/capacity') === 0)
+          return { label: 'capacity', url: location.origin + '/capacity', kind: 'capacity' };
+        return null;
+      }
+    
+      /* Sharing drops a link into a conversation you pick, rather than making you
+         copy a URL, open chat, find the person and paste. */
+      function sharePage(ctx){
+        if (!ctx) return;
+        const b = $d('vcDockB');
+        $d('vcDockTitle').textContent = 'Share ' + ctx.label;
+        $d('vcDockBack').style.display = '';
+        $d('vcDockC').style.display = 'none';
+    
+        b.innerHTML = '<p class="vc-dock-hint">Pick a conversation to send it to.</p>' +
+          chans.map(c =>
+            '<div class="vc-dock-row" data-share="' + c.id + '">' +
+              '<span class="vc-dock-av">' + inid(titleOf(c)) + '</span>' +
+              '<span class="vc-dock-t"><b>' + escd(titleOf(c)) + '</b></span></div>').join('');
+    
+        b.querySelectorAll('[data-share]').forEach(el => {
+          el.addEventListener('click', async () => {
+            const body = 'Have a look at ' + ctx.label + ': ' + ctx.url;
+            await sb.from('messages').insert({
+              channel_id: el.dataset.share, author_id: session.user.id, body
+            });
+            openConversation(el.dataset.share);
+          });
+        });
+      }
+    
+      async function loadList(){
+        const { data } = await sb.from('channels')
+          .select('*, channel_members(profile_id, last_read_at, muted, pinned, manually_unread), messages(body, created_at, author_id)')
+          .order('last_message_at', { ascending:false });
+        chans = (data || []).filter(c =>
+          (c.channel_members || []).some(m => m.profile_id === session.user.id));
+    
+        let total = 0;
+        chans.forEach(c => {
+          const mine = (c.channel_members || []).filter(m => m.profile_id === session.user.id)[0];
+          c._unread = (c.messages || []).filter(m =>
+            m.author_id !== session.user.id && mine &&
+            new Date(m.created_at) > new Date(mine.last_read_at || 0)).length;
+          c._pinned = !!(mine && mine.pinned);
+          c._muted  = !!(mine && mine.muted);
+          if (!c._muted) total += c._unread;
+        });
+    
+        const badge = $d('vcDockN');
+        badge.textContent = total > 9 ? '9+' : (total || '');
+        badge.style.display = total ? 'flex' : 'none';
+        if (total) dock.classList.add('has'); else dock.classList.remove('has');
+    
+        const btn = $d('vcDockBtn');
+        const lbl = dock.querySelector('.vc-dock-label');
+        if (lbl) lbl.textContent = total
+          ? total + (total === 1 ? ' new message' : ' new messages')
+          : 'Messages';
+        if (btn) btn.title = total
+          ? total + ' unread \u2014 click to read'
+          : 'Messages \u2014 click to open';
+    
+        if (!openChan) paintList();
+      }
+    
+      function paintList(){
+        const sorted = chans.slice().sort((a, b) => {
+          if (a._pinned !== b._pinned) return a._pinned ? -1 : 1;
+          return (a.last_message_at < b.last_message_at) ? 1 : -1;
+        });
+    
+        $d('vcDockTitle').textContent = 'Messages';
+        $d('vcDockBack').style.display = 'none';
+        $d('vcDockC').style.display = 'none';
+    
+        /* Two things you nearly always want from a chat list: start something, or
+           point at whatever you are currently looking at. */
+        const here = pageContext();
+        const actions =
+          '<div class="vc-dock-acts-row">' +
+            '<button class="vc-dock-act" id="vcDockNewBtn">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+              'stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New message</button>' +
+            (here ? '<button class="vc-dock-act" id="vcDockShare">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+              'stroke-linecap="round" stroke-linejoin="round">' +
+              '<path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7M16 6l-4-4-4 4M12 2v14"/></svg>' +
+              'Share this page</button>' : '') +
           '</div>';
-      }).join('') : '<p class="vc-dock-none">No conversations yet.</p>');
-  
-      const nb = $d('vcDockNewBtn');
-      if (nb) nb.addEventListener('click', () => { location.href = '/messages'; });
-  
-      const sh = $d('vcDockShare');
-      if (sh) sh.addEventListener('click', () => sharePage(here));
-  
-      $d('vcDockB').querySelectorAll('[data-c]').forEach(el => {
-        el.addEventListener('click', () => openConversation(el.dataset.c));
-      });
-    }
-  
-    async function openConversation(cid){
-      openChan = cid;
-      const c = chans.filter(x => x.id === cid)[0];
-      $d('vcDockTitle').textContent = c ? titleOf(c) : 'Conversation';
-      $d('vcDockBack').style.display = '';
-      $d('vcDockC').style.display = '';
-      await paintMessages();
-  
-      await sb.from('channel_members')
-        .update({ last_read_at: new Date().toISOString(), manually_unread: false })
-        .eq('channel_id', cid).eq('profile_id', session.user.id);
-      loadList();
-  
-      if (dockSub) sb.removeChannel(dockSub);
-      dockSub = sb.channel('dock-' + cid)
-        .on('postgres_changes',
-            { event:'INSERT', schema:'public', table:'messages', filter:'channel_id=eq.' + cid },
-            paintMessages)
-        .subscribe();
-    }
-  
-    async function paintMessages(){
-      if (!openChan) return;
-      const { data } = await sb.from('messages').select('*')
-        .eq('channel_id', openChan).order('created_at', { ascending:false }).limit(30);
-      const ms = (data || []).slice().reverse();
-      const b = $d('vcDockB');
-  
-      b.innerHTML = ms.length ? ms.map(m => {
-        const p = people[m.author_id] || {};
-        const mine = m.author_id === session.user.id;
-        return '<div class="vc-dock-m' + (mine ? ' mine' : '') + '">' +
-          (mine ? '' : '<span class="vc-dock-av sm">' + inid(p.full_name || p.email) + '</span>') +
-          '<span class="vc-dock-bub">' +
-            (m.body ? escd(m.body) : '') +
-            (m.attachment_url && /image/.test(m.attachment_type || '')
-              ? '<img src="' + escd(m.attachment_url) + '" alt="">' : '') +
-            (m.attachment_url && !/image/.test(m.attachment_type || '')
-              ? '<a href="' + escd(m.attachment_url) + '" target="_blank" rel="noopener">' +
-                escd(m.attachment_name || 'File') + '</a>' : '') +
-          '</span></div>';
-      }).join('') : '<p class="vc-dock-none">Say something.</p>';
-  
-      b.scrollTop = b.scrollHeight;
-    }
-  
-    async function send(){
-      const ta = $d('vcDockNew');
-      const body = ta.value.trim();
-      if (!body || !openChan) return;
-      ta.value = ''; ta.style.height = 'auto';
-      const { error } = await sb.from('messages')
-        .insert({ channel_id: openChan, author_id: session.user.id, body });
-      if (error) { alert(error.message); return; }
-      paintMessages(); loadList();
-    }
-  
-    $d('vcDockBtn').addEventListener('click', () => {
-      const open = dock.classList.toggle('open');
-      if (open) { openChan = null; paintList(); }
-    });
-    $d('vcDockX').addEventListener('click', (e) => {
-      e.stopPropagation(); dock.classList.remove('open'); openChan = null;
-    });
-    $d('vcDockBack').addEventListener('click', () => {
-      openChan = null;
-      if (dockSub) { sb.removeChannel(dockSub); dockSub = null; }
-      paintList();
-    });
-    $d('vcDockSend').addEventListener('click', send);
-    $d('vcDockNew').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
-    });
-    $d('vcDockNew').addEventListener('input', function(){
-      this.style.height = 'auto';
-      this.style.height = Math.min(this.scrollHeight, 90) + 'px';
-    });
-  
-    // Hide the dock on the messages page itself; two chat surfaces is one too many.
-    if (location.pathname.indexOf('/messages') === 0) dock.style.display = 'none';
-  
-    loadPeople().then(loadList);
-    setInterval(loadList, 30000);
-  
-    // A new message anywhere makes the bubble pulse.
-    sb.channel('dock-any-' + session.user.id)
-      .on('postgres_changes', { event:'INSERT', schema:'public', table:'messages' }, () => {
+    
+        $d('vcDockB').innerHTML = actions + (sorted.length ? sorted.map(c => {
+          const last = (c.messages || []).slice().sort((x, y) => x.created_at < y.created_at ? 1 : -1)[0];
+          return '<div class="vc-dock-row' + (c._muted ? ' muted' : '') + '" data-c="' + c.id + '">' +
+            '<span class="vc-dock-av">' + inid(titleOf(c)) + '</span>' +
+            '<span class="vc-dock-t"><b>' + (c._pinned ? '\u2022 ' : '') + escd(titleOf(c)) + '</b>' +
+            '<em>' + escd(last ? (last.body || 'Sent a file').slice(0, 34) : 'No messages') + '</em></span>' +
+            (c._unread && !c._muted ? '<span class="vc-dock-u">' + c._unread + '</span>' : '') +
+            '</div>';
+        }).join('') : '<p class="vc-dock-none">No conversations yet.</p>');
+    
+        const nb = $d('vcDockNewBtn');
+        if (nb) nb.addEventListener('click', () => { location.href = '/messages'; });
+    
+        const sh = $d('vcDockShare');
+        if (sh) sh.addEventListener('click', () => sharePage(here));
+    
+        $d('vcDockB').querySelectorAll('[data-c]').forEach(el => {
+          el.addEventListener('click', () => openConversation(el.dataset.c));
+        });
+      }
+    
+      async function openConversation(cid){
+        openChan = cid;
+        const c = chans.filter(x => x.id === cid)[0];
+        $d('vcDockTitle').textContent = c ? titleOf(c) : 'Conversation';
+        $d('vcDockBack').style.display = '';
+        $d('vcDockC').style.display = '';
+        await paintMessages();
+    
+        await sb.from('channel_members')
+          .update({ last_read_at: new Date().toISOString(), manually_unread: false })
+          .eq('channel_id', cid).eq('profile_id', session.user.id);
         loadList();
-        if (!dock.classList.contains('open')) {
-          dock.classList.add('ping');
-          setTimeout(() => dock.classList.remove('ping'), 1400);
-        } else if (openChan) { paintMessages(); }
-      })
-      .subscribe();
-  })();
+    
+        if (dockSub) sb.removeChannel(dockSub);
+        dockSub = sb.channel('dock-' + cid)
+          .on('postgres_changes',
+              { event:'INSERT', schema:'public', table:'messages', filter:'channel_id=eq.' + cid },
+              paintMessages)
+          .subscribe();
+      }
+    
+      async function paintMessages(){
+        if (!openChan) return;
+        const { data } = await sb.from('messages').select('*')
+          .eq('channel_id', openChan).order('created_at', { ascending:false }).limit(30);
+        const ms = (data || []).slice().reverse();
+        const b = $d('vcDockB');
+    
+        b.innerHTML = ms.length ? ms.map(m => {
+          const p = people[m.author_id] || {};
+          const mine = m.author_id === session.user.id;
+          return '<div class="vc-dock-m' + (mine ? ' mine' : '') + '">' +
+            (mine ? '' : '<span class="vc-dock-av sm">' + inid(p.full_name || p.email) + '</span>') +
+            '<span class="vc-dock-bub">' +
+              (m.body ? escd(m.body) : '') +
+              (m.attachment_url && /image/.test(m.attachment_type || '')
+                ? '<img src="' + escd(m.attachment_url) + '" alt="">' : '') +
+              (m.attachment_url && !/image/.test(m.attachment_type || '')
+                ? '<a href="' + escd(m.attachment_url) + '" target="_blank" rel="noopener">' +
+                  escd(m.attachment_name || 'File') + '</a>' : '') +
+            '</span></div>';
+        }).join('') : '<p class="vc-dock-none">Say something.</p>';
+    
+        b.scrollTop = b.scrollHeight;
+      }
+    
+      async function send(){
+        const ta = $d('vcDockNew');
+        const body = ta.value.trim();
+        if (!body || !openChan) return;
+        ta.value = ''; ta.style.height = 'auto';
+        const { error } = await sb.from('messages')
+          .insert({ channel_id: openChan, author_id: session.user.id, body });
+        if (error) { alert(error.message); return; }
+        paintMessages(); loadList();
+      }
+    
+      $d('vcDockBtn').addEventListener('click', () => {
+        const open = dock.classList.toggle('open');
+        if (open) { openChan = null; paintList(); }
+      });
+      $d('vcDockX').addEventListener('click', (e) => {
+        e.stopPropagation(); dock.classList.remove('open'); openChan = null;
+      });
+      $d('vcDockBack').addEventListener('click', () => {
+        openChan = null;
+        if (dockSub) { sb.removeChannel(dockSub); dockSub = null; }
+        paintList();
+      });
+      $d('vcDockSend').addEventListener('click', send);
+      $d('vcDockNew').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+      });
+      $d('vcDockNew').addEventListener('input', function(){
+        this.style.height = 'auto';
+        this.style.height = Math.min(this.scrollHeight, 90) + 'px';
+      });
+    
+      // Hide the dock on the messages page itself; two chat surfaces is one too many.
+      if (location.pathname.indexOf('/messages') === 0) dock.style.display = 'none';
+    
+      loadPeople().then(loadList);
+      setInterval(loadList, 30000);
+    
+      // A new message anywhere makes the bubble pulse.
+      sb.channel('dock-any-' + session.user.id)
+        .on('postgres_changes', { event:'INSERT', schema:'public', table:'messages' }, () => {
+          loadList();
+          if (!dock.classList.contains('open')) {
+            dock.classList.add('ping');
+            setTimeout(() => dock.classList.remove('ping'), 1400);
+          } else if (openChan) { paintMessages(); }
+        })
+        .subscribe();
+    })();
+} catch (vcErr) { console.error("shell feature failed:", vcErr); }
   
   
   /* ── Role preview ──────────────────────────────────────────────────────────

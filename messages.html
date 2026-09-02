@@ -285,9 +285,6 @@
     <input type="text" id="gname" placeholder="Group name (optional)" style="display:none">
     <button class="gbtn" id="startBtn" disabled>Start</button>
   </div>
-<div class="chmenu" id="chMenu"></div>
-<div class="ac" id="acBox"></div>
-
 </div>
 
 <script>
@@ -401,6 +398,9 @@ async function loadChans(){
       /* Four inline actions instead of a popup. A hidden menu that has to be
          positioned is one more thing that can fail; these cannot. */
       '<span class="acts">'+
+        '<button class="act" data-menu="'+c.id+'" title="More">'+
+          '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.7"/>'+
+          '<circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg></button>'+
         '<button class="act" data-act="pin" data-c="'+c.id+'" title="'+
           ((mineRow&&mineRow.pinned)?'Unpin':'Pin to top')+'">'+
           '<svg viewBox="0 0 24 24" fill="'+((mineRow&&mineRow.pinned)?'currentColor':'none')+
@@ -429,7 +429,7 @@ async function loadChans(){
 
   $('chans').querySelectorAll('.ch').forEach(function(el){
     el.addEventListener('click', function(e){
-      if (e.target.closest('[data-act]')) return;
+      if (e.target.closest('[data-act]') || e.target.closest('[data-menu]')) return;
       openCh(el.dataset.id);
     });
   });
@@ -670,7 +670,85 @@ function showPane(which){
 }
 
 /* Installed once, at load. Works no matter how often the list repaints. */
+/* The ellipsis carries the actions that need a label to be understandable —
+   leaving a group, and anything added later. The four common ones stay inline. */
+function openChMenu(anchor, cid){
+  var mn = document.getElementById('chMenu');
+  var c = chans.filter(function(x){ return x.id === cid; })[0];
+  if (!c || !mn) return;
+  var mine = (c.channel_members||[]).filter(function(m){ return m.profile_id === me.id; })[0] || {};
+
+  mn.innerHTML =
+    '<button data-m="pin">'    + (mine.pinned ? 'Unpin' : 'Pin to top') + '</button>' +
+    '<button data-m="mute">'   + (mine.muted  ? 'Unmute' : 'Mute')      + '</button>' +
+    '<button data-m="unread">Mark as unread</button>' +
+    '<button data-m="copy">Copy link</button>' +
+    (c.kind === 'group' ? '<button class="danger" data-m="leave">Leave group</button>' : '');
+  mn.dataset.c = cid;
+
+  var r = anchor.getBoundingClientRect();
+  mn.classList.add('on');                        // measure after it is laid out
+  var h = mn.offsetHeight || 180, w = mn.offsetWidth || 190;
+  mn.style.top  = Math.min(r.bottom + 6, window.innerHeight - h - 12) + 'px';
+  mn.style.left = Math.max(Math.min(r.left, window.innerWidth - w - 12), 10) + 'px';
+}
+
 document.addEventListener('click', async function(e){
+  var mBtn = e.target.closest('[data-menu]');
+  var mn = document.getElementById('chMenu');
+
+  if (mBtn) {
+    e.preventDefault(); e.stopPropagation();
+    if (mn && mn.classList.contains('on') && mn.dataset.c === mBtn.dataset.menu) {
+      mn.classList.remove('on');
+    } else {
+      openChMenu(mBtn, mBtn.dataset.menu);
+    }
+    return;
+  }
+
+  var mItem = e.target.closest('#chMenu [data-m]');
+  if (mItem) {
+    e.preventDefault(); e.stopPropagation();
+    var cid = mn.dataset.c;
+    var c = chans.filter(function(x){ return x.id === cid; })[0];
+    var mine = c ? ((c.channel_members||[]).filter(function(m){ return m.profile_id===me.id; })[0] || {}) : {};
+    mn.classList.remove('on');
+    var a = mItem.dataset.m;
+
+    if (a === 'copy') { navigator.clipboard.writeText(location.origin + '/messages?c=' + cid); return; }
+    if (a === 'pin')  await sb.from('channel_members').update({ pinned: !mine.pinned }).eq('channel_id',cid).eq('profile_id',me.id);
+    if (a === 'mute') await sb.from('channel_members').update({ muted: !mine.muted }).eq('channel_id',cid).eq('profile_id',me.id);
+    if (a === 'unread') {
+      await sb.from('channel_members')
+        .update({ manually_unread:true, last_read_at:new Date(0).toISOString() })
+        .eq('channel_id',cid).eq('profile_id',me.id);
+      if (cur && cur.id === cid) {
+        cur = null;
+        document.getElementById('live').style.display='none';
+        document.getElementById('blank').style.display='flex';
+      }
+    }
+    if (a === 'leave') {
+      var ok = window.vcConfirm
+        ? await window.vcConfirm({ title:'Leave this group?',
+            body:'You stop receiving its messages. Others keep the conversation.', confirm:'Leave' })
+        : true;
+      if (!ok) return;
+      await sb.from('channel_members').delete().eq('channel_id',cid).eq('profile_id',me.id);
+      if (cur && cur.id === cid) {
+        cur = null;
+        document.getElementById('live').style.display='none';
+        document.getElementById('blank').style.display='flex';
+      }
+    }
+    loadChans();
+    return;
+  }
+
+  // Any other click closes it.
+  if (mn) mn.classList.remove('on');
+
   var b = e.target.closest('[data-act]');
   if (!b) return;
   e.preventDefault();
@@ -1045,5 +1123,10 @@ window.vcInit = async function(){
   if (want) openCh(want);
 };
 </script>
+<!-- These must be direct children of body. Nested inside the New Message
+     modal (display:none) they could never render, which is why the menu
+     "did not open" — it was opening, inside a hidden parent. -->
+<div class="chmenu" id="chMenu"></div>
+<div class="ac" id="acBox"></div>
 </body>
 </html>

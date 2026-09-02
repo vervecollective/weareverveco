@@ -419,11 +419,15 @@ body.vc-shelled .tag.soon{ background:#f1f5f9 !important; color:#475569 !importa
   body.vc-shelled td[data-l=""]:before{display:none;}
   body.vc-shelled td input,body.vc-shelled td select{flex:1;min-width:0;text-align:left !important;}
   body.vc-shelled td.num{justify-content:space-between;}
-  body.vc-shelled .cols,body.vc-shelled .grid2,body.vc-shelled .grid,
+  body.vc-shelled .cols,body.vc-shelled .grid2,
   body.vc-shelled .layout,body.vc-shelled .row,body.vc-shelled .row3,
   body.vc-shelled .row4,body.vc-shelled .dayrow,body.vc-shelled .flow,
   body.vc-shelled .contact-grid,body.vc-shelled .price-grid,
   body.vc-shelled .pillars,body.vc-shelled .why-grid{grid-template-columns:1fr !important;}
+  /* Never collapse these — they set their own columns inline. */
+  body.vc-shelled .emo-grid,body.vc-shelled .pick .grid, body.vc-shelled .gantt-grid,
+  body.vc-shelled .axis,body.vc-shelled .row.gantt,
+  body.vc-shelled .ggrid{grid-template-columns:revert !important;}
 
   body.vc-shelled .script,body.vc-shelled .preview-panel{position:static !important;}
   body.vc-shelled .stages{
@@ -996,3 +1000,62 @@ body.vc-shelled .eng-item b{ font-size:14px !important; margin-bottom:3px; displ
 /* clickable avatars anywhere */
 [data-profile]{cursor:pointer;transition:transform .12s;}
 [data-profile]:hover{transform:scale(1.08);}
+
+
+/* ================= mobile corrections from screenshots ================= */
+@media(max-width:860px){
+
+  /* Stacked table rows: label left, value right, never overlapping. */
+  body.vc-shelled td{
+    display:grid !important; grid-template-columns:38% 1fr !important;
+    align-items:center; gap:12px; padding:9px 0 !important; text-align:left !important;
+  }
+  body.vc-shelled td:before{
+    flex:none !important; font-size:11.5px; font-weight:700; color:#5C6470;
+    text-transform:uppercase; letter-spacing:.04em;
+  }
+  body.vc-shelled td[data-l=""]{grid-template-columns:1fr !important;}
+  body.vc-shelled td > *{min-width:0;}
+  body.vc-shelled td .pill,body.vc-shelled td .st{justify-self:start;}
+
+  /* Emoji picker: real grid, and it must fit the screen. */
+  body.vc-shelled .pick{
+    left:12px !important; right:12px !important; width:auto !important;
+    bottom:86px !important;
+  }
+  body.vc-shelled .pick .grid{grid-template-columns:repeat(7,1fr) !important;}
+  body.vc-shelled .ggrid{grid-template-columns:1fr 1fr !important;}
+
+  /* Board cards: give the tap target room and stop meta colliding. */
+  body.vc-shelled .t{padding:14px !important;}
+  body.vc-shelled .t-title{font-size:14.5px !important;line-height:1.4 !important;}
+  body.vc-shelled .t-meta{gap:9px !important;row-gap:7px !important;}
+  body.vc-shelled .col{padding:12px !important;}
+  body.vc-shelled .board{gap:14px !important;}
+
+  /* Status dropdowns were clipping their own text. */
+  body.vc-shelled .lsel,body.vc-shelled .sel,body.vc-shelled .msSel{
+    width:100% !important; min-width:0 !important; padding:9px 30px 9px 11px !important;
+    font-size:13.5px !important;
+  }
+  body.vc-shelled .it-r{width:100%;align-items:stretch !important;gap:8px !important;}
+  body.vc-shelled .it{flex-direction:column !important;align-items:stretch !important;}
+  body.vc-shelled .it-r .due{text-align:right;}
+
+  /* Gantt scrolls rather than collapsing. */
+  body.vc-shelled .chart{overflow-x:auto !important;-webkit-overflow-scrolling:touch;}
+  body.vc-shelled .gantt-grid{min-width:760px !important;}
+}
+
+/* Engagement list: status was sitting on top of the date. */
+body.vc-shelled .eng-item span{display:block !important;}
+body.vc-shelled .eng-item .st{margin-top:8px !important;display:inline-block !important;}
+
+/* A quiet affordance so people know a message can be reacted to. */
+.m .react-hint{position:absolute;top:6px;right:10px;width:26px;height:26px;border-radius:50%;
+  border:none;background:none;color:#C4C7D0;cursor:pointer;display:none;
+  align-items:center;justify-content:center;padding:0;}
+.m:hover .react-hint{display:flex;}
+.m .react-hint:hover{color:#9A3412;background:#F3F4F6;}
+.m .react-hint svg{width:17px;height:17px;}
+.m:hover .qbar{display:flex;}

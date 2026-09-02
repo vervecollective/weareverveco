@@ -454,7 +454,8 @@ if (role !== 'client') {
     '<div class="vc-tray-h"><b>Notifications</b>' +
       '<button id="vcReadAll">Mark all read</button></div>' +
     '<div class="vc-tray-b" id="vcTrayB"></div>' +
-    '<div class="vc-tray-f"><button id="vcShowAll">Show read as well</button></div>';
+    '<div class="vc-tray-f"><button id="vcShowAll">Show read as well</button>' +
+      '<a href="/notifications">See all</a></div>';
 
   const brand = shell.querySelector('.vc-brand');
   if (brand) brand.after(bell);
@@ -482,6 +483,13 @@ if (role !== 'client') {
 
   let items = [];
   let showRead = false;
+
+  function badgeTo(n){
+    const badge = document.getElementById('vcBellN');
+    if (!badge) return;
+    badge.textContent = n > 9 ? '9+' : (n || '');
+    badge.style.display = n ? 'flex' : 'none';
+  }
 
   async function load(){
     const { data } = await sb.from('notifications')
@@ -525,15 +533,24 @@ if (role !== 'client') {
       '</a>').join('');
 
     b.querySelectorAll('.vc-nt').forEach((a) => {
-      a.addEventListener('click', async () => {
+      a.addEventListener('click', async (e) => {
+        /* This is a link, so the browser would navigate before the write
+           finished and the notification would come back unread. Hold the
+           navigation, mark it read, then go. */
+        e.preventDefault();
+        const href = a.getAttribute('href');
         a.classList.remove('unread');
         const it = items.filter((x) => x.id === a.dataset.id)[0];
         if (it) it.read_at = new Date().toISOString();
-        const left = items.filter((x) => !x.read_at).length;
-        const badge = document.getElementById('vcBellN');
-        if (badge) { badge.textContent = left > 9 ? '9+' : (left || ''); badge.style.display = left ? 'flex' : 'none'; }
-        await sb.from('notifications').update({ read_at: new Date().toISOString() })
-          .eq('id', a.dataset.id);
+        badgeTo(items.filter((x) => !x.read_at).length);
+
+        try {
+          await sb.from('notifications').update({ read_at: new Date().toISOString() })
+            .eq('id', a.dataset.id);
+        } catch (err) { /* still navigate */ }
+
+        if (href && href !== '#') location.href = href;
+        else paint();
       });
     });
   }
@@ -560,11 +577,47 @@ if (role !== 'client') {
   /* Browser notification, but only after the person opts in by clicking the
      bell. Asking on page load is the fastest way to get permanently blocked. */
   let asked = false;
-  bell.addEventListener('click', () => {
+  function askOnce(){
     if (asked || !('Notification' in window)) return;
     asked = true;
     if (Notification.permission === 'default') Notification.requestPermission();
-  });
+  }
+  bell.addEventListener('click', askOnce);
+  // Also ask after a little real use, so it is not the first thing that happens.
+  setTimeout(askOnce, 45000);
+
+  /* An in-app toast, because a browser notification only appears when the tab
+     is in the background and many people never grant permission. */
+  function toast(n){
+    const wrap = document.getElementById('vcToasts') || (function(){
+      const w = document.createElement('div'); w.className = 'vc-toasts'; w.id = 'vcToasts';
+      document.body.appendChild(w); return w;
+    })();
+
+    const ICON = { mention:'\uD83D\uDCAC', assigned:'\u25CF', offer:'\u2691', message:'\uD83D\uDCAC',
+                   slip_late:'\u26A0', slip_badly_late:'\u26A0', slip_blocked:'\u26A0',
+                   client_risk:'\u26A0', reply:'\u21A9' };
+    const urgent = /slip_badly_late|client_risk|slip_blocked/.test(n.kind);
+
+    const t = document.createElement('div');
+    t.className = 'vc-toast' + (urgent ? ' urgent' : '');
+    t.innerHTML =
+      '<span class="vc-toast-i">' + (ICON[n.kind] || '\u25CF') + '</span>' +
+      '<span class="vc-toast-b"><b>' + escv(n.title) + '</b>' +
+        (n.body ? '<em>' + escv(n.body) + '</em>' : '') + '</span>' +
+      '<button class="vc-toast-x" aria-label="Dismiss">&times;</button>';
+
+    t.addEventListener('click', async (e) => {
+      if (e.target.closest('.vc-toast-x')) { t.remove(); return; }
+      await sb.from('notifications').update({ read_at: new Date().toISOString() }).eq('id', n.id);
+      if (n.url) location.href = n.url;
+    });
+
+    wrap.prepend(t);
+    // Urgent ones stay until dismissed; the rest fade after eight seconds.
+    if (!urgent) setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 300); }, 8000);
+    while (wrap.children.length > 4) wrap.lastElementChild.remove();
+  }
 
   function popup(n){
     if (!('Notification' in window) || Notification.permission !== 'granted') return;
@@ -582,7 +635,7 @@ if (role !== 'client') {
         { event:'INSERT', schema:'public', table:'notifications',
           filter:'profile_id=eq.' + session.user.id },
         (payload) => { load().then(() => {
-            paint(); popup(payload.new);
+            paint(); toast(payload.new); popup(payload.new);
             bell.classList.add('new');
             setTimeout(() => bell.classList.remove('new'), 1600);
           }); })

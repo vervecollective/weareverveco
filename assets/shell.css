@@ -1170,3 +1170,51 @@ body.vc-mini .vc-navgroup + .vc-navitem{
 .vc-rep-msg{font-size:13px;margin-top:10px;display:none;}
 .vc-rep-msg.show{display:block;}
 .vc-rep-msg.ok{color:#065F46;} .vc-rep-msg.err{color:#991B1B;}
+
+
+/* ================= mobile: selects were clipping their own labels ================= */
+@media(max-width:860px){
+  /* Filter rows go full width and stack, rather than squeezing text. */
+  body.vc-shelled .bar,
+  body.vc-shelled .ctrls,
+  body.vc-shelled .tiles + div > select,
+  body.vc-shelled .filt{ max-width:none !important; }
+  body.vc-shelled .bar{flex-direction:column;align-items:stretch !important;gap:10px !important;}
+  body.vc-shelled .bar .f,
+  body.vc-shelled .bar > select,
+  body.vc-shelled .bar > .seg{width:100% !important;min-width:0 !important;}
+  body.vc-shelled select.filt{width:100% !important;height:auto !important;padding:11px 34px 11px 13px !important;}
+
+  /* Any select must show its full label. */
+  body.vc-shelled select{
+    text-overflow:ellipsis; white-space:nowrap;
+    line-height:1.3 !important; height:auto !important;
+    min-height:44px !important;
+  }
+  /* Two-up filter rows become one column. */
+  body.vc-shelled [id="fOrg"],body.vc-shelled [id="fWho"],
+  body.vc-shelled [id="fKind"],body.vc-shelled [id="filt"],
+  body.vc-shelled [id="assignee"],body.vc-shelled [id="org"],
+  body.vc-shelled [id="eng"]{width:100% !important;max-width:none !important;}
+}
+
+/* ================= Gantt on a phone =================
+   A 30-column grid on a 380px screen is unreadable. Below 860px the chart is
+   replaced by a stacked list carrying the same information. */
+@media(max-width:860px){
+  body.vc-shelled .chart{display:none !important;}
+  body.vc-shelled .gantt-mobile{display:block !important;}
+  body.vc-shelled .key{display:none !important;}
+}
+.gantt-mobile{display:none;}
+.gm-grp{font-size:10.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+  color:#fff;background:#0B0D10;padding:8px 14px;border-radius:6px;margin:18px 0 10px;}
+.gm-row{display:flex;align-items:center;gap:12px;padding:12px 14px;background:#fff;
+  border:1px solid #EBECEF;border-radius:10px;margin-bottom:8px;}
+.gm-bar{width:4px;align-self:stretch;border-radius:2px;flex-shrink:0;}
+.gm-b{flex:1;min-width:0;}
+.gm-b b{font-size:14px;font-weight:600;display:block;line-height:1.35;}
+.gm-b span{font-size:12.5px;color:#5C6470;display:block;margin-top:2px;}
+.gm-when{font-size:12.5px;font-weight:600;color:#5C6470;white-space:nowrap;text-align:right;}
+.gm-when.late{color:#991B1B;} .gm-when.soon{color:#B45309;}
+.gm-none{padding:34px 16px;text-align:center;color:#5C6470;font-size:13.5px;}

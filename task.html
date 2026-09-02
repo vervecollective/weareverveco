@@ -20,13 +20,26 @@
   .crumbs span{color:#C4C7D0;}
 
   .cols{display:grid;grid-template-columns:1fr 300px;gap:24px;align-items:start;}
-  @media(max-width:960px){.cols{grid-template-columns:1fr;gap:18px;}}
+  @media(max-width:960px){
+    .cols{grid-template-columns:1fr;gap:18px;}
+    .rail{position:static;order:-1;}
+    .main{padding:22px 20px;}
+    .t-title{font-size:23px;}
+    .wrap{padding:20px 16px 80px;}
+    .epick{width:calc(100vw - 24px) !important;left:12px !important;}
+    .egrid{grid-template-columns:repeat(7,1fr);}
+  }
 
   /* ---- main card, with a status-coloured top edge ---- */
   .main{background:#fff;border-radius:14px;padding:28px 30px;border:1px solid #EBECEF;
     box-shadow:0 1px 2px rgba(16,24,40,.04);position:relative;overflow:hidden;}
   .main:before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:var(--stc,#94A3B8);}
 
+  .chips{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px;}
+  .chip{font-size:11.5px;font-weight:700;letter-spacing:.02em;padding:5px 12px;
+    border-radius:999px;color:#fff;}
+  .chip.ghost{background:#fff;border:1px solid #E4E6EA;font-weight:600;}
+  .chip.ghost.vis{color:#1E3A8A;border-color:#BFD4F5;background:#EFF6FF;}
   .t-parent{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;
     color:#5C6470;background:#F1F2F4;padding:5px 11px;border-radius:999px;text-decoration:none;margin-bottom:12px;}
   .t-parent:hover{background:#FDF0EB;color:#9A3412;}
@@ -116,11 +129,14 @@
   .rail-h{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;
     color:#9CA3AF;padding:16px 0 4px;}
 
-  .t-rx{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;align-items:center;}
+  .t-rx{display:flex;gap:6px;flex-wrap:wrap;margin-top:18px;align-items:center;}
   .t-rx button{border:1px solid #E4E6EA;background:#fff;border-radius:999px;padding:5px 12px;
     font-size:14px;cursor:pointer;font-family:inherit;line-height:1.3;}
   .t-rx button.mine{background:#FDF0EB;border-color:#9A3412;}
-  .t-rx .more{border-style:dashed;color:#9CA3AF;font-size:13px;}
+  .t-rx .more{border-style:dashed;color:#9CA3AF;font-size:15px;line-height:1;
+    padding:6px 12px;font-weight:600;}
+  .t-rx .more:hover{border-color:#9A3412;color:#9A3412;background:#FDF0EB;}
+  .t-rx:empty{display:none;}
   .danger{width:100%;margin-top:18px;background:none;border:1px solid #F0A9A9;color:#991B1B;
     border-radius:10px;padding:11px;font:600 13px/1 'Inter',sans-serif;cursor:pointer;}
   .danger:hover{background:#FEF2F2;}
@@ -169,10 +185,13 @@ var pickTarget = null;
 function openPicker(anchor, cb){
   var p = document.getElementById('epick');
   pickTarget = cb;
+  p.classList.add('on');                    // measure only once it is laid out
   var r = anchor.getBoundingClientRect();
-  p.style.top  = Math.min(r.bottom + 8, window.innerHeight - 300) + 'px';
+  var h = p.offsetHeight || 290;
+  // Flip above the trigger if there is not room below.
+  var top = (r.bottom + 8 + h > window.innerHeight) ? Math.max(r.top - h - 8, 10) : r.bottom + 8;
+  p.style.top  = top + 'px';
   p.style.left = Math.max(Math.min(r.left, window.innerWidth - 344), 10) + 'px';
-  p.classList.add('on');
 }
 document.addEventListener('click', function(e){
   var p = document.getElementById('epick');
@@ -407,50 +426,80 @@ window.vcInit = async function(){
   var eng = T.engagements || {};
   var biz = (eng.clients && eng.clients.business_name) || eng.title || 'Engagement';
 
+  var pri = { low:['Low','#94A3B8'], normal:['Normal','#5C6470'],
+              high:['High','#B45309'], urgent:['Urgent','#991B1B'] };
+  var pc = pri[T.priority] || pri.normal;
+  var sc = COLS.filter(function(c){ return c[0] === T.status; })[0] || ['','',  '#94A3B8'];
+
   $('wrap').innerHTML =
-    '<div class="crumbs"><a href="/board">Board</a><span>/</span>'+
-      '<a href="/internal">'+esc(biz)+'</a><span>/</span><span>Task</span></div>'+
-    '<div class="cols"><div class="main" id="main">'+
-      (T.parent ? '<a class="t-parent" href="/task?id='+T.parent.id+'">&larr; '+esc(T.parent.title)+'</a>' : '')+
-      '<textarea class="t-title" id="title" rows="1">'+esc(T.title)+'</textarea>'+
-      '<textarea class="detail" id="detail" placeholder="Add detail. What does done look like?">'+esc(T.detail||'')+'</textarea>'+
-      '<div class="saveline" id="save"></div>'+
+    '<div class="crumbs"><a href="/board">Board</a><span>/</span>' +
+      '<a href="/internal">' + esc(biz) + '</a><span>/</span><span>Task</span></div>' +
 
-      '<div class="sec"><div class="sec-h"><h2>Subtasks</h2><span class="cnt" id="stCount"></span></div>'+
-        '<div class="prog" id="stProg" style="display:none"><i id="stBar"></i></div>'+
-        '<div id="stList"></div>'+
-        '<div class="addst"><input type="text" id="stNew" placeholder="Add a subtask">'+
-          '<input type="date" id="stDue"></div>'+
-      '</div>'+
+    '<div class="cols"><div class="main" id="main">' +
 
-      '<div class="sec"><div class="sec-h"><h2>Discussion</h2><span class="cnt" id="cmCount"></span></div>'+
-        '<div id="cmList"></div>'+
-        '<div class="cbox-w"><textarea id="cmNew" placeholder="Add a comment. Use @ to pull someone in."></textarea></div>'+
-        '<button class="send" id="cmSend">Comment</button>'+
-      '</div>'+
-    '</div>'+
+      // Status and priority read at a glance, above the title.
+      '<div class="chips">' +
+        '<span class="chip" id="chipStatus" style="background:' + sc[2] + '">' + esc(sc[1]) + '</span>' +
+        '<span class="chip ghost" id="chipPri" style="color:' + pc[1] + ';border-color:' + pc[1] + '33">' +
+          pc[0] + ' priority</span>' +
+        (T.client_visible ? '<span class="chip ghost vis">Client can see this</span>' : '') +
+      '</div>' +
 
-    '<div class="rail">'+
-      '<div class="f"><label for="fStatus">Status</label><select id="fStatus">'+
-        COLS.map(function(c){ return '<option value="'+c[0]+'"'+(c[0]===T.status?' selected':'')+'>'+esc(c[1])+'</option>'; }).join('')+
-      '</select></div>'+
-      '<div class="f"><label for="fPri">Priority</label><select id="fPri">'+
+      (T.parent ? '<a class="t-parent" href="/task?id=' + T.parent.id + '">&larr; ' + esc(T.parent.title) + '</a>' : '') +
+      '<textarea class="t-title" id="title" rows="1">' + esc(T.title) + '</textarea>' +
+      '<textarea class="detail" id="detail" placeholder="Add detail. What does done look like?">' +
+        esc(T.detail || '') + '</textarea>' +
+
+      // Reactions belong with the thing being reacted to, not in the sidebar.
+      '<div class="t-rx" id="tRx"></div>' +
+      '<div class="saveline" id="save"></div>' +
+
+      '<div class="sec"><div class="sec-h"><h2>Subtasks</h2><span class="cnt" id="stCount"></span></div>' +
+        '<div class="prog" id="stProg" style="display:none"><i id="stBar"></i></div>' +
+        '<div id="stList"></div>' +
+        '<div class="addst"><input type="text" id="stNew" placeholder="Add a subtask, then press Enter">' +
+          '<input type="date" id="stDue"></div>' +
+      '</div>' +
+
+      '<div class="sec"><div class="sec-h"><h2>Discussion</h2><span class="cnt" id="cmCount"></span></div>' +
+        '<div id="cmList"></div>' +
+        '<div class="cbox-w"><textarea id="cmNew" placeholder="Add a comment. Use @ to pull someone in."></textarea></div>' +
+        '<button class="send" id="cmSend">Comment</button>' +
+      '</div>' +
+    '</div>' +
+
+    '<div class="rail">' +
+      '<div class="rail-h">Status</div>' +
+      '<div class="f"><label for="fStatus">Column</label><select id="fStatus">' +
+        COLS.map(function(c){
+          return '<option value="' + c[0] + '"' + (c[0] === T.status ? ' selected' : '') + '>' + esc(c[1]) + '</option>';
+        }).join('') + '</select></div>' +
+      '<div class="f"><label for="fPri">Priority</label><select id="fPri">' +
         ['low','normal','high','urgent'].map(function(p){
-          return '<option value="'+p+'"'+(p===T.priority?' selected':'')+'>'+p.charAt(0).toUpperCase()+p.slice(1)+'</option>';
-        }).join('')+
-      '</select></div>'+
-      '<div class="f"><label for="fWho">Assignee</label><select id="fWho">'+
-        '<option value="">Unassigned</option>'+
-        people.map(function(p){ return '<option value="'+p.id+'"'+(p.id===T.assignee_id?' selected':'')+'>'+esc(p.full_name||p.email)+'</option>'; }).join('')+
-      '</select></div>'+
-      '<div class="f"><label for="fStart">Starts</label><input type="date" id="fStart" value="'+(T.start_date||'')+'"></div>'+
-      '<div class="f"><label for="fDue">Due</label><input type="date" id="fDue" value="'+(T.due_date||'')+'"></div>'+
-      '<div class="f"><label for="fEst">Estimate (hours)</label><input type="number" step="0.5" id="fEst" value="'+(T.estimate_hours||'')+'"></div>'+
-      '<div class="f"><label>Client sees this</label>'+
-        '<select id="fVis"><option value="no"'+(T.client_visible?'':' selected')+'>No, internal</option>'+
-        '<option value="yes"'+(T.client_visible?' selected':'')+'>Yes, on their portal</option></select></div>'+
-      '<div class="t-rx" id="tRx"></div>'+
-      '<button class="danger" id="del">Delete task</button>'+
+          return '<option value="' + p + '"' + (p === T.priority ? ' selected' : '') + '>' +
+            p.charAt(0).toUpperCase() + p.slice(1) + '</option>';
+        }).join('') + '</select></div>' +
+
+      '<div class="rail-h">People</div>' +
+      '<div class="f"><label for="fWho">Assignee</label><select id="fWho">' +
+        '<option value="">Unassigned</option>' +
+        people.map(function(p){
+          return '<option value="' + p.id + '"' + (p.id === T.assignee_id ? ' selected' : '') + '>' +
+            esc(p.full_name || p.email) + '</option>';
+        }).join('') + '</select></div>' +
+
+      '<div class="rail-h">Dates</div>' +
+      '<div class="f"><label for="fStart">Starts</label><input type="date" id="fStart" value="' + (T.start_date || '') + '"></div>' +
+      '<div class="f"><label for="fDue">Due</label><input type="date" id="fDue" value="' + (T.due_date || '') + '"></div>' +
+      '<div class="f"><label for="fEst">Estimate (hours)</label>' +
+        '<input type="number" step="0.5" id="fEst" placeholder="\u2014" value="' + (T.estimate_hours || '') + '"></div>' +
+
+      '<div class="rail-h">Visibility</div>' +
+      '<div class="f"><label for="fVis">Client sees this</label>' +
+        '<select id="fVis"><option value="no"' + (T.client_visible ? '' : ' selected') + '>No, internal</option>' +
+        '<option value="yes"' + (T.client_visible ? ' selected' : '') + '>Yes, on their portal</option></select></div>' +
+
+      '<button class="danger" id="del">Delete task</button>' +
     '</div></div>';
 
   function paintEdge(){
@@ -477,13 +526,31 @@ window.vcInit = async function(){
   $('fStatus').addEventListener('change', function(){
     patch({ status:this.value, completed_at: DONE.indexOf(this.value)>-1 ? new Date().toISOString() : null });
     paintEdge();
+    var c = COLS.filter(function(x){ return x[0] === this.value; }.bind(this))[0];
+    if (c) { var ch = document.getElementById('chipStatus');
+      ch.textContent = c[1]; ch.style.background = c[2]; }
   });
-  $('fPri').addEventListener('change', function(){ patch({ priority:this.value }); });
+  $('fPri').addEventListener('change', function(){
+    patch({ priority:this.value });
+    var P = { low:['Low','#94A3B8'], normal:['Normal','#5C6470'],
+              high:['High','#B45309'], urgent:['Urgent','#991B1B'] };
+    var p = P[this.value] || P.normal;
+    var ch = document.getElementById('chipPri');
+    ch.textContent = p[0] + ' priority'; ch.style.color = p[1]; ch.style.borderColor = p[1] + '33';
+  });
   $('fWho').addEventListener('change', function(){ patch({ assignee_id:this.value||null }); });
   $('fStart').addEventListener('change', function(){ patch({ start_date:this.value||null }); });
   $('fDue').addEventListener('change', function(){ patch({ due_date:this.value||null }); });
   $('fEst').addEventListener('change', function(){ patch({ estimate_hours:Number(this.value)||null }); });
-  $('fVis').addEventListener('change', function(){ patch({ client_visible:this.value==='yes' }); });
+  $('fVis').addEventListener('change', function(){
+    patch({ client_visible:this.value==='yes' });
+    var wrap = document.querySelector('.chips'), ex = wrap.querySelector('.vis');
+    if (this.value === 'yes' && !ex) {
+      var el = document.createElement('span');
+      el.className = 'chip ghost vis'; el.textContent = 'Client can see this';
+      wrap.appendChild(el);
+    } else if (this.value !== 'yes' && ex) { ex.remove(); }
+  });
 
   $('del').addEventListener('click', async function(){
     var ok = window.vcConfirm

@@ -329,7 +329,10 @@ if (role !== 'client') {
   document.body.append(veil, panel);
 
   function shut(){
-    panel.classList.remove('on'); veil.classList.remove('on');
+    panel.classList.remove('on'); panel.classList.remove('pushed');
+    veil.classList.remove('on');
+    const th = document.querySelector('.vc-thread');
+    if (th) th.classList.remove('on');
     document.body.classList.remove('vc-locked');
   }
   veil.addEventListener('click', shut);
@@ -361,12 +364,21 @@ if (role !== 'client') {
           .eq('id', id).single();
         if (!t) throw new Error('Not found');
 
-        const [{ data: cm }, { data: subs }, { data: cols }] = await Promise.all([
-          sb.from('comments').select('body, created_at, profiles:author_id(full_name)')
-            .eq('task_id', id).order('created_at', { ascending:false }).limit(4),
+        const [{ data: cm }, { data: subs }, { data: cols }, { data: allCm }] = await Promise.all([
+          sb.from('comments').select('id, body, created_at, parent_comment_id, profiles:author_id(full_name)')
+            .eq('task_id', id).is('parent_comment_id', null)
+            .order('created_at', { ascending:false }).limit(4),
           sb.from('tasks').select('id, title, status').eq('parent_task_id', id).order('sort_order'),
-          sb.from('board_statuses').select('*').eq('active', true).order('sort_order')
+          sb.from('board_statuses').select('*').eq('active', true).order('sort_order'),
+          sb.from('comments').select('id, parent_comment_id').eq('task_id', id)
         ]);
+
+        const cmCount = (allCm || []).length;
+        const replyCount = {};
+        (allCm || []).forEach((c) => {
+          if (!c.parent_comment_id) return;
+          replyCount[c.parent_comment_id] = (replyCount[c.parent_comment_id] || 0) + 1;
+        });
 
         const COLS = (cols && cols.length) ? cols : [
           { key:'todo', label:'To do', colour:'#94A3B8', is_done:false },
@@ -406,17 +418,28 @@ if (role !== 'client') {
             COLS.map(c => '<option value="' + c.key + '"' + (c.key === t.status ? ' selected' : '') + '>' +
               esc(c.label) + '</option>').join('') + '</select></div>' +
 
-          ((cm && cm.length)
-            ? '<div class="vc-peek-cm"><b>Latest discussion</b>' + cm.map((c) => {
-                const nm = (c.profiles && c.profiles.full_name) || 'Someone';
-                const iv = nm.split(' ').map(x => x[0]).filter(Boolean).join('').slice(0,2).toUpperCase();
-                const when = new Date(c.created_at).toLocaleDateString('en-US',{ month:'short', day:'numeric' });
-                return '<div class="vc-peek-c"><span class="vc-peek-av">' + iv + '</span>' +
-                  '<span class="vc-peek-cb"><em>' + esc(nm) + ' \u00b7 <i>' + when + '</i></em>' +
-                  esc(c.body) + '</span></div>';
-              }).join('') + '</div>'
-            : '<div class="vc-peek-cm"><b>Discussion</b>' +
-              '<p class="vc-peek-load">No comments yet.</p></div>');
+          '<div class="vc-peek-cm" id="vcPeekCm"><b>Discussion' +
+            (cmCount ? ' <span class="vc-peek-n">' + cmCount + '</span>' : '') + '</b>' +
+            ((cm && cm.length)
+              ? cm.slice().reverse().map((c) => {
+                  const nm = (c.profiles && c.profiles.full_name) || 'Someone';
+                  const iv = nm.split(' ').map(x => x[0]).filter(Boolean).join('').slice(0,2).toUpperCase();
+                  const when = new Date(c.created_at).toLocaleDateString('en-US',{ month:'short', day:'numeric' });
+                  const kids = replyCount[c.id] || 0;
+                  return '<div class="vc-peek-c"><span class="vc-peek-av">' + iv + '</span>' +
+                    '<span class="vc-peek-cb"><em>' + esc(nm) + ' \u00b7 <i>' + when + '</i></em>' +
+                    esc(c.body) +
+                    (kids ? '<button class="vc-peek-more" data-thread="' + c.id + '">' +
+                      kids + (kids === 1 ? ' reply' : ' replies') + '</button>' : '') +
+                    '</span></div>';
+                }).join('')
+              : '<p class="vc-peek-load">No comments yet. Say the first thing.</p>') +
+            (cmCount > 4 ? '<a class="vc-peek-all" href="/task?id=' + id + '">See all ' + cmCount + '</a>' : '') +
+            '<div class="vc-peek-add">' +
+              '<textarea id="vcPeekNew" rows="2" placeholder="Add a comment"></textarea>' +
+              '<button id="vcPeekSend">Comment</button>' +
+            '</div>' +
+          '</div>';
 
       } else if (kind === 'assignment') {      } else if (kind === 'assignment') {
         const { data: a } = await sb.from('assignments')
@@ -463,6 +486,35 @@ if (role !== 'client') {
       html = '<p class="vc-peek-load">Could not load that.</p>';
     }
     document.getElementById('vcPeekBody').innerHTML = html;
+
+    /* Commenting from the drawer, so a quick answer does not need a page load. */
+    const send = document.getElementById('vcPeekSend');
+    if (send) {
+      const ta = document.getElementById('vcPeekNew');
+      const post = async () => {
+        const body = ta.value.trim();
+        if (!body) return;
+        send.disabled = true;
+        const { data: t } = await sb.from('tasks').select('engagement_id').eq('id', id).single();
+        const { error } = await sb.from('comments').insert({
+          engagement_id: t && t.engagement_id, task_id: id, author_id: session.user.id, body
+        });
+        send.disabled = false;
+        if (error) { alert(error.message); return; }
+        ta.value = '';
+        window.vcPeek('task', id);
+      };
+      send.addEventListener('click', post);
+      ta.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); post(); }
+      });
+    }
+
+    /* A thread opens a second panel to the left rather than replacing what you
+       were looking at, so the task stays in view while you read the replies. */
+    document.querySelectorAll('[data-thread]').forEach((b) => {
+      b.addEventListener('click', () => openThread(b.dataset.thread, id));
+    });
 
     const quick = document.getElementById('vcPeekStatus');
     if (quick) {
@@ -737,6 +789,66 @@ if (role !== 'client') {
   });
   document.body.append(cardVeil, card);
 
+  const thread = document.createElement('div');
+  thread.className = 'vc-thread';
+  thread.innerHTML = '<div class="vc-thread-h"><b>Thread</b>' +
+    '<button class="vc-peek-x" id="vcThreadX" aria-label="Close">&times;</button></div>' +
+    '<div class="vc-thread-b" id="vcThreadB"></div>';
+  document.body.appendChild(thread);
+  document.getElementById('vcThreadX').addEventListener('click', () => {
+    thread.classList.remove('on'); panel.classList.remove('pushed');
+  });
+
+  async function openThread(commentId, taskId){
+    thread.classList.add('on');
+    panel.classList.add('pushed');
+    const b = document.getElementById('vcThreadB');
+    b.innerHTML = '<p class="vc-peek-load">Loading\u2026</p>';
+
+    const { data: root } = await sb.from('comments')
+      .select('*, profiles:author_id(full_name)').eq('id', commentId).single();
+    const { data: kids } = await sb.from('comments')
+      .select('*, profiles:author_id(full_name)')
+      .eq('parent_comment_id', commentId).order('created_at');
+
+    const row = (c, isReply) => {
+      const nm = (c.profiles && c.profiles.full_name) || 'Someone';
+      const iv = nm.split(' ').map(x => x[0]).filter(Boolean).join('').slice(0,2).toUpperCase();
+      const when = new Date(c.created_at).toLocaleString('en-US',
+        { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
+      return '<div class="vc-peek-c' + (isReply ? ' reply' : '') + '">' +
+        '<span class="vc-peek-av">' + iv + '</span>' +
+        '<span class="vc-peek-cb"><em>' + esc(nm) + ' \u00b7 <i>' + when + '</i></em>' +
+        esc(c.body) + '</span></div>';
+    };
+
+    b.innerHTML = (root ? row(root, false) : '') +
+      (kids || []).map((k) => row(k, true)).join('') +
+      '<div class="vc-peek-add"><textarea id="vcThreadNew" rows="2" placeholder="Reply"></textarea>' +
+      '<button id="vcThreadSend">Reply</button></div>';
+
+    const send = document.getElementById('vcThreadSend');
+    const ta = document.getElementById('vcThreadNew');
+    const post = async () => {
+      const body = ta.value.trim(); if (!body) return;
+      send.disabled = true;
+      const { data: t } = await sb.from('tasks').select('engagement_id').eq('id', taskId).single();
+      const { error } = await sb.from('comments').insert({
+        engagement_id: t && t.engagement_id, task_id: taskId,
+        author_id: session.user.id, parent_comment_id: commentId, body
+      });
+      send.disabled = false;
+      if (error) { alert(error.message); return; }
+      openThread(commentId, taskId);
+      window.vcPeek('task', taskId);
+    };
+    send.addEventListener('click', post);
+    ta.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); post(); }
+    });
+    setTimeout(() => ta.focus(), 140);
+  }
+
   window.vcProfile = async function(profileId){
     if (!profileId) return;
     card.classList.add('on'); cardVeil.classList.add('on');
@@ -781,6 +893,35 @@ if (role !== 'client') {
       ${profileId !== session.user.id
         ? `<button class="vc-pc-msg" id="vcPcMsg">Message ${escv((p.full_name || '').split(' ')[0] || 'them')}</button>`
         : '<a class="vc-pc-msg" href="/settings">Edit your profile</a>'}`;
+
+    /* Commenting from the drawer, so a quick answer does not need a page load. */
+    const send = document.getElementById('vcPeekSend');
+    if (send) {
+      const ta = document.getElementById('vcPeekNew');
+      const post = async () => {
+        const body = ta.value.trim();
+        if (!body) return;
+        send.disabled = true;
+        const { data: t } = await sb.from('tasks').select('engagement_id').eq('id', id).single();
+        const { error } = await sb.from('comments').insert({
+          engagement_id: t && t.engagement_id, task_id: id, author_id: session.user.id, body
+        });
+        send.disabled = false;
+        if (error) { alert(error.message); return; }
+        ta.value = '';
+        window.vcPeek('task', id);
+      };
+      send.addEventListener('click', post);
+      ta.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); post(); }
+      });
+    }
+
+    /* A thread opens a second panel to the left rather than replacing what you
+       were looking at, so the task stays in view while you read the replies. */
+    document.querySelectorAll('[data-thread]').forEach((b) => {
+      b.addEventListener('click', () => openThread(b.dataset.thread, id));
+    });
 
     const quick = document.getElementById('vcPeekStatus');
     if (quick) {

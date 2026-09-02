@@ -60,6 +60,11 @@
     line-height:1;padding:0;width:auto;}
   .totalbox{margin-top:14px;padding-top:12px;border-top:1px solid #e5e7eb;font-size:13.5px;color:#111827;}
   .totalbox b{color:#047857;}
+  .lnk{background:none;border:none;font:600 11.5px/1 'Inter',sans-serif;color:#6b7280;
+    cursor:pointer;padding:4px 7px;border-radius:5px;}
+  .lnk:hover{background:#f1f3f6;color:#9A3412;}
+  .lnk.warn:hover{background:#fef2f2;color:#991B1B;}
+  .st.withdrawn,.st.cancelled{background:#f1f3f6;color:#6b7280;}
   .rline{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #eef0f3;}
   .rline .rname{font-size:13.5px;font-weight:600;flex:1;}
   .rline .rpay{font-size:13px;color:#6b7280;}
@@ -269,28 +274,108 @@ async function loadJobs(){
         '</span></div>'+
       '<div class="meta"><span><b>'+esc(when)+'</b></span>'+
         (a.location?'<span>'+esc(a.location)+'</span>':'')+
-        '<span class="st '+a.status+'">'+a.status+'</span></div>'+
+        '<span class="st '+a.status+'">'+a.status+'</span>'+
+        (role !== 'contractor' && a.status !== 'cancelled'
+          ? '<button class="lnk warn" data-cancel="'+a.id+'">Cancel shoot</button>' : '')+
+        '</div>'+
       sched + perks +
       '<div class="scope">'+esc(a.scope)+
         (a.deliverables?'\n\nDeliverables: '+esc(a.deliverables):'')+'</div>'+ logistics +
-      /* A shoot can carry more than one role for the same person. Each is
-         answered on its own — someone may want the video and not the stills. */
-      ((a.assignment_roles || []).filter(function(r){ return r.contractor_id === me.id; })
+      /* Staff manage every role; a contractor only sees their own. */
+      ((a.assignment_roles || [])
+        .filter(function(r){ return role === 'contractor' ? r.contractor_id === me.id : true; })
+        .filter(function(r){ return r.status !== 'withdrawn'; })
         .map(function(r){
           var open = r.status === 'offered';
           return '<div class="rline">'+
             '<span class="rname">'+esc(r.craft)+'</span>'+
             '<span class="rpay">'+(r.pay_amount ? money(r.pay_amount) : '\u2014')+'</span>'+
-            (open
+            (open && role === 'contractor'
               ? '<span class="acts">'+
                   '<button class="btn btn-sm accept" data-r="'+r.id+'">Accept</button>'+
                   '<button class="btn btn-2 btn-sm decline" data-r="'+r.id+'">Decline</button>'+
                 '</span>'
               : '<span class="st '+r.status+'">'+r.status+'</span>')+
+            (role !== 'contractor'
+              ? '<span class="acts">'+
+                  (r.status === 'offered'
+                    ? '<button class="lnk" data-reoffer="'+r.id+'">Offer to someone else</button>'+
+                      '<button class="lnk" data-repay="'+r.id+'">Change pay</button>'
+                    : '')+
+                  (r.status === 'accepted'
+                    ? '<button class="lnk" data-repay="'+r.id+'">Change pay</button>' : '')+
+                  (r.status !== 'cancelled'
+                    ? '<button class="lnk warn" data-drop="'+r.id+'">Withdraw</button>' : '')+
+                '</span>'
+              : '')+
             '</div>';
         }).join('') || '')+
       '</div>';
   }).join('');
+
+  /* Managing an offer. Withdrawing keeps the row rather than deleting it, so
+     what was offered to whom stays on the record. */
+  el.querySelectorAll('[data-reoffer]').forEach(function(b){
+    b.addEventListener('click', async function(){
+      var rid = b.dataset.reoffer;
+      var cur = await sb.from('assignment_roles').select('craft, pay_amount').eq('id', rid).single();
+      var craft = cur.data ? cur.data.craft : '';
+      var rec = await sb.rpc('recommend_crew', { p_craft: craft, p_industry: null, p_date: null });
+      var opts = (rec.data || []).map(function(x){ return x.name + ' (' + x.score + ')'; }).join('\n');
+      var who = window.prompt('Offer ' + craft + ' to whom?\n\nBest fit:\n' + opts + '\n\nType their name:');
+      if (!who) return;
+      var m = (rec.data || []).filter(function(x){
+        return x.name.toLowerCase().indexOf(who.toLowerCase().trim()) > -1; })[0];
+      if (!m) return alert('Could not find that person.');
+      var why = window.prompt('Why is it moving? (optional)') || null;
+      var r = await sb.rpc('reoffer_role', { p_role: rid, p_to: m.profile_id,
+                                             p_pay: cur.data.pay_amount, p_reason: why });
+      if (r.error) return alert(r.error.message);
+      window.vcInit();
+    });
+  });
+
+  el.querySelectorAll('[data-repay]').forEach(function(b){
+    b.addEventListener('click', async function(){
+      var v = window.prompt('New pay for this role?');
+      if (v === null) return;
+      var n = Number(v);
+      if (!n || n < 0) return alert('Enter a number.');
+      var r = await sb.from('assignment_roles').update({ pay_amount: n }).eq('id', b.dataset.repay);
+      if (r.error) return alert(r.error.message);
+      window.vcInit();
+    });
+  });
+
+  el.querySelectorAll('[data-drop]').forEach(function(b){
+    b.addEventListener('click', async function(){
+      var ok = window.vcConfirm
+        ? await window.vcConfirm({ title:'Withdraw this role?',
+            body:'It comes off their Jobs page. The record of the offer is kept.',
+            confirm:'Withdraw' })
+        : window.confirm('Withdraw this role?');
+      if (!ok) return;
+      await sb.from('assignment_roles')
+        .update({ status:'withdrawn', withdrawn_at:new Date().toISOString() })
+        .eq('id', b.dataset.drop);
+      window.vcInit();
+    });
+  });
+
+  el.querySelectorAll('[data-cancel]').forEach(function(b){
+    b.addEventListener('click', async function(){
+      var ok = window.vcConfirm
+        ? await window.vcConfirm({ title:'Cancel this shoot?',
+            body:'Everyone offered or booked on it is told. Nothing is owed and nothing is expected of them.',
+            confirm:'Cancel shoot', danger:true })
+        : window.confirm('Cancel this shoot?');
+      if (!ok) return;
+      var why = window.prompt('What should they be told? (optional)') || null;
+      var r = await sb.rpc('cancel_assignment', { p_id: b.dataset.cancel, p_reason: why });
+      if (r.error) return alert(r.error.message);
+      window.vcInit();
+    });
+  });
 
   el.querySelectorAll('.accept').forEach(function(b){
     b.addEventListener('click', function(){ respondRole(b.dataset.r, 'accepted'); });

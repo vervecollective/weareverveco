@@ -705,6 +705,83 @@ if (role !== 'client') {
   });
 })();
 
+
+/* ── Report a problem ──────────────────────────────────────────────────────
+   Reachable from every page. Without this, someone who hits a bug has no
+   route other than texting Trae, and most people just stop using the thing. */
+(function(){
+  const btn = document.createElement('button');
+  btn.className = 'vc-report';
+  btn.id = 'vcReport';
+  btn.title = 'Report a problem';
+  btn.innerHTML =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" ' +
+    'stroke-linecap="round"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>' +
+    '<span>Report</span>';
+  document.body.appendChild(btn);
+
+  const veil = document.createElement('div');
+  veil.className = 'vc-rep-veil';
+  const box = document.createElement('div');
+  box.className = 'vc-rep';
+  box.innerHTML =
+    '<div class="vc-rep-h"><b>Something not right?</b>' +
+      '<p>Tell us what you were doing and what happened. It goes straight to Trae.</p></div>' +
+    '<div class="vc-rep-b">' +
+      '<div class="vc-rep-kinds">' +
+        '<button data-k="bug" class="on">Something is broken</button>' +
+        '<button data-k="idea">I have an idea</button>' +
+        '<button data-k="question">I am stuck</button>' +
+      '</div>' +
+      '<textarea id="vcRepBody" rows="4" placeholder="The Save button on Engagements did nothing when I clicked it."></textarea>' +
+      '<p class="vc-rep-note">We record which page you were on, so you do not have to explain that.</p>' +
+      '<div class="vc-rep-f"><button class="vc-rep-cancel" id="vcRepCancel">Cancel</button>' +
+      '<button class="vc-rep-send" id="vcRepSend">Send it</button></div>' +
+      '<p class="vc-rep-msg" id="vcRepMsg"></p>' +
+    '</div>';
+  document.body.append(veil, box);
+
+  let kind = 'bug';
+  box.querySelectorAll('.vc-rep-kinds button').forEach((b) => {
+    b.addEventListener('click', () => {
+      box.querySelectorAll('.vc-rep-kinds button').forEach((x) => x.classList.remove('on'));
+      b.classList.add('on');
+      kind = b.dataset.k;
+    });
+  });
+
+  function open(){ veil.classList.add('on'); box.classList.add('on');
+    setTimeout(() => document.getElementById('vcRepBody').focus(), 120); }
+  function shut(){ veil.classList.remove('on'); box.classList.remove('on');
+    document.getElementById('vcRepMsg').className = 'vc-rep-msg'; }
+
+  btn.addEventListener('click', open);
+  veil.addEventListener('click', shut);
+  document.getElementById('vcRepCancel').addEventListener('click', shut);
+
+  document.getElementById('vcRepSend').addEventListener('click', async () => {
+    const body = document.getElementById('vcRepBody').value.trim();
+    const msg = document.getElementById('vcRepMsg');
+    if (!body) { msg.textContent = 'Tell us what happened first.'; msg.className = 'vc-rep-msg show err'; return; }
+
+    const send = document.getElementById('vcRepSend');
+    send.disabled = true;
+    const { error } = await sb.from('reports').insert({
+      profile_id: session.user.id,
+      kind, body,
+      page: location.pathname,
+      user_agent: navigator.userAgent.slice(0, 240)
+    });
+    send.disabled = false;
+
+    if (error) { msg.textContent = error.message; msg.className = 'vc-rep-msg show err'; return; }
+    msg.textContent = 'Sent. Thank you \u2014 that genuinely helps.';
+    msg.className = 'vc-rep-msg show ok';
+    document.getElementById('vcRepBody').value = '';
+    setTimeout(shut, 1600);
+  });
+})();
+
 window.dispatchEvent(new Event('vc-auth-ready'));
 
 /* Pages define window.vcInit and expect it to run once auth resolves. Calling it

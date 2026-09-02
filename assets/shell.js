@@ -1119,6 +1119,99 @@ if (role !== 'client') {
   };
 })();
 
+
+/* ── Loading states ────────────────────────────────────────────────────────
+   Without these you cannot tell a slow save from a broken one, so people click
+   twice. Three pieces: a top progress bar for page loads, automatic busy state
+   on any button that fires an async action, and skeletons for empty regions. */
+(function(){
+
+  // 1. A thin bar at the top, like a browser's own.
+  const bar = document.createElement('div');
+  bar.className = 'vc-progress';
+  bar.innerHTML = '<i></i>';
+  document.body.appendChild(bar);
+
+  let depth = 0, timer = null;
+
+  window.vcLoading = function(on){
+    depth = Math.max(0, depth + (on ? 1 : -1));
+    if (depth > 0) {
+      bar.classList.add('on');
+      clearTimeout(timer);
+    } else {
+      // Hold briefly so a fast response still registers as something happening.
+      clearTimeout(timer);
+      timer = setTimeout(() => bar.classList.remove('on'), 220);
+    }
+    if (typeof paintBusy === 'function') paintBusy();
+  };
+
+  // Nothing should be able to leave a button spinning for ever.
+  setInterval(() => {
+    if (busyBtn && depth === 0) { busyBtn.classList.remove('vc-busy'); busyBtn = null; }
+  }, 3000);
+
+  /* 2. A clicked button stays busy for as long as queries are actually in
+     flight. Guessing when async work finishes is not possible generically, so
+     this hangs off the same counter the progress bar uses. */
+  let busyBtn = null;
+
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('button, a.btn');
+    if (!b || b.disabled || b.dataset.noBusy) return;
+    busyBtn = b;
+    // If nothing starts loading within a moment, this was not an async action.
+    setTimeout(() => { if (depth === 0 && busyBtn === b) busyBtn = null; }, 250);
+  }, true);
+
+  function paintBusy(){
+    if (busyBtn) {
+      if (depth > 0) busyBtn.classList.add('vc-busy');
+      else { busyBtn.classList.remove('vc-busy'); busyBtn = null; }
+    }
+  }
+
+  /* 3. Skeletons. A page calls vcSkeleton(el, rows) before fetching. */
+  window.vcSkeleton = function(el, rows){
+    if (typeof el === 'string') el = document.getElementById(el);
+    if (!el) return;
+    let h = '';
+    for (let i = 0; i < (rows || 3); i++) {
+      h += '<div class="vc-skel-row">' +
+        '<div class="vc-skel vc-skel-av"></div>' +
+        '<div class="vc-skel-lines">' +
+          '<div class="vc-skel" style="width:' + (58 + (i * 11) % 30) + '%"></div>' +
+          '<div class="vc-skel short" style="width:' + (32 + (i * 7) % 22) + '%"></div>' +
+        '</div></div>';
+    }
+    el.innerHTML = '<div class="vc-skels">' + h + '</div>';
+  };
+
+  /* 4. Wrap the Supabase client so every query drives the top bar. Nothing on
+     any page needs changing for this to work. */
+  const origFrom = sb.from.bind(sb);
+  sb.from = function(table){
+    const q = origFrom(table);
+    const origThen = q.then ? q.then.bind(q) : null;
+    // PostgREST builders are thenable; hook the first await.
+    q.then = function(res, rej){
+      window.vcLoading(true);
+      return origThen(
+        (v) => { window.vcLoading(false); return res ? res(v) : v; },
+        (e) => { window.vcLoading(false); if (rej) return rej(e); throw e; }
+      );
+    };
+    return q;
+  };
+
+  // The initial page render counts as loading until vcInit finishes.
+  window.addEventListener('vc-auth-ready', () => {
+    window.vcLoading(true);
+    setTimeout(() => window.vcLoading(false), 400);
+  });
+})();
+
 window.dispatchEvent(new Event('vc-auth-ready'));
 
 /* Pages define window.vcInit and expect it to run once auth resolves. Calling it

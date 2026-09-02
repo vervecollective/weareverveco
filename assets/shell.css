@@ -1623,3 +1623,14 @@ body.vc-previewing .vc-topbar{top:38px;}
 
 /* The bubble is filled now, so it needs less weight around it. */
 .vc-dock-btn svg{width:25px;height:25px;}
+
+
+/* ---- reply affordance on every drawer comment ---- */
+.vc-peek-cacts{display:block;margin-top:5px;}
+.vc-peek-cacts .vc-peek-more{
+  background:none;border:none;padding:3px 8px;margin-left:-8px;border-radius:6px;
+  font:600 11.5px/1 'Inter',sans-serif;color:var(--vc-text-4);cursor:pointer;}
+.vc-peek-c:hover .vc-peek-cacts .vc-peek-more{color:var(--vc-accent);background:#FDF0EB;}
+.vc-thread-sep{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;
+  color:var(--vc-text-4);padding:14px 0 8px;border-bottom:1px solid var(--vc-line-soft);margin-bottom:6px;}
+.vc-thread-none{font-size:13px;color:var(--vc-text-4);padding:16px 0 6px;}

@@ -705,7 +705,11 @@ async function loadCounts(){
 }
 
 async function load(){
-  if (!engId) { $('board').innerHTML = '<div class="empty">Pick an engagement.</div>'; return; }
+  if (!engId) { $('board').innerHTML = '<div class="empty"><b>No engagement selected</b>' +
+      (allEngs && allEngs.length
+        ? 'Choose one above to see its board.'
+        : 'There are no engagements yet. <a href="/internal" style="color:#9A3412;font-weight:600">Create the first one</a> and its board appears here.') +
+      '</div>'; return; }
   var r = await sb.from('tasks').select('*').eq('engagement_id', engId).order('sort_order');
   if (r.error) { $('board').innerHTML = '<div class="empty">'+esc(r.error.message)+'</div>'; return; }
   tasks = r.data || [];

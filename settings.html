@@ -86,6 +86,19 @@
   .empty{color:var(--vc-text-3);font-size:13.5px;padding:8px 0;}
   .danger{border-color:#fecaca;}
   .danger .sec-hd{border-bottom-color:#fecaca;}
+
+  .cfrow,.ptrow{display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px solid #f3f4f6;}
+  .cfrow b{flex:1;font-size:13.5px;font-weight:600;}
+  .cfrow select{padding:7px 9px;font-size:13px;font-family:inherit;
+    border:1px solid #d1d5db;border-radius:7px;background:#fff;}
+  .ptb{flex:1;min-width:0;}
+  .ptb b{display:block;font-size:13.5px;font-weight:600;}
+  .ptb em{font-size:12px;font-style:normal;color:#6b7280;}
+  .lnk{background:none;border:none;font:600 12px/1 'Inter',sans-serif;color:#6b7280;
+    cursor:pointer;padding:5px 8px;border-radius:6px;text-decoration:none;}
+  .lnk:hover{background:#f1f3f6;color:#9A3412;}
+  .lnk.warn:hover{background:#fef2f2;color:#991B1B;}
+  .none{font-size:13px;color:#9CA3AF;padding:8px 0;}
 </style>
 <!-- Google Tag Manager -->
 <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
@@ -811,4 +824,43 @@ window.addEventListener('vc-auth-ready', vcInit);
 <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-M43X6GPH"
 height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <!-- End Google Tag Manager (noscript) --></body>
-</html>
+</html><div class="card" id="craftCard" style="display:none">
+      <h2>What you do</h2>
+      <p class="sub">This is what the system matches you to work with. Be honest about
+        the level — it is better to be offered the right jobs than more of them.</p>
+      <div id="craftRows"></div>
+      <div class="row" style="margin-top:10px">
+        <div class="field"><label for="cfNew">Add a craft</label>
+          <select id="cfNew"></select></div>
+        <div class="field"><label for="cfLvl">How good are you?</label>
+          <select id="cfLvl">
+            <option value="learning">Still learning</option>
+            <option value="proficient" selected>Proficient</option>
+            <option value="expert">Expert</option>
+          </select></div>
+      </div>
+      <button class="btn btn-2 btn-sm" id="cfAdd">Add</button>
+      <p class="msg" id="cfMsg"></p>
+    </div>
+
+    <div class="card" id="portCard" style="display:none">
+      <h2>Your work</h2>
+      <p class="sub">Links, not uploads — the file stays wherever it lives. This is what
+        gets shown when someone is deciding who to put on a job.</p>
+      <div id="portRows"></div>
+      <div class="row" style="margin-top:10px">
+        <div class="field"><label for="ptTitle">What is it</label>
+          <input type="text" id="ptTitle" placeholder="Harbour Kitchen launch film"></div>
+        <div class="field"><label for="ptUrl">Link</label>
+          <input type="url" id="ptUrl" placeholder="https://…"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label for="ptCraft">Craft</label><select id="ptCraft"></select></div>
+        <div class="field"><label for="ptInd">Industry</label>
+          <input type="text" id="ptInd" placeholder="Hospitality"></div>
+      </div>
+      <button class="btn btn-2 btn-sm" id="ptAdd">Add to portfolio</button>
+      <p class="msg" id="ptMsg"></p>
+    </div>
+
+    

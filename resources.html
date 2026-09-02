@@ -164,7 +164,12 @@ function render(){
   $('list').querySelectorAll('.del').forEach(function(b){
     b.addEventListener('click', async function(e){
       e.preventDefault(); e.stopPropagation();
-      if (!window.confirm('Remove this resource? The file itself is untouched.')) return;
+      var okR = await window.vcConfirm({
+        title: 'Remove this resource?',
+        body: 'It disappears from the library for everyone. The file in Drive is untouched.',
+        confirm: 'Remove'
+      });
+      if (!okR) return;
       await sb.from('resources').delete().eq('id', b.dataset.id);
       load();
     });

@@ -68,6 +68,15 @@
     .ev{font-size:10px;padding:2px 4px;}
     .legend{width:100%;margin-left:0;}
   }
+
+  .day.band{background:#FBFBFC;}
+  .day.wkstart{border-left:2px solid #E4E7EC;}
+  .day.mstart{border-left:2px solid #9A3412;}
+  .dn{display:flex;align-items:center;gap:5px;}
+  .mtag{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;
+    color:#9A3412;background:#FDF0EB;padding:1px 5px;border-radius:3px;}
+  .wtag{margin-left:auto;font-size:9px;font-weight:700;color:#C4C7D0;letter-spacing:.03em;}
+  .day.today .wtag{color:#9A3412;}
 </style>
 </head>
 <body>
@@ -83,6 +92,14 @@
     <button class="today" id="jump">Today</button>
     <select id="fOrg" class="filt"><option value="">All organizations</option></select>
     <select id="fWho" class="filt"><option value="">Everyone</option></select>
+    <select id="fWhen" class="filt">
+      <option value="">Any time</option>
+      <option value="week">This week</option>
+      <option value="next">Next week</option>
+      <option value="month">This month</option>
+      <option value="late">Overdue only</option>
+      <option value="mine">Mine only</option>
+    </select>
     <select id="fKind" class="filt">
       <option value="">Everything</option>
       <option value="shoot">Shoots only</option>
@@ -192,6 +209,13 @@ function render(){
     .map(function(d){ return '<div class="dow">'+d+'</div>'; }).join('');
 
   var today = todayISO();
+  function isoWeek(dt){
+    var t = new Date(Date.UTC(dt.getFullYear(), dt.getMonth(), dt.getDate()));
+    var day = t.getUTCDay() || 7;
+    t.setUTCDate(t.getUTCDate() + 4 - day);
+    var y0 = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+    return Math.ceil((((t - y0) / 86400000) + 1) / 7);
+  }
   for (var i = 0; i < 42; i++){
     var d = new Date(start); d.setDate(start.getDate() + i);
     d.setHours(12,0,0,0);
@@ -199,8 +223,21 @@ function render(){
     var out = d.getMonth() !== m;
     var evs = shown.filter(function(e){ return e.date === key; });
 
-    html += '<div class="day'+(out?' out':'')+(key===today?' today':'')+'">'+
-      '<div class="dn">'+d.getDate()+'</div>'+
+    /* A week band every seventh cell, and a heavier edge where the month
+       turns over, so the grid reads as weeks rather than 42 identical boxes. */
+    var wkStart  = (i % 7 === 0);
+    var monthNew = (d.getDate() === 1);
+    var wkNo = Math.floor(i / 7);
+
+    html += '<div class="day'+(out?' out':'')+(key===today?' today':'')+
+      (wkNo % 2 ? ' band' : '')+(wkStart?' wkstart':'')+(monthNew?' mstart':'')+'">'+
+      '<div class="dn">'+
+        (monthNew
+          ? '<span class="mtag">'+d.toLocaleDateString('en-US',{month:'short'})+'</span> '
+          : '')+
+        d.getDate()+
+        (wkStart ? '<span class="wtag">W'+isoWeek(d)+'</span>' : '')+
+      '</div>'+
       evs.slice(0,3).map(function(e){
         var cls = e.kind;
         if (e.kind === 'shoot' && clashes[e.date]) cls = 'clash';

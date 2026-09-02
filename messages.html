@@ -320,11 +320,18 @@ async function paint(){
     }).join('');
     var rxHtml = chips ? '<div class="rx">'+chips+'</div>' : '';
 
+    /* A faint outlined smiley sits on hover. Clicking it opens the quick bar,
+       so the affordance is discoverable rather than assumed. */
+    var hint = '<button class="react-hint" data-m="'+m.id+'" data-e="open" title="React">'+
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">'+
+      '<circle cx="12" cy="12" r="9"/><path d="M8.5 14.5a4.5 4.5 0 0 0 7 0"/>'+
+      '<circle cx="9" cy="10" r=".7" fill="currentColor"/><circle cx="15" cy="10" r=".7" fill="currentColor"/></svg></button>';
+
     var qb = '<span class="qbar">'+QUICK.map(function(q){
       return '<button data-m="'+m.id+'" data-e="'+q+'">'+q+'</button>';
     }).join('')+'<button data-m="'+m.id+'" data-e="add">+</button></span>';
 
-    html += '<div class="m'+(cont?' cont':'')+'">'+qb+avOf(p,'av')+'<span class="bd">'+
+    html += '<div class="m'+(cont?' cont':'')+'">'+hint+qb+avOf(p,'av')+'<span class="bd">'+
       '<span class="hd"><b>'+esc(nm)+'</b><em>'+when(m.created_at)+'</em></span>'+
       (m.body ? '<div class="tx">'+esc(m.body)+'</div>' : '')+att+rxHtml+'</span></div>';
     lastAuthor=m.author_id; lastAt=new Date(m.created_at);
@@ -336,10 +343,16 @@ async function paint(){
     '<div style="font-size:13.5px;color:#5C6470;max-width:280px">Say hello. Files, emoji and reactions all work here.</div></div></div>';
   $('feed').scrollTop = $('feed').scrollHeight;
 
-  $('feed').querySelectorAll('.rx button, .qbar button').forEach(function(b){
+  $('feed').querySelectorAll('.rx button, .qbar button, .react-hint').forEach(function(b){
     b.addEventListener('click', async function(ev){
       ev.stopPropagation();
       var mid=b.dataset.m, e=b.dataset.e;
+      if (e==='open'){
+        // Reveal the quick bar for this message on touch, where hover does not exist.
+        var bar = b.parentNode.querySelector('.qbar');
+        if (bar) bar.style.display = bar.style.display==='flex' ? 'none' : 'flex';
+        return;
+      }
       if (e==='add'){ $('pick').dataset.target = mid; $('pick').classList.add('on'); return; }
       await react(mid, e);
     });

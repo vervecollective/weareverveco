@@ -348,7 +348,7 @@ if (role !== 'client') {
       ({ task:'Task', assignment:'Shoot', milestone:'Milestone', engagement:'Engagement' })[kind] || 'Detail';
     document.getElementById('vcPeekBody').innerHTML = '<p class="vc-peek-load">Loading\u2026</p>';
     document.getElementById('vcPeekOpen').href =
-      ({ task:'/board?task=' + id, assignment:'/jobs', milestone:'/internal', engagement:'/internal' })[kind] || '#';
+      ({ task:'/task?id=' + id, assignment:'/jobs', milestone:'/internal', engagement:'/internal' })[kind] || '#';
 
     panel.classList.add('on'); veil.classList.add('on');
     document.body.classList.add('vc-locked');

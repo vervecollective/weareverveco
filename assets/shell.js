@@ -1241,13 +1241,14 @@ if (role !== 'client') {
   const dock = document.createElement('div');
   dock.className = 'vc-dock';
   dock.innerHTML =
-    '<button class="vc-dock-btn" id="vcDockBtn" aria-label="Messages">' +
+    '<button class="vc-dock-btn" id="vcDockBtn" aria-label="Open messages" title="Messages">' +
       '<svg viewBox="0 0 24 24" fill="currentColor">' +
         '<path d="M12 3C6.9 3 3 6.6 3 11c0 2.3 1.1 4.4 2.9 5.8v3.4c0 .5.6.8 1 .5l2.9-2a11 11 0 0 0 2.2.2' +
         'c5.1 0 9-3.6 9-8s-3.9-8-9-8z"/>' +
         '<circle cx="8.2" cy="11" r="1.15" fill="#fff"/>' +
         '<circle cx="12" cy="11" r="1.15" fill="#fff"/>' +
         '<circle cx="15.8" cy="11" r="1.15" fill="#fff"/></svg>' +
+      '<span class="vc-dock-label">Messages</span>' +
       '<span class="vc-dock-n" id="vcDockN"></span>' +
     '</button>' +
     '<div class="vc-dock-panel" id="vcDockPanel">' +
@@ -1363,6 +1364,15 @@ if (role !== 'client') {
     badge.textContent = total > 9 ? '9+' : (total || '');
     badge.style.display = total ? 'flex' : 'none';
     if (total) dock.classList.add('has'); else dock.classList.remove('has');
+
+    const btn = $d('vcDockBtn');
+    const lbl = dock.querySelector('.vc-dock-label');
+    if (lbl) lbl.textContent = total
+      ? total + (total === 1 ? ' new message' : ' new messages')
+      : 'Messages';
+    if (btn) btn.title = total
+      ? total + ' unread \u2014 click to read'
+      : 'Messages \u2014 click to open';
 
     if (!openChan) paintList();
   }

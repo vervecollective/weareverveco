@@ -427,7 +427,7 @@ function wire(){
   document.querySelectorAll('.t').forEach(function(el){
     el.addEventListener('click', function(e){
       /* A click peeks. The drawer carries enough to answer most questions, and
-         "Open fully" is there when it does not. Shift-click skips straight to
+         "Expand" is there when it does not. Shift-click skips straight to
          the full page for anyone who already knows what they want. */
       if (e.shiftKey) { location.href = '/task?id=' + el.dataset.id; return; }
       if (window.vcPeek) window.vcPeek('task', el.dataset.id);

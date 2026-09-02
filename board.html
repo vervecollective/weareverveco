@@ -69,6 +69,16 @@
   .t.p-normal{border-left-color:#cbd5e1;}
   .t.p-low{border-left-color:#e5e7eb;}
   .t-title{font-size:13.5px;font-weight:600;line-height:1.4;margin-bottom:7px;}
+  .t-prog{height:3px;background:#EDEEF1;border-radius:999px;overflow:hidden;margin:9px 0 2px;}
+  .t-prog i{display:block;height:100%;background:#00A870;border-radius:999px;transition:width .3s;}
+  .t-lc{font-size:11.5px;line-height:1.5;color:#5C6470;margin-top:8px;padding:7px 9px;
+    background:#F7F8F9;border-radius:7px;border-left:2px solid #D8DAE0;}
+  .t-lc b{color:#374151;font-weight:600;}
+  .drop-ph{height:40px;border:2px dashed #9A3412;border-radius:10px;background:#FDF0EB;
+    margin-bottom:9px;animation:phIn .14s ease both;}
+  @keyframes phIn{from{opacity:0;transform:scaleY(.6);}to{opacity:1;transform:none;}}
+  .t.dragging{opacity:.35;transform:rotate(1.5deg);}
+  .t{transition:box-shadow .14s,transform .14s;}
   .t-meta{display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
   .av{width:22px;height:22px;border-radius:50%;background:#111827;color:#fff;
     display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:700;flex-shrink:0;}
@@ -310,8 +320,14 @@ function render(){
       inCol.map(function(t){
         var who = people.filter(function(p){return p.id===t.assignee_id;})[0];
         var dc = dueClass(t.due_date, t.status);
+        var sc = stCounts[t.id];
+        var pct = sc && sc.total ? Math.round(sc.done / sc.total * 100) : 0;
+        var lc = lastCm[t.id];
         return '<div class="t p-'+t.priority+'" draggable="true" data-id="'+t.id+'">'+
           '<div class="t-title">'+esc(t.title)+'</div>'+
+          (sc && sc.total ? '<div class="t-prog"><i style="width:'+pct+'%"></i></div>' : '')+
+          (lc ? '<div class="t-lc"><b>'+esc(((lc.profiles&&lc.profiles.full_name)||'Someone').split(' ')[0])+
+                '</b> '+esc(lc.body.slice(0,68))+(lc.body.length>68?'\u2026':'')+'</div>' : '')+
           '<div class="t-meta">'+
             (who ? '<span class="av" data-profile="'+who.id+'" title="'+esc(who.full_name)+'">'+ini(who.full_name)+'</span>'
                  : '<span class="av none" title="Unassigned">?</span>')+
@@ -406,8 +422,23 @@ function wire(){
   });
 
   document.querySelectorAll('.col').forEach(function(col){
-    col.addEventListener('dragover', function(e){ e.preventDefault(); col.classList.add('over'); });
-    col.addEventListener('dragleave', function(){ col.classList.remove('over'); });
+    col.addEventListener('dragover', function(e){
+      e.preventDefault(); col.classList.add('over');
+      // Slide a gap open where the card would land.
+      var after = null, cards = Array.prototype.slice.call(col.querySelectorAll('.t:not(.dragging)'));
+      for (var i = 0; i < cards.length; i++) {
+        var box = cards[i].getBoundingClientRect();
+        if (e.clientY < box.top + box.height / 2) { after = cards[i]; break; }
+      }
+      var ph = document.querySelector('.drop-ph') || (function(){
+        var d = document.createElement('div'); d.className = 'drop-ph'; return d;
+      })();
+      if (after) col.insertBefore(ph, after); else col.appendChild(ph);
+    });
+    col.addEventListener('dragleave', function(e){
+      if (col.contains(e.relatedTarget)) return;
+      col.classList.remove('over');
+    });
     col.addEventListener('drop', async function(e){
       e.preventDefault(); col.classList.remove('over');
       var id = e.dataTransfer.getData('text/plain');
@@ -622,15 +653,20 @@ function mentionedIds(text){
 var cmCounts = {};
 
 var stCounts = {};
+var lastCm = {};
 
 async function loadCounts(){
   cmCounts = {}; stCounts = {};
   if (!tasks.length) return;
   var ids = tasks.map(function(t){ return t.id; });
 
-  var r = await sb.from('comments').select('task_id').in('task_id', ids);
+  var r = await sb.from('comments')
+    .select('task_id, body, created_at, profiles:author_id(full_name)')
+    .in('task_id', ids).order('created_at');
+  lastCm = {};
   (r.data || []).forEach(function(c){
     cmCounts[c.task_id] = (cmCounts[c.task_id] || 0) + 1;
+    lastCm[c.task_id] = c;   // ordered ascending, so the final write is the newest
   });
 
   // Subtasks live in the same table, so count them off the parent.

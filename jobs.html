@@ -389,6 +389,34 @@ window.vcInit = async function(){
     return;
   }
 
+  var lineItems = [];
+
+  async function loadLineItems(){
+    var sel = document.getElementById('lineItem');
+    var eid = $('eng').value;
+    if (!eid) { sel.innerHTML = '<option value="">— pick an engagement first —</option>'; return; }
+    var r = await sb.from('line_items').select('*').eq('engagement_id', eid).order('sort_order');
+    if (r.error) {
+      // Silence here was leaving the placeholder in place with no explanation.
+      sel.innerHTML = '<option value="">Could not load line items</option>';
+      var mn = document.getElementById('marginNote');
+      if (mn) mn.textContent = r.error.message;
+      return;
+    }
+    lineItems = r.data || [];
+    if (!lineItems.length) {
+      sel.innerHTML = '<option value="">No line items on this engagement yet</option>';
+      return;
+    }
+    sel.innerHTML = '<option value="">— not tied to a line item —</option>' +
+      lineItems.map(function(li){
+        return '<option value="'+li.id+'">'+esc(li.description)+' \u2014 client '+money(li.unit_price)+
+               ', budgeted '+money(li.contractor_cost||0)+'</option>';
+      }).join('');
+    checkMargin();
+  }
+
+
   // staff
   $('ld').textContent = 'Offer work to contractors and track who has accepted.';
   var oc = $('offerCard'); if (oc) oc.style.display = 'block';
@@ -400,6 +428,10 @@ window.vcInit = async function(){
         return '<option value="'+e.id+'">'+esc((e.clients&&e.clients.business_name)||e.title||'Untitled')+'</option>';
       }).join('')
     : '<option value="">No engagements yet</option>';
+
+  // Populate line items now that an engagement is selected. Waiting until the
+  // end of init meant any error in between left this stuck on its placeholder.
+  await loadLineItems();
 
   var cq = await sb.from('profiles')
     .select('id, full_name, email, contractor_details(ica_signed_at, ip_assignment_signed_at, w9_on_file)')
@@ -511,22 +543,6 @@ window.vcInit = async function(){
     document.getElementById('totalBox').innerHTML =
       bits.join(' + ') + ' = <b>' + money(total) + '</b>' +
       (extras.length ? '<div style="color:#6b7280;font-size:12.5px;margin-top:4px">Plus ' + extras.join(', ') + ' covered.</div>' : '');
-  }
-
-  var lineItems = [];
-
-  async function loadLineItems(){
-    var sel = document.getElementById('lineItem');
-    var eid = $('eng').value;
-    if (!eid) { sel.innerHTML = '<option value="">— pick an engagement first —</option>'; return; }
-    var r = await sb.from('line_items').select('*').eq('engagement_id', eid).order('sort_order');
-    lineItems = r.data || [];
-    sel.innerHTML = '<option value="">— not tied to a line item —</option>' +
-      lineItems.map(function(li){
-        return '<option value="'+li.id+'">'+esc(li.description)+' \u2014 client '+money(li.unit_price)+
-               ', budgeted '+money(li.contractor_cost||0)+'</option>';
-      }).join('');
-    checkMargin();
   }
 
   /* The pay you offer and the contractor cost you budgeted are two different

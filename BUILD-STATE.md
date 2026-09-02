@@ -161,6 +161,26 @@ No contractor or client has ever signed in. Role separation, the job-offer email
 the signature flow and contractor invoicing are all built and syntax-checked but
 unwalked. **Invite a test contractor and walk their whole path before a real one.**
 
+### Pages live now
+`/login` `/welcome` `/hub` `/mywork` `/messages` `/board` `/calendar` `/timeline`
+`/capacity` `/console` `/internal` `/audit` `/documents` `/jobs` `/pay` `/team`
+`/settings` `/help` `/project` `/proposal.html`
+
+### Collaboration and chat
+- **Messaging** — DMs and groups, presence dots, typing indicators, unread counts,
+  file upload (10MB), ~130 emoji, reactions with a hover affordance, Realtime
+- **Notifications** — bell with badge, written by database triggers, browser popups,
+  emails when away
+- **Profile cards** — click any avatar anywhere; identity pill top-right
+- **Onboarding** — `/welcome`, role-aware, runs once on `onboarded_at`
+
+### Outstanding, needs Trae
+1. **Free Giphy key** — GIF search tab is built and waiting
+2. **Four SignWell templates** — CSA, SOW, ICA, IP/NDA. Blocks contracts and SOW autofill.
+3. **Attorney review** on all five legal documents
+4. **Supabase leaked-password protection** toggle
+5. **A real client**
+
 ### Recurring mistake to avoid
 Two patterns have caused every self-inflicted bug in this build:
 1. **Broad CSS rules clobbering specific ones** — caused the black flash, the
@@ -168,6 +188,25 @@ Two patterns have caused every self-inflicted bug in this build:
 2. **Replacing a *range* of code rather than an exact string** — silently ate the
    availability initialiser, so the day grid rendered empty. Always match an exact
    string so a failed patch errors instead of deleting neighbouring code.
+3. **Repeated patching corrupts files.** `messages.html` ended up with two copies of
+   `paintEmoji` and an orphaned fragment mid-function; the page was broken in
+   production. When a file has been patched many times, **rebuild it rather than
+   patch it again**, and always `node --check` every script block before pushing.
+4. **Generic class names in global rules.** A mobile rule collapsing `.grid` to one
+   column silently broke the emoji picker *and* the Gantt chart, because both used
+   `.grid` with inline templates. Page-specific containers now use specific names
+   (`.gantt-grid`, `.emo-grid`). Never write a global rule against a name a page
+   might also use.
+5. **JavaScript escapes written into HTML.** `\u2014` inside a Python string that
+   builds HTML renders as literal text, not an em dash. It shipped to Help (23
+   occurrences) and Messages. Use the real character or an HTML entity.
+
+### Verification habits that caught real bugs
+- `node --input-type=commonjs --check` on **every** script block before pushing
+- Count `<div>` vs `</div>` after any markup edit
+- After pushing, `curl` the live URL and grep for the change — twice this
+  revealed the deployed file differed from what was expected
+- Query Supabase directly to distinguish "the data is wrong" from "the page is wrong"
 
 ---
 

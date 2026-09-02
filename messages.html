@@ -348,12 +348,17 @@ async function paint(){
       ev.stopPropagation();
       var mid=b.dataset.m, e=b.dataset.e;
       if (e==='open'){
-        // Reveal the quick bar for this message on touch, where hover does not exist.
+        // Only one bar open at a time — several at once is the noise we removed.
         var bar = b.parentNode.querySelector('.qbar');
-        if (bar) bar.style.display = bar.style.display==='flex' ? 'none' : 'flex';
+        var wasOpen = bar && bar.classList.contains('open');
+        $('feed').querySelectorAll('.qbar.open').forEach(function(x){ x.classList.remove('open'); });
+        $('feed').querySelectorAll('.react-hint.active').forEach(function(x){ x.classList.remove('active'); });
+        if (bar && !wasOpen){ bar.classList.add('open'); b.classList.add('active'); }
         return;
       }
       if (e==='add'){ $('pick').dataset.target = mid; $('pick').classList.add('on'); return; }
+      $('feed').querySelectorAll('.qbar.open').forEach(function(x){ x.classList.remove('open'); });
+      $('feed').querySelectorAll('.react-hint.active').forEach(function(x){ x.classList.remove('active'); });
       await react(mid, e);
     });
   });
@@ -416,7 +421,13 @@ window.vcInit = async function(){
     $('pick').dataset.target='';
     $('pick').classList.toggle('on');
   });
-  document.addEventListener('click', function(){ $('pick').classList.remove('on'); });
+  document.addEventListener('click', function(){
+    $('pick').classList.remove('on');
+    var f = $('feed');
+    if (!f) return;
+    f.querySelectorAll('.qbar.open').forEach(function(x){ x.classList.remove('open'); });
+    f.querySelectorAll('.react-hint.active').forEach(function(x){ x.classList.remove('active'); });
+  });
   $('pick').addEventListener('click', function(e){ e.stopPropagation(); });
 
   $('tEmo').addEventListener('click', function(){

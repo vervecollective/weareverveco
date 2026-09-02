@@ -1059,3 +1059,17 @@ body.vc-shelled .eng-item .st{margin-top:8px !important;display:inline-block !im
 .m .react-hint:hover{color:#9A3412;background:#F3F4F6;}
 .m .react-hint svg{width:17px;height:17px;}
 .m:hover .qbar{display:flex;}
+
+
+/* ---- reactions: hover reveals only the faint smiley; clicking it opens the bar ----
+   The bar appearing on every hover was noise across a busy thread. */
+.m:hover .qbar{display:none !important;}
+.m .qbar.open{display:flex !important;}
+.m .react-hint{display:none;}
+.m:hover .react-hint{display:flex;}
+.m .react-hint.active{display:flex;color:#9A3412;background:#F3F4F6;}
+/* Touch has no hover, so the smiley is always there. */
+@media(hover:none){
+  .m .react-hint{display:flex;opacity:.45;}
+  .m .react-hint.active{opacity:1;}
+}

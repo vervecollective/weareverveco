@@ -7,72 +7,77 @@
 <title>Sign in — Verve Collective</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  :root{--ink:#1a1d21;--ink-3:#616873;--bg:#f7f8fa;--card:#fff;--line:#e3e6ea;--orange:#D9531E;}
   *{box-sizing:border-box;margin:0;padding:0;}
-  body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--ink);
-    display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;-webkit-font-smoothing:antialiased;}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:32px;
-    width:100%;max-width:380px;box-shadow:0 1px 3px rgba(26,29,33,.06);}
-  .brand{display:flex;align-items:center;gap:9px;margin-bottom:22px;}
-  .brand .dot{width:26px;height:26px;border-radius:6px;background:var(--ink);color:#fff;
-    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;}
-  .brand span{font-weight:800;font-size:15px;letter-spacing:-.01em;}
-  h1{font-size:19px;font-weight:800;margin-bottom:4px;}
-  .sub{font-size:13.5px;color:var(--ink-3);margin-bottom:22px;}
-  label{display:block;font-size:12px;font-weight:700;color:var(--ink-3);margin-bottom:5px;}
-  input{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:7px;
-    font-size:14px;font-family:inherit;margin-bottom:14px;}
-  input:focus{outline:none;border-color:var(--orange);}
-  .btn{width:100%;background:var(--ink);color:#fff;border:none;border-radius:7px;padding:12px;
-    font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;}
-  .btn:hover{background:#000;}
-  .btn:disabled{opacity:.55;cursor:default;}
-  .msg{font-size:13px;margin-top:14px;display:none;}
+  body{font-family:'Inter',system-ui,sans-serif;background:#F6F7F9;color:#111827;
+    line-height:1.55;-webkit-font-smoothing:antialiased;min-height:100vh;
+    display:flex;align-items:center;justify-content:center;padding:24px;}
+  .card{width:100%;max-width:396px;background:#fff;border-radius:16px;padding:36px 34px;
+    box-shadow:0 2px 4px rgba(16,24,40,.04),0 12px 40px rgba(16,24,40,.08);}
+  .brand{display:flex;align-items:center;gap:9px;margin-bottom:26px;}
+  .brand b{font-size:15px;font-weight:800;letter-spacing:-.02em;}
+  .brand i{width:26px;height:26px;border-radius:7px;background:#111827;color:#fff;
+    display:flex;align-items:center;justify-content:center;font-style:normal;
+    font-size:13px;font-weight:800;}
+  h1{font-size:23px;font-weight:700;letter-spacing:-.02em;margin-bottom:5px;}
+  .sub{font-size:14px;color:#5C6470;margin-bottom:24px;}
+  label{display:block;font-size:12.5px;font-weight:600;color:#374151;margin-bottom:6px;}
+  input{width:100%;padding:12px 14px;font-size:15px;font-family:inherit;
+    border:1px solid #D8DAE0;border-radius:10px;margin-bottom:16px;color:#111827;}
+  input:focus{outline:none;border-color:#9A3412;box-shadow:0 0 0 3px rgba(154,52,18,.1);}
+  .btn{width:100%;background:#9A3412;color:#fff;border:none;border-radius:10px;padding:13px;
+    font:600 15px/1 'Inter',sans-serif;cursor:pointer;transition:background .14s;}
+  .btn:hover{background:#7C2D12;}
+  .btn:disabled{opacity:.5;cursor:default;}
+  .msg{font-size:13.5px;line-height:1.55;margin-top:14px;display:none;}
   .msg.show{display:block;}
-  .msg.err{color:#b42318;} .msg.ok{color:#1f9254;}
-  .alt{margin-top:18px;padding-top:16px;border-top:1px solid var(--line);font-size:12.5px;color:var(--ink-3);text-align:center;}
-  .alt a{color:var(--ink);font-weight:600;cursor:pointer;text-decoration:none;}
-  .alt a:hover{color:var(--orange);}
+  .msg.ok{color:#065F46;} .msg.err{color:#991B1B;}
+  .alt{margin-top:20px;padding-top:18px;border-top:1px solid #EFF1F4;
+    display:flex;flex-direction:column;gap:9px;}
+  .alt a{font-size:13.5px;font-weight:500;color:#5C6470;cursor:pointer;text-decoration:none;}
+  .alt a:hover{color:#9A3412;}
+  .note{font-size:12.5px;color:#9CA3AF;margin-top:18px;line-height:1.6;}
 </style>
 </head>
 <body>
 <div class="card">
-  <div class="brand"><span class="dot">V</span><span>Verve Collective</span></div>
-  <h1 id="hd">Sign in</h1>
-  <p class="sub" id="sd">Use your Verve account.</p>
+  <div class="brand"><i>V</i><b>Verve Collective</b></div>
 
-  <label for="email">Email</label>
+  <h1 id="hd">Sign in</h1>
+  <p class="sub" id="sd">We will email you a link. No password needed.</p>
+
+  <label for="email">Your email</label>
   <input type="email" id="email" autocomplete="email" autofocus>
 
-  <label for="password">Password</label>
-  <input type="password" id="password" autocomplete="current-password">
+  <div id="pwRow" style="display:none">
+    <label for="password">Password</label>
+    <input type="password" id="password" autocomplete="current-password">
+  </div>
 
-  <button class="btn" id="go">Sign in</button>
+  <button class="btn" id="go">Email me a link</button>
   <p class="msg" id="msg"></p>
 
   <div class="alt">
-    <a id="toggleReset">Forgot your password?</a>
+    <a id="usePw">Use a password instead</a>
+    <a id="toggleReset" style="display:none">Forgot your password?</a>
   </div>
+
+  <p class="note">Access is by invitation. If you do not have an account yet,
+    ask Trae to send you one.</p>
 </div>
 
 <script type="module">
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+const sb = createClient('https://otqrkxjtojqlpzzvqavp.supabase.co',
+  'sb_publishable_OBViGLggbcOKacti5iUonA_QCzw3kBv');
 
-const SUPABASE_URL = 'https://otqrkxjtojqlpzzvqavp.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_OBViGLggbcOKacti5iUonA_QCzw3kBv';
+const $ = (i) => document.getElementById(i);
+const next = new URLSearchParams(location.search).get('next') || '/hub';
 
-const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+// Already signed in? Do not make them do it again.
+const { data: { session } } = await sb.auth.getSession();
+if (session) location.replace(next);
 
-/* Deep links: an email button points at /jobs, we bounce through login, then
-   send them where they were actually going. Only same-origin paths are allowed,
-   so a crafted ?next= can't redirect someone off-site. */
-function nextPath(){
-  var n = new URLSearchParams(location.search).get('next') || '/hub';
-  if (!n.startsWith('/') || n.startsWith('//')) return '/hub';
-  return n;
-}
-const $ = id => document.getElementById(id);
-let mode = 'signin';
+let mode = 'magic';   // magic | password | reset
 
 function say(t, ok){
   const m = $('msg');
@@ -80,52 +85,87 @@ function say(t, ok){
   m.className = 'msg show ' + (ok ? 'ok' : 'err');
 }
 
-// Already signed in? Go straight through.
-const { data:{ session } } = await sb.auth.getSession();
-if (session) location.href = nextPath();
-
-$('toggleReset').addEventListener('click', () => {
-  mode = mode === 'signin' ? 'reset' : 'signin';
-  const reset = mode === 'reset';
-  $('hd').textContent = reset ? 'Reset password' : 'Sign in';
-  $('sd').textContent = reset ? 'We will email you a reset link.' : 'Use your Verve account.';
-  $('password').style.display = reset ? 'none' : '';
-  document.querySelector('label[for=password]').style.display = reset ? 'none' : '';
-  $('go').textContent = reset ? 'Send reset link' : 'Sign in';
-  $('toggleReset').textContent = reset ? 'Back to sign in' : 'Forgot your password?';
-  $('msg').className = 'msg';
-});
-
-async function submit(){
-  const email = $('email').value.trim();
-  const password = $('password').value;
-  if (!email) return say('Enter your email.');
-
-  $('go').disabled = true;
-  try {
-    if (mode === 'reset') {
-      const { error } = await sb.auth.resetPasswordForEmail(email, {
-        redirectTo: location.origin + '/login.html?next=' + encodeURIComponent(nextPath())
-      });
-      if (error) throw error;
-      say('Check your email for the reset link.', true);
-      $('go').disabled = false;
-      return;
-    }
-
-    const { error } = await sb.auth.signInWithPassword({ email, password });
-    if (error) throw error;
-    location.href = nextPath();
-  } catch (e) {
-    say(e.message || 'Could not sign in.');
-    $('go').disabled = false;
+function paint(){
+  if (mode === 'magic') {
+    $('hd').textContent = 'Sign in';
+    $('sd').textContent = 'We will email you a link. No password needed.';
+    $('pwRow').style.display = 'none';
+    $('go').textContent = 'Email me a link';
+    $('usePw').textContent = 'Use a password instead';
+    $('toggleReset').style.display = 'none';
+  } else if (mode === 'password') {
+    $('hd').textContent = 'Sign in';
+    $('sd').textContent = 'Enter your email and password.';
+    $('pwRow').style.display = '';
+    $('go').textContent = 'Sign in';
+    $('usePw').textContent = 'Email me a link instead';
+    $('toggleReset').style.display = '';
+  } else {
+    $('hd').textContent = 'Reset your password';
+    $('sd').textContent = 'We will email you a link to set a new one.';
+    $('pwRow').style.display = 'none';
+    $('go').textContent = 'Send reset link';
+    $('usePw').textContent = 'Back to sign in';
+    $('toggleReset').style.display = 'none';
   }
+  $('msg').className = 'msg';
 }
 
-$('go').addEventListener('click', submit);
-['email','password'].forEach(id => $(id).addEventListener('keydown', e => {
-  if (e.key === 'Enter') submit();
-}));
+$('usePw').addEventListener('click', () => {
+  mode = (mode === 'password') ? 'magic' : (mode === 'reset' ? 'magic' : 'password');
+  paint();
+});
+$('toggleReset').addEventListener('click', () => { mode = 'reset'; paint(); });
+
+$('go').addEventListener('click', async () => {
+  const email = $('email').value.trim();
+  if (!email || email.indexOf('@') < 0) { say('Enter your email address.', false); return; }
+
+  $('go').disabled = true;
+
+  try {
+    if (mode === 'magic') {
+      /* shouldCreateUser:false is the whole security model here. Without it,
+         anyone who types an address gets an account. Access is by invitation,
+         so an unknown address must fail rather than quietly become a user. */
+      const { error } = await sb.auth.signInWithOtp({
+        email,
+        options: { shouldCreateUser: false, emailRedirectTo: location.origin + next }
+      });
+      if (error) {
+        say(/not found|signups not allowed|invalid|disabled/i.test(error.message)
+          ? 'No account for that address. Ask Trae to invite you first.'
+          : error.message, false);
+      } else {
+        say('Check your email. The link signs you straight in and lasts an hour.', true);
+      }
+
+    } else if (mode === 'reset') {
+      const { error } = await sb.auth.resetPasswordForEmail(email, {
+        redirectTo: location.origin + '/reset.html'
+      });
+      say(error ? error.message : 'Check your email for the reset link.', !error);
+
+    } else {
+      const password = $('password').value;
+      if (!password) { $('go').disabled = false; say('Enter your password.', false); return; }
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) say('That email and password do not match.', false);
+      else location.href = next;
+    }
+  } catch (e) {
+    say('Something went wrong. Try again.', false);
+  }
+
+  $('go').disabled = false;
+});
+
+['email','password'].forEach((id) => {
+  const el = $(id);
+  if (el) el.addEventListener('keydown', (e) => { if (e.key === 'Enter') $('go').click(); });
+});
+
+paint();
 </script>
 </body>
 </html>

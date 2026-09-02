@@ -313,7 +313,7 @@ function render(){
         return '<div class="t p-'+t.priority+'" draggable="true" data-id="'+t.id+'">'+
           '<div class="t-title">'+esc(t.title)+'</div>'+
           '<div class="t-meta">'+
-            (who ? '<span class="av" title="'+esc(who.full_name)+'">'+ini(who.full_name)+'</span>'
+            (who ? '<span class="av" data-profile="'+who.id+'" title="'+esc(who.full_name)+'">'+ini(who.full_name)+'</span>'
                  : '<span class="av none" title="Unassigned">?</span>')+
             (t.due_date ? '<span class="due '+dc+'">'+dueText(t.due_date)+'</span>' : '')+
             (t.client_visible ? '<span class="eye">Client</span>' : '')+

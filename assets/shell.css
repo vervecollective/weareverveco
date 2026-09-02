@@ -1583,3 +1583,30 @@ body.vc-mini .vc-tray{left:72px !important;width:300px !important;top:60px !impo
   body.vc-shelled #list .eng-item{min-width:190px;flex-shrink:0;margin:0 !important;}
   body.vc-shelled #list .empty{min-width:100%;}
 }
+
+
+/* ================= role preview ================= */
+.vc-preview{position:fixed;top:0;left:0;right:0;z-index:1700;
+  background:#1E3A8A;color:#fff;display:flex;align-items:center;justify-content:center;
+  gap:14px;padding:9px 16px;font-size:13px;font-weight:500;
+  box-shadow:0 2px 12px rgba(30,58,138,.3);}
+.vc-preview-t b{font-weight:700;}
+.vc-preview button{background:rgba(255,255,255,.16);border:none;color:#fff;
+  border-radius:7px;padding:6px 13px;font:600 12.5px/1 'Inter',sans-serif;cursor:pointer;}
+.vc-preview button:hover{background:rgba(255,255,255,.26);}
+/* Push everything down so the banner never covers content. */
+body.vc-previewing .vc-sidebar{top:38px;}
+body.vc-previewing .wrap,body.vc-previewing .page{padding-top:56px !important;}
+body.vc-previewing .vc-idbar{top:48px;}
+body.vc-previewing .vc-topbar{top:38px;}
+@media(max-width:860px){
+  .vc-preview{font-size:12px;padding:8px 12px;gap:10px;}
+  .vc-preview-t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+}
+
+.vc-idmenu-sec{border-top:1px solid #F1F2F4;margin-top:5px;padding-top:7px;}
+.vc-idmenu-sec > span{display:block;font-size:10.5px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.07em;color:#9CA3AF;padding:4px 12px 6px;}
+.vc-idmenu-sec button{font-size:13px !important;}
+.vc-idmenu-sec button.on{color:#9A3412 !important;font-weight:700 !important;}
+.vc-idmenu-sec button.on:after{content:' \2713';}

@@ -24,12 +24,19 @@ let profile = null;
 if (session) {
   const { data } = await sb
     .from('profiles')
-    .select('full_name, role, title, avatar_url, onboarded_at, phone')
+    .select('full_name, role, title, avatar_url, onboarded_at, phone, demo_role')
     .eq('id', session.user.id)
     .single();
   profile = data;
 }
-const role = (profile && profile.role) || 'contractor';
+const realRole = (profile && profile.role) || 'contractor';
+/* Previewing another role changes what the interface shows, never what the
+   database allows. Row-level security still answers to the real account, so a
+   preview can never reveal something the owner could not already see. */
+const previewRole = (realRole === 'owner' && profile && profile.demo_role) || null;
+const role = previewRole || realRole;
+window.__realRole = realRole;
+window.__preview = previewRole;
 
 /* First run: send them through onboarding once, then never again. */
 if (profile && !profile.onboarded_at && !location.pathname.startsWith('/welcome')) {
@@ -1419,6 +1426,56 @@ if (role !== 'client') {
       } else if (openChan) { paintMessages(); }
     })
     .subscribe();
+})();
+
+
+/* ── Role preview ──────────────────────────────────────────────────────────
+   Seeing the platform as a contractor or a client is the only way to check
+   what they actually get without inviting three people first. */
+(function(){
+  if (realRole !== 'owner') return;
+
+  const LABEL = { owner:'Owner', account_owner:'Account owner',
+                  contractor:'Contractor', client:'Client' };
+
+  if (previewRole) {
+    const bar = document.createElement('div');
+    bar.className = 'vc-preview';
+    bar.innerHTML =
+      '<span class="vc-preview-t">Viewing as <b>' + (LABEL[previewRole] || previewRole) + '</b>' +
+      ' \u2014 this is what they see</span>' +
+      '<button id="vcPreviewOff">Back to your account</button>';
+    document.body.appendChild(bar);
+    document.body.classList.add('vc-previewing');
+
+    document.getElementById('vcPreviewOff').addEventListener('click', async () => {
+      await sb.rpc('set_demo_role', { r: null });
+      location.reload();
+    });
+  }
+
+  // The switcher lives in the profile menu, where account-level things belong.
+  const menu = document.getElementById('vcIdMenu');
+  if (menu) {
+    const wrap = document.createElement('div');
+    wrap.className = 'vc-idmenu-sec';
+    wrap.innerHTML = '<span>View as</span>' +
+      ['owner','account_owner','contractor','client'].map((r) =>
+        '<button data-view="' + r + '"' + (role === r ? ' class="on"' : '') + '>' +
+        LABEL[r] + '</button>').join('');
+    menu.insertBefore(wrap, menu.querySelector('#vcIdReport'));
+
+    wrap.querySelectorAll('[data-view]').forEach((b) => {
+      b.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const r = b.dataset.view;
+        await sb.rpc('set_demo_role', { r: r === 'owner' ? null : r });
+        // Land somewhere that role actually uses.
+        location.href = r === 'client' ? '/project'
+                      : r === 'contractor' ? '/mywork' : '/hub';
+      });
+    });
+  }
 })();
 
 window.dispatchEvent(new Event('vc-auth-ready'));

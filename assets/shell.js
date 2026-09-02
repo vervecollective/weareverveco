@@ -615,6 +615,7 @@ if (role !== 'client') {
       <a href="/settings">Your profile</a>
       <a href="/settings">Settings</a>
       <a href="/help">Help</a>
+      <button id="vcIdReport">Report a problem</button>
       <button id="vcIdOut">Sign out</button>
     </div>`;
   document.body.appendChild(bar);

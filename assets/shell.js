@@ -332,7 +332,7 @@ try {
       '<div class="vc-peek-h">' +
         '<span class="vc-peek-k" id="vcPeekKind"></span>' +
         '<div style="display:flex;gap:8px;align-items:center">' +
-          '<a class="vc-peek-open" id="vcPeekOpen" href="#">Open fully</a>' +
+          '<a class="vc-peek-open" id="vcPeekOpen" href="#">Expand</a>' +
           '<button class="vc-peek-x" id="vcPeekX" aria-label="Close">&times;</button>' +
         '</div>' +
       '</div><div class="vc-peek-b" id="vcPeekBody"></div>';
@@ -1298,7 +1298,7 @@ try {
           '<div class="vc-dock-h">' +
             '<b id="vcDockTitle">Messages</b>' +
             '<span class="vc-dock-acts">' +
-              '<a href="/messages" title="Open full">' +
+              '<a href="/messages" title="Expand">' +
                 '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
                 'stroke-linecap="round"><path d="M15 3h6v6M21 3l-9 9M10 5H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5"/></svg></a>' +
               '<button id="vcDockBack" style="display:none" title="Back">' +

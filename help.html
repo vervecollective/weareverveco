@@ -48,6 +48,22 @@
     color:#6b7280;padding:8px 10px;border-bottom:1px solid #e5e7eb;}
   td{padding:10px;border-bottom:1px solid #f3f4f6;font-size:13.5px;vertical-align:top;}
   kbd{background:#f3f4f6;border:1px solid #e5e7eb;border-radius:4px;padding:1px 6px;font-size:12px;font-weight:600;}
+
+  .stuck{margin-top:40px;padding-top:28px;border-top:1px solid #EBECEF;}
+  .stuck h2{font-size:17px;font-weight:700;letter-spacing:-.015em;}
+  .stuck > p{font-size:14px;color:#5C6470;margin:5px 0 18px;}
+  .stuck-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:11px;}
+  .scard{display:flex;flex-direction:column;align-items:flex-start;gap:3px;
+    background:#fff;border:1px solid #EBECEF;border-radius:12px;padding:16px;
+    text-decoration:none;color:inherit;cursor:pointer;text-align:left;
+    font-family:inherit;transition:box-shadow .14s,transform .14s,border-color .14s;}
+  .scard:hover{box-shadow:0 3px 14px rgba(16,24,40,.09);transform:translateY(-1px);
+    border-color:#E8C4B2;}
+  .sic{width:32px;height:32px;border-radius:9px;background:#FDF0EB;color:#9A3412;
+    display:flex;align-items:center;justify-content:center;margin-bottom:7px;}
+  .sic svg{width:16px;height:16px;}
+  .scard b{font-size:14px;font-weight:600;}
+  .scard em{font-size:12.5px;font-style:normal;color:#5C6470;line-height:1.5;}
 </style>
 </head>
 <body>
@@ -235,6 +251,48 @@
           <p>Tell Trae which page you were on and what you clicked. "The Save button on Engagements did nothing" takes one message; "it is broken" takes three.</p>
         </div>
       </section>
+    </div>
+  </div>
+
+  <div class="stuck">
+    <h2>Still stuck?</h2>
+    <p>Nothing here is going to cover everything. Two ways to reach a person.</p>
+    <div class="stuck-g">
+      <button class="scard" id="helpReport">
+        <span class="sic">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+        </span>
+        <b>Something is broken</b>
+        <em>Report it. It goes straight to Trae with the page you were on.</em>
+      </button>
+
+      <a class="scard" href="/messages">
+        <span class="sic">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H9l-5 4z"/></svg>
+        </span>
+        <b>Ask a question</b>
+        <em>Message us in the platform. Faster than email and it stays with the work.</em>
+      </a>
+
+      <a class="scard" href="mailto:hello@weareverveco.com">
+        <span class="sic">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="m3 7 9 6 9-6"/></svg>
+        </span>
+        <b>Email</b>
+        <em>hello@weareverveco.com</em>
+      </a>
+
+      <a class="scard" href="tel:5732035389">
+        <span class="sic">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2 4.2 2 2 0 0 1 4 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.1a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>
+        </span>
+        <b>Call</b>
+        <em>573.203.5389 — for anything urgent</em>
+      </a>
     </div>
   </div>
 </div>

@@ -26,6 +26,14 @@
   .tb{flex:1;border:none;background:none;padding:7px;border-radius:7px;
     font:600 12.5px/1 'Inter',sans-serif;color:#5C6470;cursor:pointer;}
   .tb.on{background:#F1F3F6;color:#111827;}
+  .acts{display:flex;gap:1px;opacity:0;flex-shrink:0;transition:opacity .12s;}
+  .ch:hover .acts,.ch.on .acts{opacity:1;}
+  .act{background:none;border:none;color:#9CA3AF;cursor:pointer;padding:5px;
+    border-radius:6px;display:flex;line-height:0;}
+  .act svg{width:14px;height:14px;}
+  .act:hover{background:#E4E7EC;color:#111827;}
+  .act.done{color:#00875A;}
+  @media(hover:none){ .acts{opacity:1;} }
   .ch .menu{opacity:0;background:none;border:none;color:#9CA3AF;cursor:pointer;
     padding:3px;border-radius:5px;flex-shrink:0;line-height:0;}
   .ch:hover .menu{opacity:1;}
@@ -390,9 +398,28 @@ async function loadChans(){
       '<span class="b"><b>'+((mineRow&&mineRow.pinned)?'\u2022 ':'')+esc(titleOf(c))+'</b>'+
       '<span>'+esc(last ? (last.body||'Sent a file').slice(0,42) : 'No messages yet')+'</span></span>'+
       (unread?'<span class="n">'+unread+'</span>':'')+
-      '<button class="menu" data-menu="'+c.id+'" aria-label="More">'+
-        '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/>'+
-        '<circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>'+
+      /* Four inline actions instead of a popup. A hidden menu that has to be
+         positioned is one more thing that can fail; these cannot. */
+      '<span class="acts">'+
+        '<button class="act" data-act="pin" data-c="'+c.id+'" title="'+
+          ((mineRow&&mineRow.pinned)?'Unpin':'Pin to top')+'">'+
+          '<svg viewBox="0 0 24 24" fill="'+((mineRow&&mineRow.pinned)?'currentColor':'none')+
+          '" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+
+          '<path d="M12 2 9.5 8.5 3 9.5l5 4.5-1.5 6.5L12 17l5.5 3.5L16 14l5-4.5-6.5-1z"/></svg></button>'+
+        '<button class="act" data-act="mute" data-c="'+c.id+'" title="'+
+          ((mineRow&&mineRow.muted)?'Unmute':'Mute')+'">'+
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">'+
+          (mineRow&&mineRow.muted
+            ? '<path d="M11 5 6 9H3v6h3l5 4zM23 9l-6 6M17 9l6 6"/>'
+            : '<path d="M11 5 6 9H3v6h3l5 4zM16 9a5 5 0 0 1 0 6"/>')+
+          '</svg></button>'+
+        '<button class="act" data-act="unread" data-c="'+c.id+'" title="Mark unread">'+
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">'+
+          '<circle cx="12" cy="12" r="4"/></svg></button>'+
+        '<button class="act" data-act="copy" data-c="'+c.id+'" title="Copy link">'+
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">'+
+          '<path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg></button>'+
+      '</span>'+
       '</div>';
   }).join('') : '<p style="font-size:13px;color:#5C6470;padding:14px">'+
       (tab==='unread' ? 'Nothing unread.' : 'No conversations yet.')+'</p>';
@@ -402,7 +429,7 @@ async function loadChans(){
 
   $('chans').querySelectorAll('.ch').forEach(function(el){
     el.addEventListener('click', function(e){
-      if (e.target.closest('[data-menu]') || e.target.closest('#chMenu')) return;
+      if (e.target.closest('[data-act]')) return;
       openCh(el.dataset.id);
     });
   });
@@ -643,17 +670,39 @@ function showPane(which){
 }
 
 /* Installed once, at load. Works no matter how often the list repaints. */
-document.addEventListener('click', function(e){
-  var btn = e.target.closest('[data-menu]');
-  var mn  = document.getElementById('chMenu');
-  if (btn) {
-    e.preventDefault();
-    e.stopPropagation();
-    if (typeof openChMenu === 'function') openChMenu(btn, btn.dataset.menu);
+document.addEventListener('click', async function(e){
+  var b = e.target.closest('[data-act]');
+  if (!b) return;
+  e.preventDefault();
+  e.stopPropagation();
+
+  var cid = b.dataset.c, act = b.dataset.act;
+  var c = chans.filter(function(x){ return x.id === cid; })[0];
+  var mine = c ? ((c.channel_members||[]).filter(function(m){ return m.profile_id === me.id; })[0] || {}) : {};
+
+  if (act === 'copy') {
+    navigator.clipboard.writeText(location.origin + '/messages?c=' + cid);
+    b.classList.add('done');
+    setTimeout(function(){ b.classList.remove('done'); }, 1200);
     return;
   }
-  // A click anywhere else closes it, unless it landed inside the menu.
-  if (mn && !e.target.closest('#chMenu')) mn.classList.remove('on');
+  if (act === 'pin') {
+    await sb.from('channel_members').update({ pinned: !mine.pinned })
+      .eq('channel_id', cid).eq('profile_id', me.id);
+  } else if (act === 'mute') {
+    await sb.from('channel_members').update({ muted: !mine.muted })
+      .eq('channel_id', cid).eq('profile_id', me.id);
+  } else if (act === 'unread') {
+    await sb.from('channel_members')
+      .update({ manually_unread: true, last_read_at: new Date(0).toISOString() })
+      .eq('channel_id', cid).eq('profile_id', me.id);
+    if (cur && cur.id === cid) {
+      cur = null;
+      document.getElementById('live').style.display = 'none';
+      document.getElementById('blank').style.display = 'flex';
+    }
+  }
+  loadChans();
 });
 
 window.vcInit = async function(){

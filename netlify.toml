@@ -138,3 +138,8 @@
   from = "/messages"
   to = "/messages.html"
   status = 200
+
+[[redirects]]
+  from = "/resources"
+  to = "/resources.html"
+  status = 200

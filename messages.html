@@ -335,8 +335,8 @@ async function paint(){
       return '<button data-m="'+m.id+'" data-e="'+q+'">'+q+'</button>';
     }).join('')+'<button data-m="'+m.id+'" data-e="add">+</button></span>';
 
-    html += '<div class="m'+(cont?' cont':'')+'">'+hint+qb+avOf(p,'av')+'<span class="bd">'+
-      '<span class="hd"><b>'+esc(nm)+'</b><em>'+when(m.created_at)+'</em></span>'+
+    html += '<div class="m'+(cont?' cont':'')+'">'+qb+avOf(p,'av')+'<span class="bd">'+
+      '<span class="hd"><b>'+esc(nm)+'</b><em>'+when(m.created_at)+'</em>'+hint+'</span>'+
       (m.body ? '<div class="tx">'+esc(m.body)+'</div>' : '')+att+rxHtml+'</span></div>';
     lastAuthor=m.author_id; lastAt=new Date(m.created_at);
   });

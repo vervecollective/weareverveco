@@ -60,6 +60,13 @@
     line-height:1;padding:0;width:auto;}
   .totalbox{margin-top:14px;padding-top:12px;border-top:1px solid #e5e7eb;font-size:13.5px;color:#111827;}
   .totalbox b{color:#047857;}
+  .rrow{display:grid;grid-template-columns:1fr 1.3fr 118px 30px;gap:8px;align-items:center;margin-bottom:6px;}
+  .rrow select,.rrow input{padding:9px 10px;font-size:13.5px;font-family:inherit;
+    border:1px solid #d1d5db;border-radius:8px;background:#fff;}
+  .rX{background:none;border:none;color:#c4c7d0;font-size:19px;cursor:pointer;line-height:1;}
+  .rX:hover{color:#991B1B;}
+  .rWhy{grid-column:1/-1;font-size:11.5px;color:#6b7280;margin:-2px 0 8px 2px;min-height:14px;}
+  @media(max-width:760px){ .rrow{grid-template-columns:1fr 1fr;} .rrow .rX{justify-self:end;} }
   .dayrow{display:grid;grid-template-columns:1.1fr .8fr .8fr 1.4fr auto;gap:8px;margin-bottom:8px;align-items:center;}
   @media(max-width:760px){.dayrow{grid-template-columns:1fr;}}
   .sched{margin:10px 0 12px;}
@@ -104,16 +111,14 @@
       <select id="lineItem"><option value="">— pick an engagement first —</option></select>
       <p style="font-size:12px;color:#6b7280;margin-top:5px" id="marginNote"></p>
     </div>
-    <div class="row">
-      <div class="field"><label for="role">Roles on this job</label>
-        <select id="role" multiple size="5" style="height:auto;padding:8px">
-          <option selected>Videographer</option><option>Photographer</option>
-          <option>Drone pilot</option><option>Editor</option><option>Social creator</option>
-        </select>
-        <p style="font-size:12px;color:#6b7280;margin-top:5px">Hold Cmd or Ctrl for more than one — one person often shoots photo and video.</p></div>
-      <div class="field"><label for="pay"><span id="payLabel">Their pay ($)</span></label>
-        <input type="number" id="pay" step="0.01">
-        <p style="font-size:12px;color:#6b7280;margin-top:5px" id="payHint"></p></div>
+    <div class="field">
+      <label>Roles on this job</label>
+      <p style="font-size:12px;color:#6b7280;margin:-2px 0 9px">
+        One row per role. The same person can take two rows if they are covering both,
+        and two people can split one shoot. Each role is offered and answered separately.</p>
+      <div id="roleRows"></div>
+      <button type="button" class="btn btn-2 btn-sm" id="addRole">+ Add a role</button>
+      <p style="font-size:12px;color:#6b7280;margin-top:6px" id="payHint"></p>
     </div>
     <label style="margin-bottom:7px">Schedule</label>
     <div id="dayRows"></div>
@@ -319,6 +324,77 @@ async function respond(id, status){
   } catch (e) { /* the response is recorded either way */ }
 
   loadJobs();
+}
+
+var CRAFTS = ['Videographer','Photographer','Drone pilot','Editor','Social creator',
+              'Paid media','Copywriter','Designer','Producer','Assistant'];
+var roleSeq = 0;
+
+function roleRow(pre){
+  pre = pre || {};
+  var el = document.createElement('div');
+  el.className = 'rrow';
+  el.dataset.id = 'r' + (++roleSeq);
+  el.innerHTML =
+    '<select class="rCraft">' +
+      CRAFTS.map(function(c){ return '<option'+(c===pre.craft?' selected':'')+'>'+c+'</option>'; }).join('') +
+    '</select>' +
+    '<select class="rWho"><option value="">Choose someone\u2026</option></select>' +
+    '<input type="number" class="rPay" step="0.01" placeholder="Their pay">' +
+    '<button type="button" class="rX" title="Remove">&times;</button>' +
+    '<div class="rWhy"></div>';
+  document.getElementById('roleRows').appendChild(el);
+
+  el.querySelector('.rX').addEventListener('click', function(){
+    if (document.querySelectorAll('.rrow').length > 1) el.remove();
+  });
+  el.querySelector('.rCraft').addEventListener('change', function(){ fillCrew(el); });
+  el.querySelector('.rWho').addEventListener('change', function(){ showWhy(el); });
+  fillCrew(el);
+  return el;
+}
+
+/* Ranked and explained. Anyone can still be picked \u2014 the order is a
+   suggestion, not a gate. */
+async function fillCrew(row){
+  var craft = row.querySelector('.rCraft').value;
+  var dayEl = document.querySelector('#days input[type=date]');
+  var day = dayEl && dayEl.value ? dayEl.value : null;
+  var eng = document.getElementById('eng').value;
+
+  var industry = null;
+  if (eng) {
+    var eq = await sb.from('engagements').select('clients(industry)').eq('id', eng).maybeSingle();
+    industry = eq.data && eq.data.clients ? eq.data.clients.industry : null;
+  }
+
+  var r = await sb.rpc('recommend_crew', { p_craft: craft, p_industry: industry, p_date: day });
+  var d = (r && r.data) || [];
+  var sel = row.querySelector('.rWho');
+  var keep = sel.value;
+
+  var all = await sb.from('profiles').select('id, full_name, email')
+    .eq('role','contractor').eq('is_active', true);
+  var scored = d.map(function(x){ return x.profile_id; });
+  var others = ((all && all.data) || []).filter(function(p){ return scored.indexOf(p.id) < 0; });
+
+  sel.innerHTML = '<option value="">Choose someone\u2026</option>' +
+    (d.length ? '<optgroup label="Best fit">' + d.map(function(x){
+      return '<option value="'+x.profile_id+'" data-why="'+esc((x.reasons||[]).join(' \u00b7 '))+
+             '">'+esc(x.name)+'  \u2014  '+x.score+'</option>';
+    }).join('') + '</optgroup>' : '') +
+    (others.length ? '<optgroup label="Everyone else">' + others.map(function(p){
+      return '<option value="'+p.id+'" data-why="Not listed for this craft">'+
+             esc(p.full_name||p.email)+'</option>';
+    }).join('') + '</optgroup>' : '');
+
+  if (keep) sel.value = keep;
+  showWhy(row);
+}
+
+function showWhy(row){
+  var o = row.querySelector('.rWho').selectedOptions[0];
+  row.querySelector('.rWhy').textContent = (o && o.dataset.why) ? o.dataset.why : '';
 }
 
 window.vcInit = async function(){
@@ -703,6 +779,8 @@ window.vcInit = async function(){
   document.getElementById('addLoc').addEventListener('click', function(){ addLocRow(); });
   addLocRow();
   document.getElementById('addDay').addEventListener('click', function(){ addDayRow(); });
+  document.getElementById('addRole').addEventListener('click', function(){ roleRow(); });
+  roleRow();
   addDayRow();
   totalComp();
   checkGate();
@@ -710,9 +788,20 @@ window.vcInit = async function(){
 
   $('offerBtn').addEventListener('click', async function(){
     if (!$('eng').value)   return say('offerMsg','Pick an engagement.', false);
-    if (!$('con').value)   return say('offerMsg','Pick a contractor.', false);
+    var roles = Array.prototype.map.call(document.querySelectorAll('.rrow'), function(el){
+      return {
+        craft: el.querySelector('.rCraft').value,
+        contractor_id: el.querySelector('.rWho').value || null,
+        pay_amount: Number(el.querySelector('.rPay').value) || 0
+      };
+    }).filter(function(r){ return r.craft; });
+
+    if (!roles.length) return say('offerMsg','Add at least one role.', false);
+    if (roles.some(function(r){ return !r.contractor_id; }))
+      return say('offerMsg','Every role needs someone on it.', false);
+    if ($('perf').value !== 'internal' && roles.some(function(r){ return !r.pay_amount; }))
+      return say('offerMsg','Every role needs a pay figure.', false);
     if (!$('scope').value.trim()) return say('offerMsg','Describe the scope.', false);
-    if (!Number($('pay').value)) return say('offerMsg','Enter their pay.', false);
     if (!checkGate()) return say('offerMsg','Cannot offer work until the IP assignment is signed.', false);
 
     var days = collectDays();
@@ -722,16 +811,18 @@ window.vcInit = async function(){
     var btn=this; btn.disabled=true;
     var r = await sb.from('assignments').insert({
       engagement_id: $('eng').value,
-      contractor_id: $('con').value,
-      role_on_job: Array.from($('role').selectedOptions).map(function(o){return o.value;}).join(' / ') || 'Crew',
-      roles: Array.from($('role').selectedOptions).map(function(o){return o.value;}),
+      contractor_id: roles[0].contractor_id,
+      role_on_job: roles.map(function(r){ return r.craft; }).join(' / '),
+      roles: roles.map(function(r){ return r.craft; }),
       performer: $('perf').value,
-      notional_cost: $('perf').value === 'internal' ? (Number($('pay').value) || 0) : 0,
+      notional_cost: $('perf').value === 'internal'
+        ? roles.reduce(function(t,r){ return t + r.pay_amount; }, 0) : 0,
       scope: $('scope').value.trim(),
       deliverables: $('deliv').value.trim() || null,
       work_date: d,
       location: collectLocs().join(' \u00b7 ') || null,
-      pay_amount: $('perf').value === 'internal' ? 0 : Number($('pay').value),
+      pay_amount: $('perf').value === 'internal' ? 0 :
+        roles.reduce(function(t,r){ return t + r.pay_amount; }, 0),
       travel_miles: Number($('miles').value) || 0,
       mileage_rate: Number($('mrate').value) || 0,
       mileage_paid: $('mpaid').checked,
@@ -791,8 +882,25 @@ window.vcInit = async function(){
           cta_label: 'View and respond',
           footnote: 'Declining is completely fine \u2014 we would rather know early.'
         })
-      });
+      }).select().single();
+    var created = r.data || {};
     } catch (mailErr) { /* the offer is saved either way */ }
+
+    /* One row per role, so each can be accepted or declined on its own. The
+       assignment carries the shoot; the roles carry who is doing what. */
+    if (created && created.id) {
+      await sb.from('assignment_roles').insert(roles.map(function(rr){
+        return {
+          assignment_id: created.id,
+          craft: rr.craft,
+          contractor_id: rr.contractor_id,
+          pay_amount: $('perf').value === 'internal' ? 0 : rr.pay_amount,
+          status: 'offered',
+          offered_at: new Date().toISOString(),
+          is_primary: rr === roles[0]
+        };
+      }));
+    }
 
     say('offerMsg','Offer sent and emailed. They see it on their Jobs page.', true);
     picked = []; renderPicked();

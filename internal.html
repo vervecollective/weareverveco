@@ -92,7 +92,7 @@
       </div>
     </div>
 
-    <div class="card">
+    <div class="card" id="edCard">
       <h2 id="edTitle">New engagement</h2>
       <div id="phaseBar" style="display:none"></div>
 
@@ -148,7 +148,7 @@
         <p style="font-size:12px;color:#6b7280;margin-top:5px">Feeds Capacity.</p></div>
       </div>
 
-      <h2 style="margin-top:22px">Line items</h2>
+      <div id="lineBox"><h2 style="margin-top:22px">Line items</h2>
       <div class="field">
         <label for="catalog">Quick add</label>
         <select id="catalog"><option value="">— choose a service —</option></select>
@@ -447,6 +447,8 @@ if (window.__sb) {
 }
 </script>
 
+      </div>
+
       <div id="delayBox" style="display:none;margin-top:26px;border-top:1px solid #e5e7eb;padding-top:20px">
         <h2 style="color:#B45309">Behind on something the client can see</h2>
         <p style="font-size:12.5px;color:#5C6470;margin-bottom:14px">
@@ -613,6 +615,7 @@ function load(e){
   if (!lis.length) addRow();
   recalc();
   applyPhase(e);
+  setTimeout(function(){ mobileSections(); stickySave(); }, 60);
   loadDelays(e && e.id);
   if ($('stage') && !$('stage').__ph) {
     $('stage').__ph = true;
@@ -989,6 +992,58 @@ async function refresh(){
   if (r.error) { say(r.error.message,false); return; }
   list = r.data || [];
   paintList();
+}
+
+/* On a phone this page was one continuous form roughly five screens long.
+   Collapsing the sections below the fold turns it into something you can
+   actually navigate, and the save bar follows you down. */
+function mobileSections(){
+  if (window.innerWidth > 860) return;
+
+  var ids = ['lineBox','vc-proposals','delayBox','delivBox','teamBox','msBox'];
+  document.querySelectorAll('#edCard h2').forEach(function(h){
+    if (h.id === 'edTitle' || h.dataset.wrapped) return;
+    h.dataset.wrapped = '1';
+  });
+
+  // Wrap each section body so the heading can toggle it.
+  ids.forEach(function(id){
+    var box = document.getElementById(id);
+    if (!box || box.dataset.collapsible) return;
+    box.dataset.collapsible = '1';
+
+    var h = box.querySelector('h2');
+    if (!h) return;
+
+    var body = document.createElement('div');
+    body.className = 'sec-body';
+    while (h.nextSibling) body.appendChild(h.nextSibling);
+    box.appendChild(body);
+
+    h.classList.add('sec-toggle');
+    h.insertAdjacentHTML('beforeend',
+      '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+      'stroke-width="2.2" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>');
+    box.classList.add('collapsed');
+
+    h.addEventListener('click', function(){
+      box.classList.toggle('collapsed');
+    });
+  });
+}
+
+function stickySave(){
+  if (window.innerWidth > 860) return;
+  if (document.getElementById('mSave')) return;
+  var real = document.getElementById('saveBtn');
+  if (!real) return;
+
+  var bar = document.createElement('div');
+  bar.className = 'msavebar';
+  bar.id = 'mSave';
+  bar.innerHTML = '<button class="btn" id="mSaveBtn">Save engagement</button>';
+  document.body.appendChild(bar);
+  document.getElementById('mSaveBtn').addEventListener('click', function(){ real.click(); });
 }
 
 window.vcInit = async function(){

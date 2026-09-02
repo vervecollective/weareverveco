@@ -1299,3 +1299,31 @@ body.vc-mini .vc-tray{left:72px !important;width:300px !important;top:60px !impo
 .vc-tray-f{display:flex;align-items:center;justify-content:space-between;gap:10px;}
 .vc-tray-f a{font-size:11.5px;font-weight:600;color:var(--vc-accent);text-decoration:none;}
 .vc-tray-f a:hover{text-decoration:underline;}
+
+
+/* ================= richer peek ================= */
+.vc-peek-status{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.02em;
+  color:#fff;padding:5px 12px;border-radius:999px;margin-bottom:12px;}
+.vc-peek-prog{margin:16px 0;padding:14px;background:var(--vc-surface);border-radius:10px;}
+.vc-peek-prog-h{display:flex;justify-content:space-between;font-size:12px;margin-bottom:9px;}
+.vc-peek-prog-h span{color:var(--vc-text-3);}
+.vc-peek-prog-h b{font-weight:600;}
+.vc-peek-bar{height:5px;background:#E4E6EA;border-radius:999px;overflow:hidden;margin-bottom:11px;}
+.vc-peek-bar i{display:block;height:100%;background:#00A870;border-radius:999px;}
+.vc-peek-sub{font-size:12.5px;color:var(--vc-text-2);padding:4px 0 4px 17px;position:relative;}
+.vc-peek-sub:before{content:'';position:absolute;left:2px;top:11px;width:6px;height:6px;
+  border-radius:50%;border:1.5px solid #C4C7D0;}
+.vc-peek-sub.done{color:var(--vc-text-4);text-decoration:line-through;}
+.vc-peek-sub.done:before{background:#00A870;border-color:#00A870;}
+.vc-peek-sub.more{color:var(--vc-text-4);font-style:italic;padding-left:17px;}
+.vc-peek-sub.more:before{display:none;}
+.vc-peek-quick{margin:16px 0 4px;padding-top:14px;border-top:1px solid var(--vc-line);}
+.vc-peek-quick label{display:block;font-size:11.5px;font-weight:600;color:var(--vc-text-3);margin-bottom:6px;}
+.vc-peek-quick select{width:100%;padding:10px 12px;font-size:13.5px;font-family:inherit;
+  border:none;border-radius:9px;background:var(--vc-surface);color:var(--vc-text);}
+.vc-peek-quick select:focus{outline:none;box-shadow:0 0 0 2px var(--vc-accent);background:#fff;}
+
+/* Open fully reads as the primary way out of the drawer. */
+.vc-peek-open{background:var(--vc-accent);color:#fff !important;padding:7px 14px;
+  border-radius:8px;font-size:12.5px;font-weight:600;}
+.vc-peek-open:hover{background:#7C2D12;text-decoration:none !important;}

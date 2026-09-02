@@ -148,3 +148,8 @@
   from = "/task"
   to = "/task.html"
   status = 200
+
+[[redirects]]
+  from = "/notifications"
+  to = "/notifications.html"
+  status = 200

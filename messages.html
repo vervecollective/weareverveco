@@ -31,6 +31,18 @@
   .ch .menu:hover{background:#E4E7EC;color:#111827;}
   .ch .menu svg{width:15px;height:15px;}
   .ch.muted .b b{color:#9CA3AF;}
+  .ac{position:fixed;background:#fff;border:1px solid #E4E6EA;border-radius:10px;
+    box-shadow:0 12px 32px rgba(16,24,40,.16);z-index:70;display:none;
+    max-height:230px;overflow-y:auto;width:280px;padding:5px;}
+  .ac.on{display:block;}
+  .ac-i{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;cursor:pointer;}
+  .ac-i.sel,.ac-i:hover{background:#FDF0EB;}
+  .ac-i .av{width:24px;height:24px;border-radius:50%;background:#111827;color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:700;flex-shrink:0;}
+  .ac-i b{font-size:13.5px;font-weight:600;}
+  .ac-i em{font-size:12px;font-style:normal;color:#9CA3AF;display:block;}
+  .ac-h{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;
+    color:#9CA3AF;padding:7px 10px 4px;}
   .chmenu{position:fixed;background:#fff;border:1px solid #E4E6EA;border-radius:10px;
     box-shadow:0 12px 32px rgba(16,24,40,.18);z-index:95;display:none;padding:5px;min-width:186px;}
   .chmenu.on{display:block;}
@@ -69,6 +81,26 @@
   .pane-h .av{width:34px;height:34px;border-radius:50%;background:#111827;color:#fff;
     display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;background-size:cover;}
   .pane-h b{font-size:15px;font-weight:700;}
+  .pane-h .av{cursor:pointer;position:relative;}
+  .pane-h .av:hover:after{content:'Edit';position:absolute;inset:0;background:rgba(0,0,0,.55);
+    border-radius:50%;color:#fff;font-size:8.5px;font-weight:700;display:flex;
+    align-items:center;justify-content:center;}
+  .ptabs{margin-left:auto;display:flex;gap:3px;}
+  .pt{border:none;background:none;padding:7px 13px;border-radius:8px;
+    font:600 12.5px/1 'Inter',sans-serif;color:#5C6470;cursor:pointer;}
+  .pt.on{background:#F1F3F6;color:#111827;}
+  .files{flex:1;overflow-y:auto;padding:20px 24px;background:#FCFCFD;}
+  .fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;}
+  .fcard{background:#fff;border:1px solid #EBECEF;border-radius:11px;overflow:hidden;
+    text-decoration:none;color:inherit;display:block;}
+  .fcard:hover{box-shadow:0 3px 12px rgba(16,24,40,.1);}
+  .fcard img{width:100%;height:104px;object-fit:cover;display:block;background:#F1F3F6;}
+  .fcard .doc{height:104px;display:flex;align-items:center;justify-content:center;
+    background:#F6F7F9;color:#9CA3AF;font-size:26px;}
+  .fcard .meta{padding:9px 11px;}
+  .fcard .meta b{font-size:12.5px;font-weight:600;display:block;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis;}
+  .fcard .meta em{font-size:11px;font-style:normal;color:#9CA3AF;}
   .pane-h em{font-size:12.5px;font-style:normal;color:#00875A;font-weight:600;}
   .feed{flex:1;overflow-y:auto;padding:24px 26px;display:flex;flex-direction:column;background:#FCFCFD;}
   .day{text-align:center;font-size:11.5px;font-weight:700;color:#5C6470;margin:16px 0 10px;}
@@ -198,8 +230,17 @@
     <div class="blank" id="blank"><div><b>Pick a conversation</b>
       <span>Direct messages for anything that is not about a specific task. Task discussion belongs on the task.</span></div></div>
     <div id="live" style="display:none;flex:1;flex-direction:column;min-height:0">
-      <div class="pane-h"><span class="av" id="hAv"></span><b id="hName"></b><em id="hOn"></em></div>
+      <div class="pane-h">
+        <span class="av" id="hAv"></span>
+        <b id="hName"></b><em id="hOn"></em>
+        <span class="ptabs">
+          <button class="pt on" data-p="chat">Chat</button>
+          <button class="pt" data-p="files">Files</button>
+        </span>
+        <input type="file" id="grpImg" accept="image/*" style="display:none">
+      </div>
       <div class="feed" id="feed"></div>
+      <div class="files" id="files" style="display:none"></div>
       <div class="typing" id="typing"></div>
       <div class="compose">
         <div class="pick" id="pick">
@@ -236,6 +277,7 @@
     <button class="gbtn" id="startBtn" disabled>Start</button>
   </div>
 <div class="chmenu" id="chMenu"></div>
+<div class="ac" id="acBox"></div>
 
 </div>
 
@@ -305,7 +347,7 @@ async function react(mid, e){
 
 async function loadChans(){
   var r = await sb.from('channels')
-    .select('*, channel_members(profile_id, last_read_at, muted, pinned, manually_unread), messages(body, created_at, author_id)')
+    .select('*, image_url, channel_members(profile_id, last_read_at, muted, pinned, manually_unread), messages(body, created_at, author_id)')
     .order('last_message_at',{ascending:false});
   chans = (r.data||[]).filter(function(c){
     return (c.channel_members||[]).some(function(m){ return m.profile_id === me.id; });
@@ -337,8 +379,9 @@ async function loadChans(){
     }).length;
     var o = otherOf(c);
     var dot = (o && online[o.id]) ? '<i></i>' : '';
-    var av = (o && o.avatar_url)
-      ? '<span class="av" style="background-image:url('+esc(o.avatar_url)+')">'+dot+'</span>'
+    var pic = c.image_url || (o && o.avatar_url);
+    var av = pic
+      ? '<span class="av" style="background-image:url('+esc(pic)+')">'+dot+'</span>'
       : '<span class="av">'+ini(titleOf(c))+dot+'</span>';
     var mineRow = (c.channel_members||[]).filter(function(m){return m.profile_id===me.id;})[0];
     return '<div class="ch'+(cur&&cur.id===c.id?' on':'')+
@@ -464,9 +507,13 @@ async function openCh(id){
   if (!cur) return;
   $('blank').style.display='none'; $('live').style.display='flex'; $('pane').classList.add('open');
   var o = otherOf(cur);
-  $('hAv').outerHTML = avOf(o,'av').replace('class="av"','class="av" id="hAv"');
+  var hpic = cur.image_url || (o && o.avatar_url);
+  $('hAv').outerHTML = hpic
+    ? '<span class="av" id="hAv" style="background-image:url('+esc(hpic)+')"></span>'
+    : '<span class="av" id="hAv">'+ini(titleOf(cur))+'</span>';
   $('hName').textContent = titleOf(cur);
   $('hOn').textContent = (o && online[o.id]) ? 'Active now' : '';
+  showPane('chat');
   await paint();
   await sb.from('channel_members')
     .update({ last_read_at:new Date().toISOString(), manually_unread:false })
@@ -563,10 +610,42 @@ async function runSearch(q){
   });
 }
 
+/* Files exchanged in a conversation, without scrolling back through months
+   of it. Images render as thumbnails so you recognise them. */
+async function loadFiles(){
+  if (!cur) return;
+  var r = await sb.rpc('channel_files', { cid: cur.id });
+  var d = r.data || [];
+  $('files').innerHTML = d.length
+    ? '<div class="fgrid">' + d.map(function(f){
+        var isImg = /image/.test(f.type || '');
+        return '<a class="fcard" href="'+esc(f.url)+'" target="_blank" rel="noopener">'+
+          (isImg ? '<img src="'+esc(f.url)+'" alt="">'
+                 : '<div class="doc">\u25A4</div>')+
+          '<div class="meta"><b>'+esc(f.name||'File')+'</b>'+
+          '<em>'+esc((f.author_name||'').split(' ')[0])+' \u00b7 '+
+          new Date(f.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'})+
+          '</em></div></a>';
+      }).join('') + '</div>'
+    : '<p style="font-size:13.5px;color:#5C6470;text-align:center;padding:40px">'+
+      'Nothing shared yet. Use the paperclip to send a file.</p>';
+}
+
+function showPane(which){
+  document.querySelectorAll('.pt').forEach(function(b){
+    b.classList.toggle('on', b.dataset.p === which);
+  });
+  $('feed').style.display    = which === 'chat' ? 'flex' : 'none';
+  $('typing').style.display  = which === 'chat' ? '' : 'none';
+  document.querySelector('.compose').style.display = which === 'chat' ? 'flex' : 'none';
+  $('files').style.display   = which === 'files' ? 'block' : 'none';
+  if (which === 'files') loadFiles();
+}
+
 window.vcInit = async function(){
   sb = window.__sb; me = window.__user;
 
-  var pq = await sb.from('profiles').select('id, full_name, email, role, avatar_url').eq('is_active',true);
+  var pq = await sb.from('profiles').select('id, full_name, email, role, avatar_url, username').eq('is_active',true);
   (pq.data||[]).forEach(function(p){ people[p.id]=p; });
 
   async function pres(){
@@ -742,6 +821,97 @@ window.vcInit = async function(){
       {onConflict:'channel_id,profile_id'});
     typeTimer = setTimeout(function(){ typeTimer=null; }, 2500);
   });
+  /* @ pulls someone in, / points at a task or engagement. Same grammar as the
+     task page, so it is one thing to learn rather than two. */
+  var refs = [];
+  (async function buildRefs(){
+    var t = await sb.from('tasks').select('id, title').limit(40);
+    (t.data||[]).forEach(function(x){
+      refs.push({ slug: x.title.toLowerCase().replace(/[^a-z0-9]+/g,'-').slice(0,28),
+                  label: x.title, kind:'Task', url:'/task?id='+x.id });
+    });
+    var e = await sb.from('engagements').select('id, title, clients(business_name)').limit(20);
+    (e.data||[]).forEach(function(x){
+      var nm = (x.clients && x.clients.business_name) || x.title || 'Engagement';
+      refs.push({ slug: nm.toLowerCase().replace(/[^a-z0-9]+/g,'-').slice(0,28),
+                  label: nm, kind:'Engagement', url:'/internal' });
+    });
+  })();
+
+  function attachAC(ta){
+    if (ta.__ac) return; ta.__ac = true;
+    var ac = document.getElementById('acBox');
+    var mode = null, from = -1, items = [], sel = 0;
+    function close(){ ac.classList.remove('on'); mode = null; }
+
+    function show(list, kind){
+      items = list; sel = 0;
+      if (!list.length) return close();
+      ac.innerHTML = '<div class="ac-h">' + (kind === '@' ? 'People' : 'Reference') + '</div>' +
+        list.map(function(x,i){
+          return '<div class="ac-i'+(i===0?' sel':'')+'" data-i="'+i+'">'+
+            (kind==='@' ? '<span class="av">'+ini(x.label)+'</span>' : '')+
+            '<span><b>'+esc(x.label)+'</b>'+(x.sub?'<em>'+esc(x.sub)+'</em>':'')+'</span></div>';
+        }).join('');
+      var r = ta.getBoundingClientRect();
+      ac.style.left = r.left + 'px';
+      ac.style.top  = Math.max(r.top - 240, 10) + 'px';
+      ac.classList.add('on');
+      ac.querySelectorAll('.ac-i').forEach(function(el){
+        el.addEventListener('mousedown', function(ev){ ev.preventDefault(); pick(Number(el.dataset.i)); });
+      });
+    }
+    function pick(i){
+      var x = items[i]; if (!x) return;
+      var v = ta.value;
+      ta.value = v.slice(0, from) + (mode==='@' ? '@' : '/') + x.token + ' ' + v.slice(ta.selectionStart);
+      close(); ta.focus();
+    }
+
+    ta.addEventListener('input', function(){
+      var pos = ta.selectionStart, v = ta.value;
+      var at = Math.max(v.lastIndexOf('@', pos-1), v.lastIndexOf('/', pos-1));
+      if (at < 0) return close();
+      var ch = v[at], before = at === 0 ? ' ' : v[at-1];
+      if (!/\s/.test(before)) return close();
+      var term = v.slice(at+1, pos);
+      if (/\s/.test(term)) return close();
+      mode = ch; from = at;
+
+      if (ch === '@') {
+        show(Object.keys(people).map(function(k){ return people[k]; })
+          .filter(function(p){
+            if (p.id === me.id) return false;
+            var h = (p.full_name||p.email||'').toLowerCase();
+            return !term || h.indexOf(term.toLowerCase()) > -1;
+          }).slice(0,6).map(function(p){
+            return { label: p.full_name||p.email, sub:'@'+(p.username||''),
+                     token: p.username || (p.full_name||'').split(' ')[0].toLowerCase() };
+          }), '@');
+      } else {
+        show(refs.filter(function(r){
+          return !term || r.slug.indexOf(term.toLowerCase()) > -1;
+        }).slice(0,6).map(function(r){
+          return { label: r.label, sub: r.kind, token: r.slug };
+        }), '/');
+      }
+    });
+
+    ta.addEventListener('keydown', function(e){
+      if (!ac.classList.contains('on')) return;
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        sel = Math.max(0, Math.min(items.length-1, sel + (e.key==='ArrowDown'?1:-1)));
+        ac.querySelectorAll('.ac-i').forEach(function(el,i){ el.classList.toggle('sel', i===sel); });
+      } else if (e.key === 'Tab') { e.preventDefault(); pick(sel); }
+      else if (e.key === 'Enter' && items.length) { e.preventDefault(); pick(sel); }
+      else if (e.key === 'Escape') close();
+    });
+    ta.addEventListener('blur', function(){ setTimeout(close, 140); });
+  }
+
+  attachAC($('box'));
+
   async function send(){
     var t = $('box').value.trim();
     if (!t || !cur) return;
@@ -783,6 +953,33 @@ window.vcInit = async function(){
     clearTimeout(sTimer);
     var v = this.value.trim();
     sTimer = setTimeout(function(){ runSearch(v); }, 300);
+  });
+
+  document.querySelectorAll('.pt').forEach(function(b){
+    b.addEventListener('click', function(){ showPane(b.dataset.p); });
+  });
+
+  /* Group picture. Clicking the header avatar on a group opens a file picker;
+     the image belongs to the channel, so everyone in it sees the change. */
+  /* openCh replaces this element, which would destroy a direct listener.
+     Delegating from the header survives the swap. */
+  document.querySelector('.pane-h').addEventListener('click', function(e){
+    if (!e.target.closest('#hAv')) return;
+    if (!cur || cur.kind !== 'group') return;
+    $('grpImg').click();
+  });
+  $('grpImg').addEventListener('change', async function(){
+    var f = this.files && this.files[0];
+    if (!f || !cur) return;
+    if (f.size > 3 * 1024 * 1024) { alert('Keep it under 3MB.'); this.value=''; return; }
+    var path = 'group/' + cur.id + '-' + Date.now();
+    var up = await sb.storage.from('chat').upload(path, f, { contentType: f.type });
+    this.value = '';
+    if (up.error) { alert(up.error.message); return; }
+    var url = sb.storage.from('chat').getPublicUrl(path).data.publicUrl;
+    await sb.from('channels').update({ image_url: url }).eq('id', cur.id);
+    await loadChans();
+    openCh(cur.id);
   });
 
   await loadChans();

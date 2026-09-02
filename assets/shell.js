@@ -381,9 +381,9 @@ if (role !== 'client') {
         const pct = total ? Math.round(done / total * 100) : 0;
 
         html =
-          '<div class="vc-peek-status" style="background:' + cur.colour + '">' + escv(cur.label) + '</div>' +
-          '<h3>' + escv(t.title) + '</h3>' +
-          (t.detail ? '<p class="vc-peek-d">' + escv(t.detail) + '</p>' : '') +
+          '<div class="vc-peek-status" style="background:' + cur.colour + '">' + esc(cur.label) + '</div>' +
+          '<h3>' + esc(t.title) + '</h3>' +
+          (t.detail ? '<p class="vc-peek-d">' + esc(t.detail) + '</p>' : '') +
 
           (total
             ? '<div class="vc-peek-prog"><div class="vc-peek-prog-h">' +
@@ -391,7 +391,7 @@ if (role !== 'client') {
                 '<div class="vc-peek-bar"><i style="width:' + pct + '%"></i></div>' +
                 (subs || []).slice(0, 4).map((x) =>
                   '<div class="vc-peek-sub' + (doneKeys.indexOf(x.status) > -1 ? ' done' : '') + '">' +
-                  escv(x.title) + '</div>').join('') +
+                  esc(x.title) + '</div>').join('') +
                 (total > 4 ? '<div class="vc-peek-sub more">and ' + (total - 4) + ' more</div>' : '') +
               '</div>'
             : '') +
@@ -404,7 +404,7 @@ if (role !== 'client') {
 
           '<div class="vc-peek-quick"><label>Move to</label><select id="vcPeekStatus">' +
             COLS.map(c => '<option value="' + c.key + '"' + (c.key === t.status ? ' selected' : '') + '>' +
-              escv(c.label) + '</option>').join('') + '</select></div>' +
+              esc(c.label) + '</option>').join('') + '</select></div>' +
 
           ((cm && cm.length)
             ? '<div class="vc-peek-cm"><b>Latest discussion</b>' + cm.map((c) => {
@@ -412,8 +412,8 @@ if (role !== 'client') {
                 const iv = nm.split(' ').map(x => x[0]).filter(Boolean).join('').slice(0,2).toUpperCase();
                 const when = new Date(c.created_at).toLocaleDateString('en-US',{ month:'short', day:'numeric' });
                 return '<div class="vc-peek-c"><span class="vc-peek-av">' + iv + '</span>' +
-                  '<span class="vc-peek-cb"><em>' + escv(nm) + ' \u00b7 <i>' + when + '</i></em>' +
-                  escv(c.body) + '</span></div>';
+                  '<span class="vc-peek-cb"><em>' + esc(nm) + ' \u00b7 <i>' + when + '</i></em>' +
+                  esc(c.body) + '</span></div>';
               }).join('') + '</div>'
             : '<div class="vc-peek-cm"><b>Discussion</b>' +
               '<p class="vc-peek-load">No comments yet.</p></div>');

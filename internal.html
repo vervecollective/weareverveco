@@ -417,7 +417,7 @@
 
   (async () => {
     try {
-      const { data } = await supabase.from('engagements')
+      const { data } = await window.__sb.from('engagements')
         .select('id, title, clients(business_name)')
         .order('updated_at', { ascending: false });
       $('vcp-eng').innerHTML = '<option value="">— pick an engagement —</option>' +

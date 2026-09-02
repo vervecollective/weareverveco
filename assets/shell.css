@@ -1267,3 +1267,35 @@ body.vc-mini .vc-bell:hover{background:#F1F2F4;box-shadow:none;}
 body.vc-mini .vc-bell-n{top:-2px;right:2px;}
 /* Tray clears the rail instead of sitting under it. */
 body.vc-mini .vc-tray{left:72px !important;width:300px !important;top:60px !important;}
+
+
+/* ================= toasts ================= */
+.vc-toasts{position:fixed;bottom:22px;right:22px;z-index:1500;display:flex;
+  flex-direction:column-reverse;gap:9px;max-width:min(370px,92vw);}
+.vc-toast{display:flex;gap:11px;align-items:flex-start;background:#fff;
+  border:1px solid #E4E6EA;border-left:3px solid #9A3412;border-radius:11px;
+  padding:13px 14px;box-shadow:0 8px 26px rgba(16,24,40,.16);cursor:pointer;
+  animation:toastIn .26s cubic-bezier(.32,.72,0,1) both;}
+.vc-toast:hover{box-shadow:0 10px 32px rgba(16,24,40,.22);}
+.vc-toast.urgent{border-left-color:#B91C1C;background:#FFFBFA;}
+.vc-toast.out{animation:toastOut .3s ease both;}
+@keyframes toastIn{from{opacity:0;transform:translateX(28px);}to{opacity:1;transform:none;}}
+@keyframes toastOut{to{opacity:0;transform:translateX(28px);}}
+.vc-toast-i{font-size:13px;color:#9A3412;margin-top:1px;flex-shrink:0;}
+.vc-toast.urgent .vc-toast-i{color:#B91C1C;}
+.vc-toast-b{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+.vc-toast-b b{font-size:13.5px;font-weight:600;line-height:1.4;}
+.vc-toast-b em{font-size:12.5px;font-style:normal;color:#5C6470;line-height:1.5;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.vc-toast-x{background:none;border:none;color:#C4C7D0;font-size:18px;line-height:1;
+  cursor:pointer;padding:0 2px;flex-shrink:0;}
+.vc-toast-x:hover{color:#111827;}
+@media(max-width:860px){
+  .vc-toasts{left:12px;right:12px;bottom:14px;max-width:none;}
+}
+@media (prefers-reduced-motion: reduce){ .vc-toast{animation:none;} }
+
+/* tray footer now holds two things */
+.vc-tray-f{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.vc-tray-f a{font-size:11.5px;font-weight:600;color:var(--vc-accent);text-decoration:none;}
+.vc-tray-f a:hover{text-decoration:underline;}

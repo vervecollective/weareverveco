@@ -542,209 +542,211 @@ try {
   /* ── Notifications ─────────────────────────────────────────────────────────
      Written by database triggers, so nothing depends on a page remembering to
      create them. Bell lives in the sidebar and works on every screen. */
+try {
   (function(){
-    const bell = document.createElement('button');
-    bell.className = 'vc-bell';
-    bell.setAttribute('aria-label','Notifications');
-    bell.innerHTML =
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" ' +
-      'stroke-linecap="round" stroke-linejoin="round">' +
-      '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg>' +
-      '<span class="vc-bell-n" id="vcBellN"></span>';
-  
-    const tray = document.createElement('div');
-    tray.className = 'vc-tray';
-    tray.innerHTML =
-      '<div class="vc-tray-h"><b>Notifications</b>' +
-        '<button id="vcReadAll">Mark all read</button></div>' +
-      '<div class="vc-tray-b" id="vcTrayB"></div>' +
-      '<div class="vc-tray-f"><button id="vcShowAll">Show read as well</button>' +
-        '<a href="/notifications">See all</a></div>';
-  
-    const brand = shell.querySelector('.vc-brand');
-    if (brand) brand.after(bell);
-    shell.append(tray);
-  
-    bell.addEventListener('click', (e) => {
-      e.stopPropagation();
-      tray.classList.toggle('on');
-      if (tray.classList.contains('on')) paint();
-    });
-    document.addEventListener('click', (e) => {
-      if (!tray.contains(e.target) && !bell.contains(e.target)) tray.classList.remove('on');
-    });
-  
-    const esc = (v) => { const d = document.createElement('div'); d.textContent = v == null ? '' : v; return d.innerHTML; };
-    const ago = (ts) => {
-      const m = Math.round((Date.now() - new Date(ts)) / 60000);
-      if (m < 1) return 'now';
-      if (m < 60) return m + 'm';
-      if (m < 1440) return Math.round(m/60) + 'h';
-      return Math.round(m/1440) + 'd';
-    };
-    const ICON = { mention:'\uD83D\uDCAC', assigned:'\u25CF', offer:'\u2691',
-                   offer_accepted:'\u2713', offer_declined:'\u2715' };
-  
-    let items = [];
-    let showRead = false;
-  
-    function badgeTo(n){
-      const badge = document.getElementById('vcBellN');
-      if (!badge) return;
-      badge.textContent = n > 9 ? '9+' : (n || '');
-      badge.style.display = n ? 'flex' : 'none';
-    }
-  
-    async function load(){
-      const { data } = await sb.from('notifications')
-        .select('*').eq('profile_id', session.user.id)
-        .order('created_at', { ascending:false }).limit(30);
-      items = (data || []).sort((a, b) => {
-        const au = a.read_at ? 1 : 0, bu = b.read_at ? 1 : 0;
-        if (au !== bu) return au - bu;                       // unread first
-        return a.created_at < b.created_at ? 1 : -1;         // then newest
+      const bell = document.createElement('button');
+      bell.className = 'vc-bell';
+      bell.setAttribute('aria-label','Notifications');
+      bell.innerHTML =
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" ' +
+        'stroke-linecap="round" stroke-linejoin="round">' +
+        '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg>' +
+        '<span class="vc-bell-n" id="vcBellN"></span>';
+    
+      const tray = document.createElement('div');
+      tray.className = 'vc-tray';
+      tray.innerHTML =
+        '<div class="vc-tray-h"><b>Notifications</b>' +
+          '<button id="vcReadAll">Mark all read</button></div>' +
+        '<div class="vc-tray-b" id="vcTrayB"></div>' +
+        '<div class="vc-tray-f"><button id="vcShowAll">Show read as well</button>' +
+          '<a href="/notifications">See all</a></div>';
+    
+      const brand = shell.querySelector('.vc-brand');
+      if (brand) brand.after(bell);
+      shell.append(tray);
+    
+      bell.addEventListener('click', (e) => {
+        e.stopPropagation();
+        tray.classList.toggle('on');
+        if (tray.classList.contains('on')) paint();
       });
-      const unread = items.filter(n => !n.read_at).length;
-      const badge = document.getElementById('vcBellN');
-      if (badge) {
-        badge.textContent = unread > 9 ? '9+' : (unread || '');
-        badge.style.display = unread ? 'flex' : 'none';
+      document.addEventListener('click', (e) => {
+        if (!tray.contains(e.target) && !bell.contains(e.target)) tray.classList.remove('on');
+      });
+    
+      const esc = (v) => { const d = document.createElement('div'); d.textContent = v == null ? '' : v; return d.innerHTML; };
+      const ago = (ts) => {
+        const m = Math.round((Date.now() - new Date(ts)) / 60000);
+        if (m < 1) return 'now';
+        if (m < 60) return m + 'm';
+        if (m < 1440) return Math.round(m/60) + 'h';
+        return Math.round(m/1440) + 'd';
+      };
+      const ICON = { mention:'\uD83D\uDCAC', assigned:'\u25CF', offer:'\u2691',
+                     offer_accepted:'\u2713', offer_declined:'\u2715' };
+    
+      let items = [];
+      let showRead = false;
+    
+      function badgeTo(n){
+        const badge = document.getElementById('vcBellN');
+        if (!badge) return;
+        badge.textContent = n > 9 ? '9+' : (n || '');
+        badge.style.display = n ? 'flex' : 'none';
       }
-      return unread;
-    }
-  
-    function paint(){
-      const b = document.getElementById('vcTrayB');
-      const shown = showRead ? items : items.filter((n) => !n.read_at);
-      const btn = document.getElementById('vcShowAll');
-      if (btn) btn.textContent = showRead ? 'Show unread only' : 'Show read as well';
-      if (!shown.length) {
-        b.innerHTML = '<p class="vc-tray-none">' +
-          (showRead ? 'Nothing here yet.' : 'You are all caught up.') + '</p>';
-        return;
-      }
-      if (!items.length) {
-        b.innerHTML = '<p class="vc-tray-none">Nothing yet. You will hear about mentions, ' +
-                      'tasks assigned to you, and job offers.</p>';
-        return;
-      }
-      b.innerHTML = shown.map(n =>
-        '<a class="vc-nt' + (n.read_at ? '' : ' unread') + '" href="' + (n.url || '#') + '" data-id="' + n.id + '">' +
-          '<span class="vc-nt-i">' + (ICON[n.kind] || '\u25CF') + '</span>' +
-          '<span class="vc-nt-b"><b>' + esc(n.title) + '</b>' +
-            (n.body ? '<em>' + esc(n.body) + '</em>' : '') + '</span>' +
-          '<span class="vc-nt-t">' + ago(n.created_at) + '</span>' +
-        '</a>').join('');
-  
-      b.querySelectorAll('.vc-nt').forEach((a) => {
-        a.addEventListener('click', async (e) => {
-          /* This is a link, so the browser would navigate before the write
-             finished and the notification would come back unread. Hold the
-             navigation, mark it read, then go. */
-          e.preventDefault();
-          const href = a.getAttribute('href');
-          a.classList.remove('unread');
-          const it = items.filter((x) => x.id === a.dataset.id)[0];
-          if (it) it.read_at = new Date().toISOString();
-          badgeTo(items.filter((x) => !x.read_at).length);
-  
-          try {
-            await sb.from('notifications').update({ read_at: new Date().toISOString() })
-              .eq('id', a.dataset.id);
-          } catch (err) { /* still navigate */ }
-  
-          if (href && href !== '#') location.href = href;
-          else paint();
+    
+      async function load(){
+        const { data } = await sb.from('notifications')
+          .select('*').eq('profile_id', session.user.id)
+          .order('created_at', { ascending:false }).limit(30);
+        items = (data || []).sort((a, b) => {
+          const au = a.read_at ? 1 : 0, bu = b.read_at ? 1 : 0;
+          if (au !== bu) return au - bu;                       // unread first
+          return a.created_at < b.created_at ? 1 : -1;         // then newest
         });
+        const unread = items.filter(n => !n.read_at).length;
+        const badge = document.getElementById('vcBellN');
+        if (badge) {
+          badge.textContent = unread > 9 ? '9+' : (unread || '');
+          badge.style.display = unread ? 'flex' : 'none';
+        }
+        return unread;
+      }
+    
+      function paint(){
+        const b = document.getElementById('vcTrayB');
+        const shown = showRead ? items : items.filter((n) => !n.read_at);
+        const btn = document.getElementById('vcShowAll');
+        if (btn) btn.textContent = showRead ? 'Show unread only' : 'Show read as well';
+        if (!shown.length) {
+          b.innerHTML = '<p class="vc-tray-none">' +
+            (showRead ? 'Nothing here yet.' : 'You are all caught up.') + '</p>';
+          return;
+        }
+        if (!items.length) {
+          b.innerHTML = '<p class="vc-tray-none">Nothing yet. You will hear about mentions, ' +
+                        'tasks assigned to you, and job offers.</p>';
+          return;
+        }
+        b.innerHTML = shown.map(n =>
+          '<a class="vc-nt' + (n.read_at ? '' : ' unread') + '" href="' + (n.url || '#') + '" data-id="' + n.id + '">' +
+            '<span class="vc-nt-i">' + (ICON[n.kind] || '\u25CF') + '</span>' +
+            '<span class="vc-nt-b"><b>' + esc(n.title) + '</b>' +
+              (n.body ? '<em>' + esc(n.body) + '</em>' : '') + '</span>' +
+            '<span class="vc-nt-t">' + ago(n.created_at) + '</span>' +
+          '</a>').join('');
+    
+        b.querySelectorAll('.vc-nt').forEach((a) => {
+          a.addEventListener('click', async (e) => {
+            /* This is a link, so the browser would navigate before the write
+               finished and the notification would come back unread. Hold the
+               navigation, mark it read, then go. */
+            e.preventDefault();
+            const href = a.getAttribute('href');
+            a.classList.remove('unread');
+            const it = items.filter((x) => x.id === a.dataset.id)[0];
+            if (it) it.read_at = new Date().toISOString();
+            badgeTo(items.filter((x) => !x.read_at).length);
+    
+            try {
+              await sb.from('notifications').update({ read_at: new Date().toISOString() })
+                .eq('id', a.dataset.id);
+            } catch (err) { /* still navigate */ }
+    
+            if (href && href !== '#') location.href = href;
+            else paint();
+          });
+        });
+      }
+    
+      document.getElementById('vcShowAll').addEventListener('click', (e) => {
+        e.stopPropagation();
+        showRead = !showRead;
+        paint();
       });
-    }
-  
-    document.getElementById('vcShowAll').addEventListener('click', (e) => {
-      e.stopPropagation();
-      showRead = !showRead;
-      paint();
-    });
-  
-    document.getElementById('vcReadAll').addEventListener('click', async (e) => {
-      e.stopPropagation();
-      // Grey them immediately — waiting on a round trip made this feel broken.
-      tray.querySelectorAll('.vc-nt.unread').forEach((n) => n.classList.remove('unread'));
-      const badge = document.getElementById('vcBellN');
-      if (badge) { badge.textContent = ''; badge.style.display = 'none'; }
-  
-      await sb.from('notifications').update({ read_at: new Date().toISOString() })
-        .eq('profile_id', session.user.id).is('read_at', null);
-      items.forEach((n) => { n.read_at = n.read_at || new Date().toISOString(); });
-      await load();
-    });
-  
-    /* Browser notification, but only after the person opts in by clicking the
-       bell. Asking on page load is the fastest way to get permanently blocked. */
-    let asked = false;
-    function askOnce(){
-      if (asked || !('Notification' in window)) return;
-      asked = true;
-      if (Notification.permission === 'default') Notification.requestPermission();
-    }
-    bell.addEventListener('click', askOnce);
-    // Also ask after a little real use, so it is not the first thing that happens.
-    setTimeout(askOnce, 45000);
-  
-    /* An in-app toast, because a browser notification only appears when the tab
-       is in the background and many people never grant permission. */
-    function toast(n){
-      const wrap = document.getElementById('vcToasts') || (function(){
-        const w = document.createElement('div'); w.className = 'vc-toasts'; w.id = 'vcToasts';
-        document.body.appendChild(w); return w;
-      })();
-  
-      const ICON = { mention:'\uD83D\uDCAC', assigned:'\u25CF', offer:'\u2691', message:'\uD83D\uDCAC',
-                     slip_late:'\u26A0', slip_badly_late:'\u26A0', slip_blocked:'\u26A0',
-                     client_risk:'\u26A0', reply:'\u21A9' };
-      const urgent = /slip_badly_late|client_risk|slip_blocked/.test(n.kind);
-  
-      const t = document.createElement('div');
-      t.className = 'vc-toast' + (urgent ? ' urgent' : '');
-      t.innerHTML =
-        '<span class="vc-toast-i">' + (ICON[n.kind] || '\u25CF') + '</span>' +
-        '<span class="vc-toast-b"><b>' + escv(n.title) + '</b>' +
-          (n.body ? '<em>' + escv(n.body) + '</em>' : '') + '</span>' +
-        '<button class="vc-toast-x" aria-label="Dismiss">&times;</button>';
-  
-      t.addEventListener('click', async (e) => {
-        if (e.target.closest('.vc-toast-x')) { t.remove(); return; }
-        await sb.from('notifications').update({ read_at: new Date().toISOString() }).eq('id', n.id);
-        if (n.url) location.href = n.url;
+    
+      document.getElementById('vcReadAll').addEventListener('click', async (e) => {
+        e.stopPropagation();
+        // Grey them immediately — waiting on a round trip made this feel broken.
+        tray.querySelectorAll('.vc-nt.unread').forEach((n) => n.classList.remove('unread'));
+        const badge = document.getElementById('vcBellN');
+        if (badge) { badge.textContent = ''; badge.style.display = 'none'; }
+    
+        await sb.from('notifications').update({ read_at: new Date().toISOString() })
+          .eq('profile_id', session.user.id).is('read_at', null);
+        items.forEach((n) => { n.read_at = n.read_at || new Date().toISOString(); });
+        await load();
       });
-  
-      wrap.prepend(t);
-      // Urgent ones stay until dismissed; the rest fade after eight seconds.
-      if (!urgent) setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 300); }, 8000);
-      while (wrap.children.length > 4) wrap.lastElementChild.remove();
-    }
-  
-    function popup(n){
-      if (!('Notification' in window) || Notification.permission !== 'granted') return;
-      const note = new Notification(n.title, {
-        body: n.body || '', icon: '/assets/logo-email.png', tag: n.id
-      });
-      note.onclick = () => { window.focus(); if (n.url) location.href = n.url; };
-    }
-  
-    load();
-    setInterval(load, 60000);
-  
-    sb.channel('notif-' + session.user.id)
-      .on('postgres_changes',
-          { event:'INSERT', schema:'public', table:'notifications',
-            filter:'profile_id=eq.' + session.user.id },
-          (payload) => { load().then(() => {
-              paint(); toast(payload.new); popup(payload.new);
-              bell.classList.add('new');
-              setTimeout(() => bell.classList.remove('new'), 1600);
-            }); })
-      .subscribe();
-  })();
+    
+      /* Browser notification, but only after the person opts in by clicking the
+         bell. Asking on page load is the fastest way to get permanently blocked. */
+      let asked = false;
+      function askOnce(){
+        if (asked || !('Notification' in window)) return;
+        asked = true;
+        if (Notification.permission === 'default') Notification.requestPermission();
+      }
+      bell.addEventListener('click', askOnce);
+      // Also ask after a little real use, so it is not the first thing that happens.
+      setTimeout(askOnce, 45000);
+    
+      /* An in-app toast, because a browser notification only appears when the tab
+         is in the background and many people never grant permission. */
+      function toast(n){
+        const wrap = document.getElementById('vcToasts') || (function(){
+          const w = document.createElement('div'); w.className = 'vc-toasts'; w.id = 'vcToasts';
+          document.body.appendChild(w); return w;
+        })();
+    
+        const ICON = { mention:'\uD83D\uDCAC', assigned:'\u25CF', offer:'\u2691', message:'\uD83D\uDCAC',
+                       slip_late:'\u26A0', slip_badly_late:'\u26A0', slip_blocked:'\u26A0',
+                       client_risk:'\u26A0', reply:'\u21A9' };
+        const urgent = /slip_badly_late|client_risk|slip_blocked/.test(n.kind);
+    
+        const t = document.createElement('div');
+        t.className = 'vc-toast' + (urgent ? ' urgent' : '');
+        t.innerHTML =
+          '<span class="vc-toast-i">' + (ICON[n.kind] || '\u25CF') + '</span>' +
+          '<span class="vc-toast-b"><b>' + escv(n.title) + '</b>' +
+            (n.body ? '<em>' + escv(n.body) + '</em>' : '') + '</span>' +
+          '<button class="vc-toast-x" aria-label="Dismiss">&times;</button>';
+    
+        t.addEventListener('click', async (e) => {
+          if (e.target.closest('.vc-toast-x')) { t.remove(); return; }
+          await sb.from('notifications').update({ read_at: new Date().toISOString() }).eq('id', n.id);
+          if (n.url) location.href = n.url;
+        });
+    
+        wrap.prepend(t);
+        // Urgent ones stay until dismissed; the rest fade after eight seconds.
+        if (!urgent) setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 300); }, 8000);
+        while (wrap.children.length > 4) wrap.lastElementChild.remove();
+      }
+    
+      function popup(n){
+        if (!('Notification' in window) || Notification.permission !== 'granted') return;
+        const note = new Notification(n.title, {
+          body: n.body || '', icon: '/assets/logo-email.png', tag: n.id
+        });
+        note.onclick = () => { window.focus(); if (n.url) location.href = n.url; };
+      }
+    
+      load();
+      setInterval(load, 60000);
+    
+      sb.channel('notif-' + session.user.id)
+        .on('postgres_changes',
+            { event:'INSERT', schema:'public', table:'notifications',
+              filter:'profile_id=eq.' + session.user.id },
+            (payload) => { load().then(() => {
+                paint(); toast(payload.new); popup(payload.new);
+                bell.classList.add('new');
+                setTimeout(() => bell.classList.remove('new'), 1600);
+              }); })
+        .subscribe();
+    })();
+} catch (vcErr) { console.error("shell feature failed:", vcErr); }
 } catch (vcErr) { console.error("shell feature failed:", vcErr); }
 
 
@@ -1001,86 +1003,88 @@ try {
   /* ── Report a problem ──────────────────────────────────────────────────────
      Reachable from every page. Without this, someone who hits a bug has no
      route other than texting Trae, and most people just stop using the thing. */
+try {
   (function(){
-    /* No floating button: it sat on top of the chat compose bar. It lives in the
-       profile menu instead, which is where people already look and is never in
-       front of anything. */
-  
-    const veil = document.createElement('div');
-    veil.className = 'vc-rep-veil';
-    const box = document.createElement('div');
-    box.className = 'vc-rep';
-    box.innerHTML =
-      '<div class="vc-rep-h"><b>Something not right?</b>' +
-        '<p>Tell us what you were doing and what happened. It goes straight to Trae.</p></div>' +
-      '<div class="vc-rep-b">' +
-        '<div class="vc-rep-kinds">' +
-          '<button data-k="bug" class="on">Something is broken</button>' +
-          '<button data-k="idea">I have an idea</button>' +
-          '<button data-k="question">I am stuck</button>' +
-        '</div>' +
-        '<textarea id="vcRepBody" rows="4" placeholder="The Save button on Engagements did nothing when I clicked it."></textarea>' +
-        '<p class="vc-rep-note">We record which page you were on, so you do not have to explain that.</p>' +
-        '<div class="vc-rep-f"><button class="vc-rep-cancel" id="vcRepCancel">Cancel</button>' +
-        '<button class="vc-rep-send" id="vcRepSend">Send it</button></div>' +
-        '<p class="vc-rep-msg" id="vcRepMsg"></p>' +
-      '</div>';
-    document.body.append(veil, box);
-  
-    let kind = 'bug';
-    box.querySelectorAll('.vc-rep-kinds button').forEach((b) => {
-      b.addEventListener('click', () => {
-        box.querySelectorAll('.vc-rep-kinds button').forEach((x) => x.classList.remove('on'));
-        b.classList.add('on');
-        kind = b.dataset.k;
+      /* No floating button: it sat on top of the chat compose bar. It lives in the
+         profile menu instead, which is where people already look and is never in
+         front of anything. */
+    
+      const veil = document.createElement('div');
+      veil.className = 'vc-rep-veil';
+      const box = document.createElement('div');
+      box.className = 'vc-rep';
+      box.innerHTML =
+        '<div class="vc-rep-h"><b>Something not right?</b>' +
+          '<p>Tell us what you were doing and what happened. It goes straight to Trae.</p></div>' +
+        '<div class="vc-rep-b">' +
+          '<div class="vc-rep-kinds">' +
+            '<button data-k="bug" class="on">Something is broken</button>' +
+            '<button data-k="idea">I have an idea</button>' +
+            '<button data-k="question">I am stuck</button>' +
+          '</div>' +
+          '<textarea id="vcRepBody" rows="4" placeholder="The Save button on Engagements did nothing when I clicked it."></textarea>' +
+          '<p class="vc-rep-note">We record which page you were on, so you do not have to explain that.</p>' +
+          '<div class="vc-rep-f"><button class="vc-rep-cancel" id="vcRepCancel">Cancel</button>' +
+          '<button class="vc-rep-send" id="vcRepSend">Send it</button></div>' +
+          '<p class="vc-rep-msg" id="vcRepMsg"></p>' +
+        '</div>';
+      document.body.append(veil, box);
+    
+      let kind = 'bug';
+      box.querySelectorAll('.vc-rep-kinds button').forEach((b) => {
+        b.addEventListener('click', () => {
+          box.querySelectorAll('.vc-rep-kinds button').forEach((x) => x.classList.remove('on'));
+          b.classList.add('on');
+          kind = b.dataset.k;
+        });
       });
-    });
-  
-    function open(){ veil.classList.add('on'); box.classList.add('on');
-      setTimeout(() => document.getElementById('vcRepBody').focus(), 120); }
-    function shut(){ veil.classList.remove('on'); box.classList.remove('on');
-      document.getElementById('vcRepMsg').className = 'vc-rep-msg'; }
-  
-    const menuItem = document.getElementById('vcIdReport');
-    if (menuItem) {
-      menuItem.addEventListener('click', (e) => {
-        e.stopPropagation();
-        document.getElementById('vcIdMenu').classList.remove('on');
-        open();
-      });
-    }
-  
-    // Keyboard shortcut for anyone who reports often.
-    document.addEventListener('keydown', (e) => {
-      if (e.key === '?' && e.shiftKey && !/input|textarea/i.test((e.target.tagName || ''))) {
-        e.preventDefault(); open();
+    
+      function open(){ veil.classList.add('on'); box.classList.add('on');
+        setTimeout(() => document.getElementById('vcRepBody').focus(), 120); }
+      function shut(){ veil.classList.remove('on'); box.classList.remove('on');
+        document.getElementById('vcRepMsg').className = 'vc-rep-msg'; }
+    
+      const menuItem = document.getElementById('vcIdReport');
+      if (menuItem) {
+        menuItem.addEventListener('click', (e) => {
+          e.stopPropagation();
+          document.getElementById('vcIdMenu').classList.remove('on');
+          open();
+        });
       }
-    });
-    veil.addEventListener('click', shut);
-    document.getElementById('vcRepCancel').addEventListener('click', shut);
-  
-    document.getElementById('vcRepSend').addEventListener('click', async () => {
-      const body = document.getElementById('vcRepBody').value.trim();
-      const msg = document.getElementById('vcRepMsg');
-      if (!body) { msg.textContent = 'Tell us what happened first.'; msg.className = 'vc-rep-msg show err'; return; }
-  
-      const send = document.getElementById('vcRepSend');
-      send.disabled = true;
-      const { error } = await sb.from('reports').insert({
-        profile_id: session.user.id,
-        kind, body,
-        page: location.pathname,
-        user_agent: navigator.userAgent.slice(0, 240)
+    
+      // Keyboard shortcut for anyone who reports often.
+      document.addEventListener('keydown', (e) => {
+        if (e.key === '?' && e.shiftKey && !/input|textarea/i.test((e.target.tagName || ''))) {
+          e.preventDefault(); open();
+        }
       });
-      send.disabled = false;
-  
-      if (error) { msg.textContent = error.message; msg.className = 'vc-rep-msg show err'; return; }
-      msg.textContent = 'Sent. Thank you \u2014 that genuinely helps.';
-      msg.className = 'vc-rep-msg show ok';
-      document.getElementById('vcRepBody').value = '';
-      setTimeout(shut, 1600);
-    });
-  })();
+      veil.addEventListener('click', shut);
+      document.getElementById('vcRepCancel').addEventListener('click', shut);
+    
+      document.getElementById('vcRepSend').addEventListener('click', async () => {
+        const body = document.getElementById('vcRepBody').value.trim();
+        const msg = document.getElementById('vcRepMsg');
+        if (!body) { msg.textContent = 'Tell us what happened first.'; msg.className = 'vc-rep-msg show err'; return; }
+    
+        const send = document.getElementById('vcRepSend');
+        send.disabled = true;
+        const { error } = await sb.from('reports').insert({
+          profile_id: session.user.id,
+          kind, body,
+          page: location.pathname,
+          user_agent: navigator.userAgent.slice(0, 240)
+        });
+        send.disabled = false;
+    
+        if (error) { msg.textContent = error.message; msg.className = 'vc-rep-msg show err'; return; }
+        msg.textContent = 'Sent. Thank you \u2014 that genuinely helps.';
+        msg.className = 'vc-rep-msg show ok';
+        document.getElementById('vcRepBody').value = '';
+        setTimeout(shut, 1600);
+      });
+    })();
+} catch (vcErr) { console.error("shell feature failed:", vcErr); }
 } catch (vcErr) { console.error("shell feature failed:", vcErr); }
 
 
@@ -1174,95 +1178,97 @@ try {
      Without these you cannot tell a slow save from a broken one, so people click
      twice. Three pieces: a top progress bar for page loads, automatic busy state
      on any button that fires an async action, and skeletons for empty regions. */
+  try {
   (function(){
-  
-    // 1. A thin bar at the top, like a browser's own.
-    const bar = document.createElement('div');
-    bar.className = 'vc-progress';
-    bar.innerHTML = '<i></i>';
-    document.body.appendChild(bar);
-  
-    let depth = 0, timer = null;
-  
-    window.vcLoading = function(on){
-      depth = Math.max(0, depth + (on ? 1 : -1));
-      if (depth > 0) {
-        bar.classList.add('on');
-        clearTimeout(timer);
-      } else {
-        // Hold briefly so a fast response still registers as something happening.
-        clearTimeout(timer);
-        timer = setTimeout(() => bar.classList.remove('on'), 220);
+    
+      // 1. A thin bar at the top, like a browser's own.
+      const bar = document.createElement('div');
+      bar.className = 'vc-progress';
+      bar.innerHTML = '<i></i>';
+      document.body.appendChild(bar);
+    
+      let depth = 0, timer = null;
+    
+      window.vcLoading = function(on){
+        depth = Math.max(0, depth + (on ? 1 : -1));
+        if (depth > 0) {
+          bar.classList.add('on');
+          clearTimeout(timer);
+        } else {
+          // Hold briefly so a fast response still registers as something happening.
+          clearTimeout(timer);
+          timer = setTimeout(() => bar.classList.remove('on'), 220);
+        }
+        if (typeof paintBusy === 'function') paintBusy();
+      };
+    
+      // Nothing should be able to leave a button spinning for ever.
+      setInterval(() => {
+        if (busyBtn && depth === 0) { busyBtn.classList.remove('vc-busy'); busyBtn = null; }
+      }, 3000);
+    
+      /* 2. A clicked button stays busy for as long as queries are actually in
+         flight. Guessing when async work finishes is not possible generically, so
+         this hangs off the same counter the progress bar uses. */
+      let busyBtn = null;
+    
+      document.addEventListener('click', (e) => {
+        const b = e.target.closest('button, a.btn');
+        if (!b || b.disabled || b.dataset.noBusy) return;
+        busyBtn = b;
+        // If nothing starts loading within a moment, this was not an async action.
+        setTimeout(() => { if (depth === 0 && busyBtn === b) busyBtn = null; }, 250);
+      }, true);
+    
+      function paintBusy(){
+        if (busyBtn) {
+          if (depth > 0) busyBtn.classList.add('vc-busy');
+          else { busyBtn.classList.remove('vc-busy'); busyBtn = null; }
+        }
       }
-      if (typeof paintBusy === 'function') paintBusy();
-    };
-  
-    // Nothing should be able to leave a button spinning for ever.
-    setInterval(() => {
-      if (busyBtn && depth === 0) { busyBtn.classList.remove('vc-busy'); busyBtn = null; }
-    }, 3000);
-  
-    /* 2. A clicked button stays busy for as long as queries are actually in
-       flight. Guessing when async work finishes is not possible generically, so
-       this hangs off the same counter the progress bar uses. */
-    let busyBtn = null;
-  
-    document.addEventListener('click', (e) => {
-      const b = e.target.closest('button, a.btn');
-      if (!b || b.disabled || b.dataset.noBusy) return;
-      busyBtn = b;
-      // If nothing starts loading within a moment, this was not an async action.
-      setTimeout(() => { if (depth === 0 && busyBtn === b) busyBtn = null; }, 250);
-    }, true);
-  
-    function paintBusy(){
-      if (busyBtn) {
-        if (depth > 0) busyBtn.classList.add('vc-busy');
-        else { busyBtn.classList.remove('vc-busy'); busyBtn = null; }
-      }
-    }
-  
-    /* 3. Skeletons. A page calls vcSkeleton(el, rows) before fetching. */
-    window.vcSkeleton = function(el, rows){
-      if (typeof el === 'string') el = document.getElementById(el);
-      if (!el) return;
-      let h = '';
-      for (let i = 0; i < (rows || 3); i++) {
-        h += '<div class="vc-skel-row">' +
-          '<div class="vc-skel vc-skel-av"></div>' +
-          '<div class="vc-skel-lines">' +
-            '<div class="vc-skel" style="width:' + (58 + (i * 11) % 30) + '%"></div>' +
-            '<div class="vc-skel short" style="width:' + (32 + (i * 7) % 22) + '%"></div>' +
-          '</div></div>';
-      }
-      el.innerHTML = '<div class="vc-skels">' + h + '</div>';
-    };
-  
-    /* 4. Hook the network, not the client.
-  
-       The previous version wrapped sb.from(). That does not work: from() returns
-       a query builder with no .then — the thenable only appears after .select(),
-       which returns a different object, so the override was discarded and the
-       bar never fired once. Patching fetch catches every request regardless of
-       how the query was built, including storage and edge functions. */
-    const origFetch = window.fetch.bind(window);
-    window.fetch = function(input, init){
-      const url = typeof input === 'string' ? input : (input && input.url) || '';
-      const ours = url.indexOf('supabase.co') > -1 || url.indexOf('/functions/v1/') > -1;
-      if (!ours) return origFetch(input, init);
-  
-      window.vcLoading(true);
-      return origFetch(input, init)
-        .then((r) => { window.vcLoading(false); return r; })
-        .catch((e) => { window.vcLoading(false); throw e; });
-    };
-  
-    // The initial page render counts as loading until vcInit finishes.
-    window.addEventListener('vc-auth-ready', () => {
-      window.vcLoading(true);
-      setTimeout(() => window.vcLoading(false), 400);
-    });
-  })();
+    
+      /* 3. Skeletons. A page calls vcSkeleton(el, rows) before fetching. */
+      window.vcSkeleton = function(el, rows){
+        if (typeof el === 'string') el = document.getElementById(el);
+        if (!el) return;
+        let h = '';
+        for (let i = 0; i < (rows || 3); i++) {
+          h += '<div class="vc-skel-row">' +
+            '<div class="vc-skel vc-skel-av"></div>' +
+            '<div class="vc-skel-lines">' +
+              '<div class="vc-skel" style="width:' + (58 + (i * 11) % 30) + '%"></div>' +
+              '<div class="vc-skel short" style="width:' + (32 + (i * 7) % 22) + '%"></div>' +
+            '</div></div>';
+        }
+        el.innerHTML = '<div class="vc-skels">' + h + '</div>';
+      };
+    
+      /* 4. Hook the network, not the client.
+    
+         The previous version wrapped sb.from(). That does not work: from() returns
+         a query builder with no .then — the thenable only appears after .select(),
+         which returns a different object, so the override was discarded and the
+         bar never fired once. Patching fetch catches every request regardless of
+         how the query was built, including storage and edge functions. */
+      const origFetch = window.fetch.bind(window);
+      window.fetch = function(input, init){
+        const url = typeof input === 'string' ? input : (input && input.url) || '';
+        const ours = url.indexOf('supabase.co') > -1 || url.indexOf('/functions/v1/') > -1;
+        if (!ours) return origFetch(input, init);
+    
+        window.vcLoading(true);
+        return origFetch(input, init)
+          .then((r) => { window.vcLoading(false); return r; })
+          .catch((e) => { window.vcLoading(false); throw e; });
+      };
+    
+      // The initial page render counts as loading until vcInit finishes.
+      window.addEventListener('vc-auth-ready', () => {
+        window.vcLoading(true);
+        setTimeout(() => window.vcLoading(false), 400);
+      });
+    })();
+  } catch (vcErr) { console.error("shell feature failed:", vcErr); }
 } catch (vcErr) { console.error("shell feature failed:", vcErr); }
 
 
@@ -1561,51 +1567,53 @@ try {
   /* ── Role preview ──────────────────────────────────────────────────────────
      Seeing the platform as a contractor or a client is the only way to check
      what they actually get without inviting three people first. */
+  try {
   (function(){
-    if (realRole !== 'owner') return;
-  
-    const LABEL = { owner:'Owner', account_owner:'Account owner',
-                    contractor:'Contractor', client:'Client' };
-  
-    if (previewRole) {
-      const bar = document.createElement('div');
-      bar.className = 'vc-preview';
-      bar.innerHTML =
-        '<span class="vc-preview-t">Viewing as <b>' + (LABEL[previewRole] || previewRole) + '</b>' +
-        ' \u2014 this is what they see</span>' +
-        '<button id="vcPreviewOff">Back to your account</button>';
-      document.body.appendChild(bar);
-      document.body.classList.add('vc-previewing');
-  
-      document.getElementById('vcPreviewOff').addEventListener('click', async () => {
-        await sb.rpc('set_demo_role', { r: null });
-        location.reload();
-      });
-    }
-  
-    // The switcher lives in the profile menu, where account-level things belong.
-    const menu = document.getElementById('vcIdMenu');
-    if (menu) {
-      const wrap = document.createElement('div');
-      wrap.className = 'vc-idmenu-sec';
-      wrap.innerHTML = '<span>View as</span>' +
-        ['owner','account_owner','contractor','client'].map((r) =>
-          '<button data-view="' + r + '"' + (role === r ? ' class="on"' : '') + '>' +
-          LABEL[r] + '</button>').join('');
-      menu.insertBefore(wrap, menu.querySelector('#vcIdReport'));
-  
-      wrap.querySelectorAll('[data-view]').forEach((b) => {
-        b.addEventListener('click', async (e) => {
-          e.stopPropagation();
-          const r = b.dataset.view;
-          await sb.rpc('set_demo_role', { r: r === 'owner' ? null : r });
-          // Land somewhere that role actually uses.
-          location.href = r === 'client' ? '/project'
-                        : r === 'contractor' ? '/mywork' : '/hub';
+      if (realRole !== 'owner') return;
+    
+      const LABEL = { owner:'Owner', account_owner:'Account owner',
+                      contractor:'Contractor', client:'Client' };
+    
+      if (previewRole) {
+        const bar = document.createElement('div');
+        bar.className = 'vc-preview';
+        bar.innerHTML =
+          '<span class="vc-preview-t">Viewing as <b>' + (LABEL[previewRole] || previewRole) + '</b>' +
+          ' \u2014 this is what they see</span>' +
+          '<button id="vcPreviewOff">Back to your account</button>';
+        document.body.appendChild(bar);
+        document.body.classList.add('vc-previewing');
+    
+        document.getElementById('vcPreviewOff').addEventListener('click', async () => {
+          await sb.rpc('set_demo_role', { r: null });
+          location.reload();
         });
-      });
-    }
-  })();
+      }
+    
+      // The switcher lives in the profile menu, where account-level things belong.
+      const menu = document.getElementById('vcIdMenu');
+      if (menu) {
+        const wrap = document.createElement('div');
+        wrap.className = 'vc-idmenu-sec';
+        wrap.innerHTML = '<span>View as</span>' +
+          ['owner','account_owner','contractor','client'].map((r) =>
+            '<button data-view="' + r + '"' + (role === r ? ' class="on"' : '') + '>' +
+            LABEL[r] + '</button>').join('');
+        menu.insertBefore(wrap, menu.querySelector('#vcIdReport'));
+    
+        wrap.querySelectorAll('[data-view]').forEach((b) => {
+          b.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const r = b.dataset.view;
+            await sb.rpc('set_demo_role', { r: r === 'owner' ? null : r });
+            // Land somewhere that role actually uses.
+            location.href = r === 'client' ? '/project'
+                          : r === 'contractor' ? '/mywork' : '/hub';
+          });
+        });
+      }
+    })();
+  } catch (vcErr) { console.error("shell feature failed:", vcErr); }
 } catch (vcErr) { console.error("shell feature failed:", vcErr); }
 
 window.dispatchEvent(new Event('vc-auth-ready'));

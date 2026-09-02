@@ -1212,6 +1212,213 @@ if (role !== 'client') {
   });
 })();
 
+
+/* ── Chat dock ─────────────────────────────────────────────────────────────
+   Messages follow you around the platform. A bubble bottom-right with an
+   unread count; click it for a compact list, click a conversation for a small
+   window you can type in without leaving the page you are working on. */
+(function(){
+  if (role === 'client') return;   // clients use the request channel instead
+
+  const dock = document.createElement('div');
+  dock.className = 'vc-dock';
+  dock.innerHTML =
+    '<button class="vc-dock-btn" id="vcDockBtn" aria-label="Messages">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+        'stroke-linecap="round" stroke-linejoin="round">' +
+        '<path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.2A8.4 8.4 0 0 1 21 11.5z"/></svg>' +
+      '<span class="vc-dock-n" id="vcDockN"></span>' +
+    '</button>' +
+    '<div class="vc-dock-panel" id="vcDockPanel">' +
+      '<div class="vc-dock-h">' +
+        '<b id="vcDockTitle">Messages</b>' +
+        '<span class="vc-dock-acts">' +
+          '<a href="/messages" title="Open full">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+            'stroke-linecap="round"><path d="M15 3h6v6M21 3l-9 9M10 5H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5"/></svg></a>' +
+          '<button id="vcDockBack" style="display:none" title="Back">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+            'stroke-linecap="round"><path d="m15 18-6-6 6-6"/></svg></button>' +
+          '<button id="vcDockX" title="Close">&times;</button>' +
+        '</span>' +
+      '</div>' +
+      '<div class="vc-dock-b" id="vcDockB"></div>' +
+      '<div class="vc-dock-c" id="vcDockC" style="display:none">' +
+        '<textarea id="vcDockNew" rows="1" placeholder="Write a message"></textarea>' +
+        '<button id="vcDockSend" aria-label="Send">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+          'stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg>' +
+        '</button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(dock);
+
+  const $d = (i) => document.getElementById(i);
+  const escd = (v) => { const x = document.createElement('div'); x.textContent = v == null ? '' : v; return x.innerHTML; };
+  const inid = (n) => (n || '?').split(' ').map(x => x[0]).filter(Boolean).join('').slice(0,2).toUpperCase();
+
+  let chans = [], openChan = null, people = {}, dockSub = null;
+
+  async function loadPeople(){
+    const { data } = await sb.from('profiles')
+      .select('id, full_name, email, avatar_url').eq('is_active', true);
+    (data || []).forEach(p => { people[p.id] = p; });
+  }
+
+  function titleOf(c){
+    if (c.name) return c.name;
+    const ids = (c.channel_members || []).map(m => m.profile_id).filter(x => x !== session.user.id);
+    const p = people[ids[0]];
+    return p ? (p.full_name || p.email) : 'Conversation';
+  }
+
+  async function loadList(){
+    const { data } = await sb.from('channels')
+      .select('*, channel_members(profile_id, last_read_at, muted, pinned, manually_unread), messages(body, created_at, author_id)')
+      .order('last_message_at', { ascending:false });
+    chans = (data || []).filter(c =>
+      (c.channel_members || []).some(m => m.profile_id === session.user.id));
+
+    let total = 0;
+    chans.forEach(c => {
+      const mine = (c.channel_members || []).filter(m => m.profile_id === session.user.id)[0];
+      c._unread = (c.messages || []).filter(m =>
+        m.author_id !== session.user.id && mine &&
+        new Date(m.created_at) > new Date(mine.last_read_at || 0)).length;
+      c._pinned = !!(mine && mine.pinned);
+      c._muted  = !!(mine && mine.muted);
+      if (!c._muted) total += c._unread;
+    });
+
+    const badge = $d('vcDockN');
+    badge.textContent = total > 9 ? '9+' : (total || '');
+    badge.style.display = total ? 'flex' : 'none';
+    if (total) dock.classList.add('has'); else dock.classList.remove('has');
+
+    if (!openChan) paintList();
+  }
+
+  function paintList(){
+    const sorted = chans.slice().sort((a, b) => {
+      if (a._pinned !== b._pinned) return a._pinned ? -1 : 1;
+      return (a.last_message_at < b.last_message_at) ? 1 : -1;
+    });
+
+    $d('vcDockTitle').textContent = 'Messages';
+    $d('vcDockBack').style.display = 'none';
+    $d('vcDockC').style.display = 'none';
+
+    $d('vcDockB').innerHTML = sorted.length ? sorted.map(c => {
+      const last = (c.messages || []).slice().sort((x, y) => x.created_at < y.created_at ? 1 : -1)[0];
+      return '<div class="vc-dock-row' + (c._muted ? ' muted' : '') + '" data-c="' + c.id + '">' +
+        '<span class="vc-dock-av">' + inid(titleOf(c)) + '</span>' +
+        '<span class="vc-dock-t"><b>' + (c._pinned ? '\u2022 ' : '') + escd(titleOf(c)) + '</b>' +
+        '<em>' + escd(last ? (last.body || 'Sent a file').slice(0, 34) : 'No messages') + '</em></span>' +
+        (c._unread && !c._muted ? '<span class="vc-dock-u">' + c._unread + '</span>' : '') +
+        '</div>';
+    }).join('') : '<p class="vc-dock-none">No conversations yet.<br><a href="/messages">Start one</a></p>';
+
+    $d('vcDockB').querySelectorAll('[data-c]').forEach(el => {
+      el.addEventListener('click', () => openConversation(el.dataset.c));
+    });
+  }
+
+  async function openConversation(cid){
+    openChan = cid;
+    const c = chans.filter(x => x.id === cid)[0];
+    $d('vcDockTitle').textContent = c ? titleOf(c) : 'Conversation';
+    $d('vcDockBack').style.display = '';
+    $d('vcDockC').style.display = '';
+    await paintMessages();
+
+    await sb.from('channel_members')
+      .update({ last_read_at: new Date().toISOString(), manually_unread: false })
+      .eq('channel_id', cid).eq('profile_id', session.user.id);
+    loadList();
+
+    if (dockSub) sb.removeChannel(dockSub);
+    dockSub = sb.channel('dock-' + cid)
+      .on('postgres_changes',
+          { event:'INSERT', schema:'public', table:'messages', filter:'channel_id=eq.' + cid },
+          paintMessages)
+      .subscribe();
+  }
+
+  async function paintMessages(){
+    if (!openChan) return;
+    const { data } = await sb.from('messages').select('*')
+      .eq('channel_id', openChan).order('created_at', { ascending:false }).limit(30);
+    const ms = (data || []).slice().reverse();
+    const b = $d('vcDockB');
+
+    b.innerHTML = ms.length ? ms.map(m => {
+      const p = people[m.author_id] || {};
+      const mine = m.author_id === session.user.id;
+      return '<div class="vc-dock-m' + (mine ? ' mine' : '') + '">' +
+        (mine ? '' : '<span class="vc-dock-av sm">' + inid(p.full_name || p.email) + '</span>') +
+        '<span class="vc-dock-bub">' +
+          (m.body ? escd(m.body) : '') +
+          (m.attachment_url && /image/.test(m.attachment_type || '')
+            ? '<img src="' + escd(m.attachment_url) + '" alt="">' : '') +
+          (m.attachment_url && !/image/.test(m.attachment_type || '')
+            ? '<a href="' + escd(m.attachment_url) + '" target="_blank" rel="noopener">' +
+              escd(m.attachment_name || 'File') + '</a>' : '') +
+        '</span></div>';
+    }).join('') : '<p class="vc-dock-none">Say something.</p>';
+
+    b.scrollTop = b.scrollHeight;
+  }
+
+  async function send(){
+    const ta = $d('vcDockNew');
+    const body = ta.value.trim();
+    if (!body || !openChan) return;
+    ta.value = ''; ta.style.height = 'auto';
+    const { error } = await sb.from('messages')
+      .insert({ channel_id: openChan, author_id: session.user.id, body });
+    if (error) { alert(error.message); return; }
+    paintMessages(); loadList();
+  }
+
+  $d('vcDockBtn').addEventListener('click', () => {
+    const open = dock.classList.toggle('open');
+    if (open) { openChan = null; paintList(); }
+  });
+  $d('vcDockX').addEventListener('click', (e) => {
+    e.stopPropagation(); dock.classList.remove('open'); openChan = null;
+  });
+  $d('vcDockBack').addEventListener('click', () => {
+    openChan = null;
+    if (dockSub) { sb.removeChannel(dockSub); dockSub = null; }
+    paintList();
+  });
+  $d('vcDockSend').addEventListener('click', send);
+  $d('vcDockNew').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+  });
+  $d('vcDockNew').addEventListener('input', function(){
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 90) + 'px';
+  });
+
+  // Hide the dock on the messages page itself; two chat surfaces is one too many.
+  if (location.pathname.indexOf('/messages') === 0) dock.style.display = 'none';
+
+  loadPeople().then(loadList);
+  setInterval(loadList, 30000);
+
+  // A new message anywhere makes the bubble pulse.
+  sb.channel('dock-any-' + session.user.id)
+    .on('postgres_changes', { event:'INSERT', schema:'public', table:'messages' }, () => {
+      loadList();
+      if (!dock.classList.contains('open')) {
+        dock.classList.add('ping');
+        setTimeout(() => dock.classList.remove('ping'), 1400);
+      } else if (openChan) { paintMessages(); }
+    })
+    .subscribe();
+})();
+
 window.dispatchEvent(new Event('vc-auth-ready'));
 
 /* Pages define window.vcInit and expect it to run once auth resolves. Calling it

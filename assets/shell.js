@@ -977,6 +977,19 @@ if (role !== 'client') {
     e.stopPropagation();
     window.vcProfile(t.dataset.profile);
   });
+
+  /* Every peek target, everywhere, handled once. Pages used to bind these per
+     render, so any repaint silently dropped them — which is how the timeline
+     stopped opening tasks. */
+  document.addEventListener('click', (e) => {
+    const el = e.target.closest('[data-k][data-r]');
+    if (!el) return;
+    const kind = el.dataset.k, ref = el.dataset.r;
+    if (!kind || !ref) return;
+    e.preventDefault();
+    e.stopPropagation();
+    window.vcPeek(kind, ref);
+  });
 })();
 
 

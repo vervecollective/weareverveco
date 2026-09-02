@@ -524,9 +524,7 @@ if (role !== 'client') {
 
     /* A thread opens a second panel to the left rather than replacing what you
        were looking at, so the task stays in view while you read the replies. */
-    document.querySelectorAll('[data-thread]').forEach((b) => {
-      b.addEventListener('click', () => openThread(b.dataset.thread, id));
-    });
+    // Handled by a delegated listener installed once (see below).
 
     const quick = document.getElementById('vcPeekStatus');
     if (quick) {
@@ -866,6 +864,18 @@ if (role !== 'client') {
     });
     setTimeout(() => ta.focus(), 140);
   }
+
+  /* Delegated once. Re-rendering the drawer used to drop these listeners,
+     which is why replies stopped opening. */
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-thread]');
+    if (!b) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const taskId = (document.getElementById('vcPeekOpen') || {}).href || '';
+    const m = taskId.match(/id=([0-9a-f-]{36})/i);
+    openThread(b.dataset.thread, m ? m[1] : null);
+  });
 
   window.vcProfile = async function(profileId){
     if (!profileId) return;

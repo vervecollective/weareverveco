@@ -1610,3 +1610,16 @@ body.vc-previewing .vc-topbar{top:38px;}
 .vc-idmenu-sec button{font-size:13px !important;}
 .vc-idmenu-sec button.on{color:#9A3412 !important;font-weight:700 !important;}
 .vc-idmenu-sec button.on:after{content:' \2713';}
+
+
+/* ---- dock: actions row ---- */
+.vc-dock-acts-row{display:flex;gap:6px;padding:4px 4px 10px;border-bottom:1px solid #EFF1F4;margin-bottom:6px;}
+.vc-dock-act{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;
+  border:1px solid #E4E6EA;background:#fff;border-radius:9px;padding:9px 8px;
+  font:600 12px/1 'Inter',sans-serif;color:#374151;cursor:pointer;}
+.vc-dock-act svg{width:14px;height:14px;flex-shrink:0;}
+.vc-dock-act:hover{border-color:#9A3412;color:#9A3412;background:#FDF0EB;}
+.vc-dock-hint{font-size:12px;color:#5C6470;padding:6px 8px 10px;}
+
+/* The bubble is filled now, so it needs less weight around it. */
+.vc-dock-btn svg{width:25px;height:25px;}

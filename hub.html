@@ -58,6 +58,16 @@
   .hero b{font-size:15px;font-weight:700;display:block;margin-bottom:4px;}
   .hero p{font-size:13.5px;color:#9ca3af;line-height:1.6;}
   .hero a{color:#fdba8c;font-weight:600;text-decoration:none;}
+
+  .hfilt{display:flex;gap:8px;align-items:center;margin-bottom:16px;}
+  .hfilt select{padding:9px 13px;font-size:13.5px;font-family:inherit;
+    border:1px solid #D8DAE0;border-radius:9px;background:#fff;color:#111827;min-width:230px;}
+  .hfilt select:focus{outline:none;border-color:#9A3412;}
+  .hclear{background:none;border:none;font:600 12.5px/1 'Inter',sans-serif;
+    color:#5C6470;cursor:pointer;padding:8px 10px;border-radius:7px;}
+  .hclear:hover{background:#F1F3F6;color:#9A3412;}
+  .sh{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+    color:#9CA3AF;margin:26px 0 9px;}
 </style>
 </head>
 <body>
@@ -65,6 +75,7 @@
   <h1 id="greet">Home</h1>
   <p class="lede" id="sub">Loading…</p>
 
+  <div class="hfilt" id="hfilt"></div>
   <div class="tiles" id="tiles"></div>
 
   <div class="cols">
@@ -77,7 +88,11 @@
       <div class="card">
         <h2>This week</h2>
         <p class="hint">Shoots, milestones and deadlines in the next seven days.</p>
-        <div id="week"><div class="none">Loading…</div></div>
+        <h2 class="sh">Waiting on us</h2>
+  <div id="clientAsk"></div>
+
+  <h2 class="sh">This week</h2>
+  <div id="week"><div class="none">Loading…</div></div>
       </div>
     </div>
 
@@ -183,11 +198,33 @@ window.vcInit = async function(){
     .select('*, engagements(clients(business_name))')
     .neq('status','done').neq('status','cancelled');
   var tasks = tq.data || [];
-  var lateTasks = tasks.filter(function(t){ var n=days(t.due_date); return n!==null && n<0; });
-  var blocked = tasks.filter(function(t){ return t.status==='blocked'; });
+  var lateTasks_all = tasks.filter(function(t){ var n=days(t.due_date); return n!==null && n<0; });
+  var blocked_all = tasks.filter(function(t){ return t.status==='blocked'; });
 
   var mq = await sb.from('milestones').select('*, engagements(clients(business_name))').neq('status','done');
   var ms = mq.data || [];
+
+  /* Filtering by engagement, because "what needs me" is a different question
+     from "what needs me on Harbour Kitchen". */
+  var hEng = sessionStorage.getItem('vcHubEng') || '';
+  $('hfilt').innerHTML =
+    '<select id="hEngSel"><option value="">All engagements</option>' +
+    engs.map(function(e){
+      var nm = (e.clients && e.clients.business_name) || e.title || 'Untitled';
+      return '<option value="'+e.id+'"'+(e.id===hEng?' selected':'')+'>'+esc(nm)+'</option>';
+    }).join('') + '</select>' +
+    (hEng ? '<button class="hclear" id="hClear">Clear</button>' : '');
+
+  $('hEngSel').addEventListener('change', function(){
+    sessionStorage.setItem('vcHubEng', this.value);
+    window.vcInit();
+  });
+  var hc = document.getElementById('hClear');
+  if (hc) hc.addEventListener('click', function(){
+    sessionStorage.removeItem('vcHubEng'); window.vcInit();
+  });
+
+  function inScope(engId){ return !hEng || engId === hEng; }
 
   // Tiles. Each one answers a question you would otherwise have to go and ask.
   function tile(n, label, sub, href, tone){
@@ -244,11 +281,11 @@ window.vcInit = async function(){
     var biz=(o.engagements&&o.engagements.clients&&o.engagements.clients.business_name)||'Job';
     att.push(row('/jobs','#b45309', o.role_on_job+' offer unanswered', biz, rel(o.work_date), relClass(o.work_date), 'assignment', o.id));
   });
-  blocked.forEach(function(t){
+  blocked_all.filter(function(t){ return inScope(t.engagement_id); }).forEach(function(t){
     att.push(row('#','#b91c1c', t.title+' is blocked',
       t.blocked_reason || 'No reason given', 'Unblock', '', 'task', t.id));
   });
-  lateTasks.slice(0,4).forEach(function(t){
+  lateTasks_all.filter(function(t){ return inScope(t.engagement_id); }).slice(0,4).forEach(function(t){
     att.push(row('#','#b45309', t.title,
       (t.engagements&&t.engagements.clients&&t.engagements.clients.business_name)||'',
       rel(t.due_date), 'late', 'task', t.id));
@@ -281,6 +318,32 @@ window.vcInit = async function(){
   wk.sort(function(a,b){ return a.d < b.d ? -1 : 1; });
   $('week').innerHTML = wk.length ? wk.map(function(x){return x.html;}).join('')
     : '<div class="none">Nothing scheduled in the next seven days.</div>';
+  wirePeeks();
+
+  /* Requests from clients, and anything they can see that has gone quiet.
+     These are the ones that damage trust rather than just slip. */
+  var askQ = await sb.from('client_requests')
+    .select('*, engagements(clients(business_name))')
+    .neq('status','answered').order('created_at', { ascending:false }).limit(8);
+  var asks = (askQ.data || []).filter(function(a){ return inScope(a.engagement_id); });
+
+  var riskQ = await sb.from('client_facing_risk').select('*').limit(8);
+  var risks = (riskQ.data || []).filter(function(r){ return inScope(r.engagement_id); });
+
+  var ca = [];
+  asks.forEach(function(a){
+    ca.push(row('?', '#1E3A8A', a.body ? a.body.slice(0,72) : 'A question',
+      (a.engagements && a.engagements.clients && a.engagements.clients.business_name) || '',
+      'asked ' + rel(a.created_at ? a.created_at.slice(0,10) : null), '', 'engagement', a.engagement_id));
+  });
+  risks.forEach(function(r){
+    ca.push(row('!', '#B91C1C', r.label + ' is late',
+      (r.business_name || '') + ' can see this date',
+      r.days_late + 'd over', 'late', 'engagement', r.engagement_id));
+  });
+
+  $('clientAsk').innerHTML = ca.length ? ca.join('')
+    : '<div class="none">Nothing a client is waiting on.</div>';
   wirePeeks();
 
   // Team load

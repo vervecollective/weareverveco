@@ -413,9 +413,12 @@ function renderList(shown){
 function wire(){
   document.querySelectorAll('.t').forEach(function(el){
     el.addEventListener('click', function(e){
-      // Shift-click peeks in the drawer; a plain click opens the full task page.
-      if (e.shiftKey) { open(el.dataset.id); return; }
-      location.href = '/task?id=' + el.dataset.id;
+      /* A click peeks. The drawer carries enough to answer most questions, and
+         "Open fully" is there when it does not. Shift-click skips straight to
+         the full page for anyone who already knows what they want. */
+      if (e.shiftKey) { location.href = '/task?id=' + el.dataset.id; return; }
+      if (window.vcPeek) window.vcPeek('task', el.dataset.id);
+      else open(el.dataset.id);
     });
     el.addEventListener('dragend', function(){
       el.classList.remove('drag');

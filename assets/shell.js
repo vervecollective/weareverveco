@@ -24,7 +24,7 @@ let profile = null;
 if (session) {
   const { data } = await sb
     .from('profiles')
-    .select('full_name, role, title, avatar_url, onboarded_at, phone, demo_role')
+    .select('full_name, role, title, avatar_url, onboarded_at, phone, demo_role, status')
     .eq('id', session.user.id)
     .single();
   profile = data;
@@ -769,11 +769,19 @@ try {
       bar.className = 'vc-idbar';
       bar.innerHTML = `<button class="vc-id" id="vcId" aria-label="Your account">
           ${avatarHtml(profile || { full_name: name }, 'vc-id-av')}
-          <span class="vc-id-t"><b>${escv(name)}</b><em>${ROLE[role] || role}</em></span>
+          <span class="vc-id-t"><b>${escv(name)}</b>
+            <em><span class="vc-sdot" id="vcSDot"></span><span id="vcSTxt">${ROLE[role] || role}</span></em></span>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>
         </button>
         <div class="vc-idmenu" id="vcIdMenu">
+      <div class="vc-idmenu-sec vc-status-pick">
+        <span>Your status</span>
+        <button data-st="available"><i class="s-available"></i>Available</button>
+        <button data-st="busy"><i class="s-busy"></i>Heads down</button>
+        <button data-st="away"><i class="s-away"></i>Away</button>
+        <button data-st="offline"><i class="s-offline"></i>Off for the day</button>
+      </div>
           <a href="/settings">Your profile</a>
           <a href="/settings">Settings</a>
           <a href="/help">Help</a>
@@ -789,7 +797,32 @@ try {
       document.addEventListener('click', () => {
         document.getElementById('vcIdMenu').classList.remove('on');
       });
-      document.getElementById('vcIdOut').addEventListener('click', async () => {
+      /* Your own status, set by you. Presence answers "is the tab open"; this
+     answers "should anyone expect a reply". */
+  const SLABEL = { available:'Available', busy:'Heads down', away:'Away', offline:'Off for the day' };
+
+  function paintStatus(st){
+    const dot = document.getElementById('vcSDot');
+    const txt = document.getElementById('vcSTxt');
+    if (dot) dot.className = 'vc-sdot s-' + st;
+    if (txt) txt.textContent = SLABEL[st] || st;
+    document.querySelectorAll('.vc-status-pick [data-st]').forEach((b) => {
+      b.classList.toggle('on', b.dataset.st === st);
+    });
+  }
+  paintStatus((profile && profile.status) || 'available');
+
+  document.querySelectorAll('.vc-status-pick [data-st]').forEach((b) => {
+    b.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const st = b.dataset.st;
+      paintStatus(st);
+      await sb.from('profiles').update({ status: st }).eq('id', session.user.id);
+      document.getElementById('vcIdMenu').classList.remove('on');
+    });
+  });
+
+  document.getElementById('vcIdOut').addEventListener('click', async () => {
         await sb.auth.signOut();
         location.href = '/login.html';
       });
@@ -1069,16 +1102,35 @@ try {
     
         const send = document.getElementById('vcRepSend');
         send.disabled = true;
+
         const { error } = await sb.from('reports').insert({
           profile_id: session.user.id,
           kind, body,
           page: location.pathname,
           user_agent: navigator.userAgent.slice(0, 240)
         });
+
+        /* A report that vanishes into a table is a report you never hear about
+           again. This also opens a conversation, so it can be answered and the
+           person can see what happened to it. */
+        let cid = null;
+        try {
+          const r = await sb.rpc('open_support_thread', {
+            p_kind: kind, p_body: body, p_page: location.pathname
+          });
+          cid = r.data || null;
+        } catch (e) { /* the report is filed either way */ }
+
         send.disabled = false;
-    
-        if (error) { msg.textContent = error.message; msg.className = 'vc-rep-msg show err'; return; }
-        msg.textContent = 'Sent. Thank you \u2014 that genuinely helps.';
+
+        if (error && !cid) { msg.textContent = error.message; msg.className = 'vc-rep-msg show err'; return; }
+
+        if (cid) {
+          msg.innerHTML = 'Sent, and opened as a conversation so you can follow it. ' +
+            '<a href="/messages?c=' + cid + '" style="color:#9A3412;font-weight:600">Open it</a>.';
+        } else {
+          msg.textContent = 'Sent. Thank you \u2014 that genuinely helps.';
+        }
         msg.className = 'vc-rep-msg show ok';
         document.getElementById('vcRepBody').value = '';
         setTimeout(shut, 1600);

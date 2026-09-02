@@ -895,6 +895,89 @@ if (role !== 'client') {
   });
 })();
 
+
+/* ── Confirm ───────────────────────────────────────────────────────────────
+   One dialog for anything that cannot be undone. It says what actually goes,
+   not "are you sure", and the heaviest deletions ask you to type the name so
+   a stray click cannot take an account with it. */
+(function(){
+  const veil = document.createElement('div');
+  veil.className = 'vc-cf-veil';
+  const box = document.createElement('div');
+  box.className = 'vc-cf';
+  box.setAttribute('role', 'dialog');
+  box.setAttribute('aria-modal', 'true');
+  document.body.append(veil, box);
+
+  let resolver = null;
+
+  function shut(v){
+    box.classList.remove('on'); veil.classList.remove('on');
+    document.body.classList.remove('vc-locked');
+    if (resolver) { resolver(v); resolver = null; }
+  }
+  veil.addEventListener('click', () => shut(false));
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && box.classList.contains('on')) shut(false);
+  });
+
+  /* opts: { title, body, list, confirm, cancel, danger, typeToConfirm } */
+  window.vcConfirm = function(opts){
+    opts = opts || {};
+    const danger = opts.danger !== false;
+    const needType = opts.typeToConfirm;
+
+    box.innerHTML =
+      '<div class="vc-cf-h">' +
+        '<span class="vc-cf-icon' + (danger ? ' danger' : '') + '">' +
+          (danger
+            ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">' +
+              '<path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>'
+            : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">' +
+              '<circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>') +
+        '</span>' +
+        '<b>' + escv(opts.title || 'Are you sure?') + '</b>' +
+      '</div>' +
+      '<div class="vc-cf-b">' +
+        (opts.body ? '<p>' + escv(opts.body) + '</p>' : '') +
+        (opts.list && opts.list.length
+          ? '<ul class="vc-cf-list">' + opts.list.map(x => '<li>' + escv(x) + '</li>').join('') + '</ul>'
+          : '') +
+        (needType
+          ? '<label class="vc-cf-type">Type <b>' + escv(needType) + '</b> to confirm' +
+            '<input type="text" id="vcCfType" autocomplete="off" spellcheck="false"></label>'
+          : '') +
+        '<div class="vc-cf-f">' +
+          '<button class="vc-cf-no" id="vcCfNo">' + escv(opts.cancel || 'Cancel') + '</button>' +
+          '<button class="vc-cf-yes' + (danger ? ' danger' : '') + '" id="vcCfYes"' +
+            (needType ? ' disabled' : '') + '>' + escv(opts.confirm || 'Delete') + '</button>' +
+        '</div>' +
+      '</div>';
+
+    veil.classList.add('on'); box.classList.add('on');
+    document.body.classList.add('vc-locked');
+
+    document.getElementById('vcCfNo').addEventListener('click', () => shut(false));
+    document.getElementById('vcCfYes').addEventListener('click', () => shut(true));
+
+    if (needType) {
+      const inp = document.getElementById('vcCfType');
+      const yes = document.getElementById('vcCfYes');
+      inp.addEventListener('input', () => {
+        yes.disabled = inp.value.trim().toLowerCase() !== String(needType).trim().toLowerCase();
+      });
+      inp.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !yes.disabled) shut(true);
+      });
+      setTimeout(() => inp.focus(), 120);
+    } else {
+      setTimeout(() => document.getElementById('vcCfNo').focus(), 120);
+    }
+
+    return new Promise((res) => { resolver = res; });
+  };
+})();
+
 window.dispatchEvent(new Event('vc-auth-ready'));
 
 /* Pages define window.vcInit and expect it to run once auth resolves. Calling it

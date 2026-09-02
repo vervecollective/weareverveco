@@ -30,7 +30,7 @@
 
   /* Chart */
   .chart{border:1px solid #E4E6EA;border-top:none;overflow-x:auto;}
-  .grid{min-width:900px;}
+  .gantt-grid{min-width:900px;}
   .axis{display:grid;position:sticky;top:0;z-index:3;background:#fff;
     border-bottom:1px solid #E4E6EA;}
   .axis .lbl{padding:11px 14px;font-size:10.5px;font-weight:700;letter-spacing:.1em;
@@ -93,7 +93,7 @@
     </div>
   </div>
 
-  <div class="chart"><div class="grid" id="grid"></div></div>
+  <div class="chart"><div class="gantt-grid" id="grid"></div></div>
 
   <div class="key">
     <span><i class="sw" style="background:#0B0D10"></i>Engagement</span>
@@ -129,7 +129,7 @@ var ABBR = {
 function fit(text, widthPct){
   if (!text) return '';
   // ~7px per character at 11px/700, minus 18px padding
-  var px = (widthPct / 100) * (document.querySelector('.grid') || {}).clientWidth || 0;
+  var px = (widthPct / 100) * (document.querySelector('.gantt-grid') || {}).clientWidth || 0;
   var lane = px ? px : 60;
   var chars = Math.max(Math.floor((lane - 20) / 6.2), 0);
 

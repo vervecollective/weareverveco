@@ -250,8 +250,14 @@ window.vcInit = async function(){
     var r = await sb.from('clients')
       .select('id, business_name, contact_email, client_user_id')
       .order('business_name');
-    var d = (r.data || []);
     var sel = document.getElementById('invClient');
+
+    /* Silence here was showing an empty dropdown with no explanation. */
+    if (r.error) {
+      sel.innerHTML = '<option value="">Could not load clients \u2014 ' + esc(r.error.message) + '</option>';
+      return;
+    }
+    var d = (r.data || []);
     sel.innerHTML = d.length
       ? d.map(function(c){
           return '<option value="'+c.id+'" data-email="'+esc(c.contact_email||'')+'"'+
@@ -259,7 +265,7 @@ window.vcInit = async function(){
             esc(c.business_name)+(c.client_user_id ? ' \u2014 already has a login' : '')+
             '</option>';
         }).join('')
-      : '<option value="">No clients yet \u2014 create an engagement first</option>';
+      : '<option value="">No clients yet \u2014 add one on an engagement first</option>';
 
     // Prefill the email from the client record; it is almost always the same.
     sel.addEventListener('change', function(){

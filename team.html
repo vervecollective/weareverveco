@@ -238,10 +238,41 @@ window.vcInit = async function(){
     document.getElementById('invName').value = '';
     document.getElementById('invAdmin').checked = false;
     document.getElementById('invAdminRow').style.display = role === 'account_owner' ? 'flex' : 'none';
+    document.getElementById('invClientRow').style.display = role === 'client' ? 'block' : 'none';
+    if (role === 'client') fillClients();
     document.getElementById('invMsg').className = 'msg';
     v.classList.add('on'); m.classList.add('on');
     setTimeout(function(){ document.getElementById('invEmail').focus(); }, 100);
   }
+  /* A client login is meaningless unless it points at a client record — the
+     portal finds their work through clients.client_user_id. */
+  async function fillClients(){
+    var r = await sb.from('clients')
+      .select('id, business_name, contact_email, client_user_id')
+      .order('business_name');
+    var d = (r.data || []);
+    var sel = document.getElementById('invClient');
+    sel.innerHTML = d.length
+      ? d.map(function(c){
+          return '<option value="'+c.id+'" data-email="'+esc(c.contact_email||'')+'"'+
+            (c.client_user_id ? ' disabled' : '')+'>'+
+            esc(c.business_name)+(c.client_user_id ? ' \u2014 already has a login' : '')+
+            '</option>';
+        }).join('')
+      : '<option value="">No clients yet \u2014 create an engagement first</option>';
+
+    // Prefill the email from the client record; it is almost always the same.
+    sel.addEventListener('change', function(){
+      var o = this.selectedOptions[0];
+      var em = document.getElementById('invEmail');
+      if (o && o.dataset.email && !em.value) em.value = o.dataset.email;
+    });
+    if (sel.selectedOptions[0] && sel.selectedOptions[0].dataset.email) {
+      var em = document.getElementById('invEmail');
+      if (!em.value) em.value = sel.selectedOptions[0].dataset.email;
+    }
+  }
+
   function shutInvite(){
     document.getElementById('invVeil').classList.remove('on');
     document.getElementById('invModal').classList.remove('on');
@@ -262,6 +293,15 @@ window.vcInit = async function(){
     if (!email || email.indexOf('@') < 0) {
       msg.textContent = 'A real email address, please.'; msg.className = 'msg show err'; return;
     }
+    var clientId = null;
+    if (role === 'client') {
+      clientId = document.getElementById('invClient').value;
+      if (!clientId) {
+        msg.textContent = 'Pick which client this login is for.';
+        msg.className = 'msg show err'; return;
+      }
+    }
+
     var btn = document.getElementById('invSend');
     btn.disabled = true; msg.textContent = 'Sending\u2026'; msg.className = 'msg show';
 
@@ -280,7 +320,16 @@ window.vcInit = async function(){
       if (document.getElementById('invAdmin').checked) {
         await sb.from('profiles').update({ is_admin: true }).eq('email', email);
       }
-      msg.textContent = 'Invited. They will get an email to set a password.';
+      /* Link the login to the client record. The database also links by
+         matching email, but the person may have been invited at a different
+         address than the one on the account. */
+      if (role === 'client' && clientId) {
+        var lr = await sb.from('profiles').select('id').eq('email', email).maybeSingle();
+        if (lr.data && lr.data.id) {
+          await sb.from('clients').update({ client_user_id: lr.data.id }).eq('id', clientId);
+        }
+      }
+      msg.textContent = 'Invited. They will get a link to sign in.';
       msg.className = 'msg show ok';
       setTimeout(function(){ shutInvite(); window.vcInit(); }, 1400);
     } catch (err) {
@@ -297,7 +346,14 @@ window.vcInit = async function(){
     <div class="fld"><label for="invEmail">Their email</label>
       <input type="email" id="invEmail" placeholder="name@example.com"></div>
     <div class="fld"><label for="invName">Their name</label>
-      <input type="text" id="invName" placeholder="Optional — they can set it themselves"></div>
+      <input type="text" id="invName" placeholder="Optional — we will use their email if blank"></div>
+    <div class="fld" id="invClientRow" style="display:none">
+      <label for="invClient">Which client are they?</label>
+      <select id="invClient"></select>
+      <p style="font-size:12px;color:#5C6470;margin-top:6px">
+        A client login shows one account. Without this they sign in and see nothing.</p>
+    </div>
+
     <label class="admrow" id="invAdminRow" style="display:none">
       <input type="checkbox" id="invAdmin">
       <span><b>Make them an admin</b><em>Admins can change shared things like resources and board columns. Most people do not need this.</em></span>

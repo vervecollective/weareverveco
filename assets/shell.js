@@ -1233,9 +1233,12 @@ if (role !== 'client') {
   dock.className = 'vc-dock';
   dock.innerHTML =
     '<button class="vc-dock-btn" id="vcDockBtn" aria-label="Messages">' +
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
-        'stroke-linecap="round" stroke-linejoin="round">' +
-        '<path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.2A8.4 8.4 0 0 1 21 11.5z"/></svg>' +
+      '<svg viewBox="0 0 24 24" fill="currentColor">' +
+        '<path d="M12 3C6.9 3 3 6.6 3 11c0 2.3 1.1 4.4 2.9 5.8v3.4c0 .5.6.8 1 .5l2.9-2a11 11 0 0 0 2.2.2' +
+        'c5.1 0 9-3.6 9-8s-3.9-8-9-8z"/>' +
+        '<circle cx="8.2" cy="11" r="1.15" fill="#fff"/>' +
+        '<circle cx="12" cy="11" r="1.15" fill="#fff"/>' +
+        '<circle cx="15.8" cy="11" r="1.15" fill="#fff"/></svg>' +
       '<span class="vc-dock-n" id="vcDockN"></span>' +
     '</button>' +
     '<div class="vc-dock-panel" id="vcDockPanel">' +
@@ -1281,6 +1284,54 @@ if (role !== 'client') {
     return p ? (p.full_name || p.email) : 'Conversation';
   }
 
+  /* Describe the current page well enough that a message about it makes sense
+     to whoever receives it. */
+  function pageContext(){
+    const p = location.pathname;
+    const q = new URLSearchParams(location.search);
+    const title = (document.querySelector('h1') || {}).textContent || '';
+
+    if (p.indexOf('/task') === 0 && q.get('id'))
+      return { label: title.trim() || 'this task', url: location.href, kind: 'task' };
+    if (p.indexOf('/internal') === 0)
+      return { label: 'an engagement', url: location.origin + '/internal', kind: 'engagement' };
+    if (p.indexOf('/board') === 0)
+      return { label: 'the board', url: location.origin + '/board', kind: 'board' };
+    if (p.indexOf('/timeline') === 0)
+      return { label: 'the timeline', url: location.origin + '/timeline', kind: 'timeline' };
+    if (p.indexOf('/jobs') === 0)
+      return { label: 'a job', url: location.origin + '/jobs', kind: 'job' };
+    if (p.indexOf('/capacity') === 0)
+      return { label: 'capacity', url: location.origin + '/capacity', kind: 'capacity' };
+    return null;
+  }
+
+  /* Sharing drops a link into a conversation you pick, rather than making you
+     copy a URL, open chat, find the person and paste. */
+  function sharePage(ctx){
+    if (!ctx) return;
+    const b = $d('vcDockB');
+    $d('vcDockTitle').textContent = 'Share ' + ctx.label;
+    $d('vcDockBack').style.display = '';
+    $d('vcDockC').style.display = 'none';
+
+    b.innerHTML = '<p class="vc-dock-hint">Pick a conversation to send it to.</p>' +
+      chans.map(c =>
+        '<div class="vc-dock-row" data-share="' + c.id + '">' +
+          '<span class="vc-dock-av">' + inid(titleOf(c)) + '</span>' +
+          '<span class="vc-dock-t"><b>' + escd(titleOf(c)) + '</b></span></div>').join('');
+
+    b.querySelectorAll('[data-share]').forEach(el => {
+      el.addEventListener('click', async () => {
+        const body = 'Have a look at ' + ctx.label + ': ' + ctx.url;
+        await sb.from('messages').insert({
+          channel_id: el.dataset.share, author_id: session.user.id, body
+        });
+        openConversation(el.dataset.share);
+      });
+    });
+  }
+
   async function loadList(){
     const { data } = await sb.from('channels')
       .select('*, channel_members(profile_id, last_read_at, muted, pinned, manually_unread), messages(body, created_at, author_id)')
@@ -1317,7 +1368,22 @@ if (role !== 'client') {
     $d('vcDockBack').style.display = 'none';
     $d('vcDockC').style.display = 'none';
 
-    $d('vcDockB').innerHTML = sorted.length ? sorted.map(c => {
+    /* Two things you nearly always want from a chat list: start something, or
+       point at whatever you are currently looking at. */
+    const here = pageContext();
+    const actions =
+      '<div class="vc-dock-acts-row">' +
+        '<button class="vc-dock-act" id="vcDockNewBtn">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+          'stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New message</button>' +
+        (here ? '<button class="vc-dock-act" id="vcDockShare">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+          'stroke-linecap="round" stroke-linejoin="round">' +
+          '<path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7M16 6l-4-4-4 4M12 2v14"/></svg>' +
+          'Share this page</button>' : '') +
+      '</div>';
+
+    $d('vcDockB').innerHTML = actions + (sorted.length ? sorted.map(c => {
       const last = (c.messages || []).slice().sort((x, y) => x.created_at < y.created_at ? 1 : -1)[0];
       return '<div class="vc-dock-row' + (c._muted ? ' muted' : '') + '" data-c="' + c.id + '">' +
         '<span class="vc-dock-av">' + inid(titleOf(c)) + '</span>' +
@@ -1325,7 +1391,13 @@ if (role !== 'client') {
         '<em>' + escd(last ? (last.body || 'Sent a file').slice(0, 34) : 'No messages') + '</em></span>' +
         (c._unread && !c._muted ? '<span class="vc-dock-u">' + c._unread + '</span>' : '') +
         '</div>';
-    }).join('') : '<p class="vc-dock-none">No conversations yet.<br><a href="/messages">Start one</a></p>';
+    }).join('') : '<p class="vc-dock-none">No conversations yet.</p>');
+
+    const nb = $d('vcDockNewBtn');
+    if (nb) nb.addEventListener('click', () => { location.href = '/messages'; });
+
+    const sh = $d('vcDockShare');
+    if (sh) sh.addEventListener('click', () => sharePage(here));
 
     $d('vcDockB').querySelectorAll('[data-c]').forEach(el => {
       el.addEventListener('click', () => openConversation(el.dataset.c));

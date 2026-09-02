@@ -797,7 +797,12 @@ async function loadDeliverables(engId){
   });
   rows.querySelectorAll('.dvX').forEach(function(b){
     b.addEventListener('click', async function(){
-      if (!window.confirm('Remove this deliverable?')) return;
+      var ok = await window.vcConfirm({
+        title: 'Remove this deliverable?',
+        body: 'The link is removed from the platform. The file itself stays wherever it lives.',
+        confirm: 'Remove'
+      });
+      if (!ok) return;
       await sb.from('deliverables').delete().eq('id', b.dataset.id);
       loadDeliverables(engId);
     });
@@ -1062,7 +1067,16 @@ async function save(){
 async function invoice(){
   if (!current || !current.id) return say('Save the engagement first.', false);
   if (!$('cemail').value.trim()) return say('A contact email is required to invoice.', false);
-  if (!window.confirm('Create and email a real Stripe invoice for this engagement?')) return;
+  var okInv = await window.vcConfirm({
+    title: 'Send a real invoice?',
+    body: 'This creates a live Stripe invoice and emails it to ' + $('cemail').value.trim() +
+          '. They can pay it immediately.',
+    list: ['Ad spend is not included \u2014 it never appears on a Verve invoice',
+           'The deal moves to Contract Sent',
+           'You cannot unsend an email'],
+    confirm: 'Create and send', danger: false
+  });
+  if (!okInv) return;
 
   var btn = $('invBtn'); btn.disabled = true;
   say('Creating invoice…', true);
@@ -1085,7 +1099,17 @@ async function invoice(){
 
 async function del(){
   if (!current || !current.id) return;
-  if (!window.confirm('Delete this engagement permanently? Stripe invoices are unaffected.')) return;
+  var label = (current.clients && current.clients.business_name) || current.title || 'this engagement';
+  var okDel = await window.vcConfirm({
+    title: 'Delete ' + label + '?',
+    body: 'Everything attached to this engagement goes with it. This cannot be undone.',
+    list: ['Line items and pricing', 'Milestones and the client timeline',
+           'Tasks, subtasks and their comments', 'Deliverables and delay notes',
+           'Any proposal written for it'],
+    confirm: 'Delete engagement',
+    typeToConfirm: label
+  });
+  if (!okDel) return;
   var r = await sb.from('engagements').delete().eq('id', current.id);
   if (r.error) return say(r.error.message,false);
   await refresh(); load(null); say('Deleted.', true);

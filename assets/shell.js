@@ -360,33 +360,65 @@ if (role !== 'client') {
           .select('*, engagements(title, clients(business_name)), profiles:assignee_id(full_name)')
           .eq('id', id).single();
         if (!t) throw new Error('Not found');
-        const { data: cm } = await sb.from('comments')
-          .select('body, created_at, profiles:author_id(full_name)')
-          .eq('task_id', id).order('created_at', { ascending:false }).limit(8);
 
-        html = '<h3>' + esc(t.title) + '</h3>' +
-          (t.detail ? '<p class="vc-peek-d">' + esc(t.detail) + '</p>' : '') +
+        const [{ data: cm }, { data: subs }, { data: cols }] = await Promise.all([
+          sb.from('comments').select('body, created_at, profiles:author_id(full_name)')
+            .eq('task_id', id).order('created_at', { ascending:false }).limit(4),
+          sb.from('tasks').select('id, title, status').eq('parent_task_id', id).order('sort_order'),
+          sb.from('board_statuses').select('*').eq('active', true).order('sort_order')
+        ]);
+
+        const COLS = (cols && cols.length) ? cols : [
+          { key:'todo', label:'To do', colour:'#94A3B8', is_done:false },
+          { key:'in_progress', label:'In progress', colour:'#9A3412', is_done:false },
+          { key:'done', label:'Done', colour:'#00A870', is_done:true }
+        ];
+        const doneKeys = COLS.filter(c => c.is_done).map(c => c.key);
+        const cur = COLS.filter(c => c.key === t.status)[0] || COLS[0];
+
+        const total = (subs || []).length;
+        const done = (subs || []).filter(x => doneKeys.indexOf(x.status) > -1).length;
+        const pct = total ? Math.round(done / total * 100) : 0;
+
+        html =
+          '<div class="vc-peek-status" style="background:' + cur.colour + '">' + escv(cur.label) + '</div>' +
+          '<h3>' + escv(t.title) + '</h3>' +
+          (t.detail ? '<p class="vc-peek-d">' + escv(t.detail) + '</p>' : '') +
+
+          (total
+            ? '<div class="vc-peek-prog"><div class="vc-peek-prog-h">' +
+                '<span>Subtasks</span><b>' + done + ' of ' + total + '</b></div>' +
+                '<div class="vc-peek-bar"><i style="width:' + pct + '%"></i></div>' +
+                (subs || []).slice(0, 4).map((x) =>
+                  '<div class="vc-peek-sub' + (doneKeys.indexOf(x.status) > -1 ? ' done' : '') + '">' +
+                  escv(x.title) + '</div>').join('') +
+                (total > 4 ? '<div class="vc-peek-sub more">and ' + (total - 4) + ' more</div>' : '') +
+              '</div>'
+            : '') +
+
           fld('Account', (t.engagements && t.engagements.clients && t.engagements.clients.business_name) || '\u2014') +
-          fld('Status', String(t.status).replace('_',' ')) +
-          fld('Priority', t.priority) +
           fld('Assignee', (t.profiles && t.profiles.full_name) || 'Unassigned') +
+          fld('Priority', t.priority) +
           fld('Due', t.due_date ? date(t.due_date) : '\u2014') +
           (t.blocked_reason ? fld('Blocked by', t.blocked_reason) : '') +
+
+          '<div class="vc-peek-quick"><label>Move to</label><select id="vcPeekStatus">' +
+            COLS.map(c => '<option value="' + c.key + '"' + (c.key === t.status ? ' selected' : '') + '>' +
+              escv(c.label) + '</option>').join('') + '</select></div>' +
+
           ((cm && cm.length)
-            ? '<div class="vc-peek-cm"><b>Discussion (' + cm.length + ')</b>' + cm.map((c) => {
+            ? '<div class="vc-peek-cm"><b>Latest discussion</b>' + cm.map((c) => {
                 const nm = (c.profiles && c.profiles.full_name) || 'Someone';
-                const ini = nm.split(' ').map(x => x[0]).filter(Boolean).join('').slice(0,2).toUpperCase();
-                const when = new Date(c.created_at)
-                  .toLocaleDateString('en-US',{ month:'short', day:'numeric' });
-                return '<div class="vc-peek-c">' +
-                  '<span class="vc-peek-av">' + ini + '</span>' +
-                  '<span class="vc-peek-cb"><em>' + esc(nm) +
-                  ' \u00b7 <i>' + when + '</i></em>' + esc(c.body) + '</span></div>';
+                const iv = nm.split(' ').map(x => x[0]).filter(Boolean).join('').slice(0,2).toUpperCase();
+                const when = new Date(c.created_at).toLocaleDateString('en-US',{ month:'short', day:'numeric' });
+                return '<div class="vc-peek-c"><span class="vc-peek-av">' + iv + '</span>' +
+                  '<span class="vc-peek-cb"><em>' + escv(nm) + ' \u00b7 <i>' + when + '</i></em>' +
+                  escv(c.body) + '</span></div>';
               }).join('') + '</div>'
             : '<div class="vc-peek-cm"><b>Discussion</b>' +
-              '<p class="vc-peek-load">No comments yet. Open the task on the board to add one.</p></div>');
+              '<p class="vc-peek-load">No comments yet.</p></div>');
 
-      } else if (kind === 'assignment') {
+      } else if (kind === 'assignment') {      } else if (kind === 'assignment') {
         const { data: a } = await sb.from('assignments')
           .select('*, assignment_days(*), engagements(clients(business_name)), profiles:contractor_id(full_name)')
           .eq('id', id).single();
@@ -431,6 +463,15 @@ if (role !== 'client') {
       html = '<p class="vc-peek-load">Could not load that.</p>';
     }
     document.getElementById('vcPeekBody').innerHTML = html;
+
+    const quick = document.getElementById('vcPeekStatus');
+    if (quick) {
+      quick.addEventListener('change', async () => {
+        await sb.from('tasks').update({ status: quick.value }).eq('id', id);
+        if (typeof window.vcInit === 'function') window.vcInit();   // refresh the page behind
+        window.vcPeek(kind, id);                                    // and the drawer
+      });
+    }
   };
 })();
 
@@ -740,6 +781,16 @@ if (role !== 'client') {
       ${profileId !== session.user.id
         ? `<button class="vc-pc-msg" id="vcPcMsg">Message ${escv((p.full_name || '').split(' ')[0] || 'them')}</button>`
         : '<a class="vc-pc-msg" href="/settings">Edit your profile</a>'}`;
+
+    const quick = document.getElementById('vcPeekStatus');
+    if (quick) {
+      quick.addEventListener('change', async () => {
+        await sb.from('tasks').update({ status: quick.value }).eq('id', id);
+        // Repaint whatever page is underneath so the change is visible at once.
+        if (typeof window.vcInit === 'function') window.vcInit();
+        window.vcPeek(kind, id);
+      });
+    }
 
     const msgBtn = document.getElementById('vcPcMsg');
     if (msgBtn) msgBtn.addEventListener('click', async () => {

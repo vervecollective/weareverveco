@@ -454,7 +454,7 @@ try {
               '</div>' +
             '</div>';
   
-        } else if (kind === 'assignment') {      } else if (kind === 'assignment') {
+        } else if (kind === 'assignment') {
           const { data: a } = await sb.from('assignments')
             .select('*, assignment_days(*), engagements(clients(business_name)), profiles:contractor_id(full_name)')
             .eq('id', id).single();

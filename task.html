@@ -44,20 +44,33 @@
     color:#5C6470;background:#F1F2F4;padding:5px 11px;border-radius:999px;text-decoration:none;margin-bottom:12px;}
   .t-parent:hover{background:#FDF0EB;color:#9A3412;}
 
-  .t-title{font-size:28px;font-weight:700;letter-spacing:-.028em;line-height:1.25;
-    border:none;width:100%;font-family:inherit;color:#111827;padding:0;background:none;resize:none;}
-  .t-title:focus{outline:none;}
+  /* Textareas carry UA borders, shadows and a scrollbar unless every one is
+     cleared explicitly. Setting border:none alone was not enough. */
+  .t-title,.detail{
+    -webkit-appearance:none;appearance:none;
+    border:0 !important;outline:0 !important;box-shadow:none !important;
+    background:transparent !important;resize:none;overflow:hidden;
+    font-family:inherit;width:100%;display:block;
+  }
+  .t-title{font-size:28px;font-weight:700;letter-spacing:-.028em;line-height:1.3;
+    color:#111827;padding:0;margin:0;}
+  .t-title::-webkit-scrollbar,.detail::-webkit-scrollbar{display:none;}
 
   /* No boxes around editable text until you are actually in them. */
-  .detail{margin-top:12px;font-size:15.5px;line-height:1.7;color:#374151;width:100%;
-    border:none;border-radius:0;padding:0;font-family:inherit;resize:none;min-height:52px;
-    background:none;overflow:hidden;}
-  .detail:focus{outline:none;}
+  .detail{margin-top:10px;font-size:15.5px;line-height:1.7;color:#374151;
+    padding:0;min-height:26px;}
   .detail::placeholder{color:#B4B9C2;}
+  /* A quiet cue that these are editable, without drawing a box. */
+  .t-title:hover,.detail:hover{background:#FAFBFC !important;
+    box-shadow:0 0 0 8px #FAFBFC !important;border-radius:4px;}
+  .t-title:focus,.detail:focus{background:#fff !important;
+    box-shadow:0 0 0 8px #fff, 0 0 0 9px #E4E6EA !important;border-radius:4px;}
   .saveline{font-size:12px;color:#9CA3AF;margin-top:10px;height:15px;}
   .saveline.on{color:#00875A;}
 
-  .sec{margin-top:30px;padding-top:24px;border-top:1px solid #F1F2F4;}
+  .sec{margin-top:26px;padding-top:22px;border-top:1px solid #EFF1F4;}
+  .sec-h h2:before{content:'';display:inline-block;width:3px;height:13px;background:#9A3412;
+    border-radius:2px;margin-right:9px;vertical-align:-2px;}
   .sec-h{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
   .sec-h h2{font-size:13.5px;font-weight:700;letter-spacing:-.01em;}
   .sec-h .cnt{font-size:12.5px;color:#5C6470;font-weight:500;}
@@ -66,9 +79,15 @@
   .prog{height:6px;background:#EDEEF1;border-radius:999px;overflow:hidden;margin-bottom:14px;}
   .prog i{display:block;height:100%;background:linear-gradient(90deg,#00A870,#00C875);
     border-radius:999px;transition:width .35s cubic-bezier(.32,.72,0,1);}
-  .st{display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:10px;
-    margin-bottom:5px;background:#FAFBFC;transition:background .14s,box-shadow .14s;}
-  .st:hover{background:#F1F3F6;}
+  .st{display:flex;align-items:center;gap:11px;padding:12px 12px;border-radius:0;
+    margin:0;background:none;border-bottom:1px solid #F1F3F6;
+    transition:background .14s;cursor:pointer;position:relative;}
+  .st:first-child{border-top:1px solid #F1F3F6;}
+  .st:hover{background:#FAFBFC;}
+  /* An orange edge on hover so the row reads as something you act on. */
+  .st:hover:before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:#9A3412;}
+  .st .open{opacity:0;font-size:11.5px;font-weight:600;color:#9A3412;white-space:nowrap;}
+  .st:hover .open{opacity:1;}
   .st.drag{opacity:.4;}
   .st.over{box-shadow:inset 0 2px 0 #9A3412;}
   .st .grip{color:#C4C7D0;cursor:grab;flex-shrink:0;display:flex;}
@@ -78,8 +97,9 @@
   .cbox.on{background:#00A870;border-color:#00A870;}
   .cbox svg{width:11px;height:11px;color:#fff;opacity:0;}
   .cbox.on svg{opacity:1;}
-  .st .txt{flex:1;font-size:14.5px;border:none;background:none;font-family:inherit;color:#111827;padding:0;}
-  .st .txt:focus{outline:none;}
+  .st .txt{flex:1;font-size:14.5px;border:none;background:none;font-family:inherit;
+    color:#111827;padding:4px 6px;border-radius:6px;-webkit-appearance:none;appearance:none;}
+  .st .txt:focus{outline:none;background:#fff;box-shadow:0 0 0 2px #9A3412;}
   .st.done .txt{text-decoration:line-through;color:#9CA3AF;}
   .st .when{font-size:12px;color:#5C6470;white-space:nowrap;font-weight:500;}
   .st .when.late{color:#991B1B;font-weight:700;}
@@ -87,15 +107,58 @@
     padding:2px 4px;opacity:0;}
   .st:hover .x{opacity:1;} .st .x:hover{color:#991B1B;}
   .addst{display:flex;gap:9px;margin-top:10px;align-items:center;}
-  .addst input[type=text]{flex:1;padding:11px 13px;font-size:14.5px;font-family:inherit;
-    border:none;border-radius:10px;background:#F1F3F6;}
-  .addst input[type=text]:focus{outline:none;background:#fff;box-shadow:0 0 0 2px #9A3412;}
+  .addst{padding-top:4px;}
+  .addst input[type=text]{flex:1;padding:12px 12px 12px 34px;font-size:14.5px;font-family:inherit;
+    border:none;border-radius:8px;background:none;-webkit-appearance:none;appearance:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M12 5v14M5 12h14'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:10px center;background-size:15px;}
+  .addst input[type=text]:hover{background-color:#FAFBFC;}
+  .addst input[type=text]:focus{outline:none;background-color:#fff;box-shadow:0 0 0 2px #9A3412;}
   .addst input[type=date]{width:140px;padding:10px;font-size:13px;font-family:inherit;
     border:none;border-radius:10px;background:#F1F3F6;color:#5C6470;}
 
   /* ---- discussion ---- */
-  .cm{display:flex;gap:12px;padding:14px 0;}
+  .cm{display:flex;gap:12px;padding:14px 0;position:relative;}
   .cm + .cm{border-top:1px solid #F4F5F7;}
+  .cm.reply{margin-left:34px;padding-left:16px;border-top:none;
+    border-left:2px solid #EFF1F4;padding-top:12px;}
+  .cm.reply .av{width:26px;height:26px;font-size:10px;}
+  .cm-tools{display:flex;gap:4px;align-items:center;margin-top:7px;}
+  .cm-act{background:none;border:none;font:600 12px/1 'Inter',sans-serif;color:#9CA3AF;
+    cursor:pointer;padding:4px 7px;border-radius:6px;}
+  .cm-act:hover{background:#F3F4F6;color:#9A3412;}
+  .cm-react{background:none;border:none;color:#C4C7D0;cursor:pointer;padding:3px;
+    border-radius:6px;display:flex;line-height:0;}
+  .cm-react svg{width:16px;height:16px;}
+  .cm-react:hover{background:#F3F4F6;color:#9A3412;}
+  .reply-box{margin:10px 0 4px 34px;display:none;}
+  .reply-box.on{display:block;}
+  .reply-box textarea{width:100%;border:none;border-radius:10px;padding:11px 13px;
+    background:#F1F3F6;font:400 14px/1.6 'Inter',sans-serif;resize:vertical;min-height:62px;
+    -webkit-appearance:none;appearance:none;}
+  .reply-box textarea:focus{outline:none;background:#fff;box-shadow:0 0 0 2px #9A3412;}
+  .reply-box .row{display:flex;gap:8px;margin-top:7px;}
+  .reply-box button{border:none;border-radius:8px;padding:8px 15px;
+    font:600 13px/1 'Inter',sans-serif;cursor:pointer;}
+  .reply-box .go{background:#9A3412;color:#fff;}
+  .reply-box .no{background:none;color:#5C6470;}
+
+  /* @ and / autocomplete */
+  .ac{position:absolute;background:#fff;border:1px solid #E4E6EA;border-radius:10px;
+    box-shadow:0 12px 32px rgba(16,24,40,.16);z-index:70;display:none;
+    max-height:230px;overflow-y:auto;width:280px;padding:5px;}
+  .ac.on{display:block;}
+  .ac-i{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;cursor:pointer;}
+  .ac-i.sel,.ac-i:hover{background:#FDF0EB;}
+  .ac-i .av{width:24px;height:24px;border-radius:50%;background:#111827;color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:700;flex-shrink:0;}
+  .ac-i b{font-size:13.5px;font-weight:600;}
+  .ac-i em{font-size:12px;font-style:normal;color:#9CA3AF;}
+  .ac-h{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;
+    color:#9CA3AF;padding:7px 10px 4px;}
+  .mention{color:#9A3412;font-weight:600;background:#FDF0EB;padding:1px 5px;border-radius:4px;}
+  .refchip{color:#1E3A8A;font-weight:600;background:#EFF6FF;padding:1px 5px;border-radius:4px;
+    text-decoration:none;}
   .cm .av{width:34px;height:34px;border-radius:50%;background:#111827;color:#fff;flex-shrink:0;
     display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:700;background-size:cover;}
   .cm .b{flex:1;min-width:0;}
@@ -110,8 +173,10 @@
   .cm-rx .addr{border-style:dashed;color:#9CA3AF;opacity:0;}
   .cm:hover .cm-rx .addr{opacity:1;}
   .cbox-w{margin-top:16px;}
+  .cbox-w{position:relative;}
   .cbox-w textarea{width:100%;border:none;border-radius:12px;padding:14px 16px;background:#F1F3F6;
-    font:400 14.5px/1.6 'Inter',sans-serif;resize:vertical;min-height:84px;}
+    font:400 14.5px/1.6 'Inter',sans-serif;resize:vertical;min-height:84px;
+    -webkit-appearance:none;appearance:none;}
   .cbox-w textarea:focus{outline:none;background:#fff;box-shadow:0 0 0 2px #9A3412;}
   .send{background:#9A3412;color:#fff;border:none;border-radius:10px;padding:11px 22px;
     font:600 14px/1 'Inter',sans-serif;cursor:pointer;margin-top:10px;}
@@ -129,7 +194,7 @@
   .rail-h{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;
     color:#9CA3AF;padding:16px 0 4px;}
 
-  .t-rx{display:flex;gap:6px;flex-wrap:wrap;margin-top:18px;align-items:center;}
+  .t-rx{display:flex;gap:6px;flex-wrap:wrap;margin-top:20px;align-items:center;min-height:32px;}
   .t-rx button{border:1px solid #E4E6EA;background:#fff;border-radius:999px;padding:5px 12px;
     font-size:14px;cursor:pointer;font-family:inherit;line-height:1.3;}
   .t-rx button.mine{background:#FDF0EB;border-color:#9A3412;}
@@ -159,6 +224,7 @@
 <body>
 <div class="wrap" id="wrap"><p class="loading">Loading…</p></div>
 <div class="epick" id="epick"><div class="epick-b" id="epickB"></div></div>
+<div class="ac" id="ac"></div>
 
 <script>
 function $(i){return document.getElementById(i);}
@@ -250,6 +316,7 @@ async function loadSubtasks(){
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round">'+
         '<path d="m4 12.5 5 5L20 6.5"/></svg></span>'+
       '<input class="txt" value="'+esc(x.title).replace(/"/g,'&quot;')+'" data-tx="'+x.id+'">'+
+      '<span class="open" data-go="'+x.id+'">Open &rarr;</span>'+
       (x.due_date ? '<span class="when'+(isLate(x.due_date,x.status)?' late':'')+'">'+rel(x.due_date)+'</span>' : '')+
       '<button class="x" data-x="'+x.id+'">&times;</button></div>';
   }).join('') : '<p class="none">No subtasks. Break this down if it needs it.</p>';
@@ -263,6 +330,12 @@ async function loadSubtasks(){
         completed_at: on ? null : new Date().toISOString()
       }).eq('id', b.dataset.ck);
       loadSubtasks();
+    });
+  });
+  $('stList').querySelectorAll('[data-go]').forEach(function(el){
+    el.addEventListener('click', function(e){
+      e.stopPropagation();
+      location.href = '/task?id=' + el.dataset.go;
     });
   });
   $('stList').querySelectorAll('[data-tx]').forEach(function(inp){
@@ -323,7 +396,15 @@ async function loadComments(){
   }
 
   $('cmCount').textContent = d.length ? d.length + (d.length===1?' comment':' comments') : '';
-  $('cmList').innerHTML = d.length ? d.map(function(c){
+
+  var tops = d.filter(function(c){ return !c.parent_comment_id; });
+  var kids = {};
+  d.forEach(function(c){
+    if (!c.parent_comment_id) return;
+    (kids[c.parent_comment_id] = kids[c.parent_comment_id] || []).push(c);
+  });
+
+  function render(c, isReply){
     var p = c.profiles || {};
     var nm = p.full_name || p.email || 'Someone';
     var av = p.avatar_url
@@ -333,26 +414,89 @@ async function loadComments(){
     var chips = Object.keys(rx).map(function(e){
       return '<button class="'+(rx[e].mine?'mine':'')+'" data-c="'+c.id+'" data-e="'+e+'">'+e+' '+rx[e].n+'</button>';
     }).join('');
-    return '<div class="cm">'+av+'<div class="b">'+
+
+    return '<div class="cm'+(isReply?' reply':'')+'" id="cm-'+c.id+'">'+av+'<div class="b">'+
       '<div class="hd"><b>'+esc(nm)+'</b><em>'+
         new Date(c.created_at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+
       '</em></div>'+
-      '<div class="tx">'+esc(c.body)+'</div>'+
-      '<div class="cm-rx">'+chips+'<button class="addr" data-c="'+c.id+'" data-e="pick">+</button></div>'+
+      '<div class="tx">'+linkify(c.body)+'</div>'+
+      (chips ? '<div class="cm-rx">'+chips+'</div>' : '')+
+      '<div class="cm-tools">'+
+        '<button class="cm-react" data-c="'+c.id+'" title="React">'+
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">'+
+          '<circle cx="12" cy="12" r="9"/><path d="M8.5 14.5a4.5 4.5 0 0 0 7 0"/>'+
+          '<circle cx="9" cy="10" r=".7" fill="currentColor"/><circle cx="15" cy="10" r=".7" fill="currentColor"/></svg>'+
+        '</button>'+
+        (isReply ? '' : '<button class="cm-act" data-reply="'+c.id+'">Reply</button>')+
+      '</div>'+
       '</div></div>';
-  }).join('') : '<p class="none">No discussion yet. This is where it belongs — not in a DM.</p>';
+  }
+
+  $('cmList').innerHTML = tops.length ? tops.map(function(c){
+    return render(c, false) +
+      (kids[c.id] || []).map(function(k){ return render(k, true); }).join('') +
+      '<div class="reply-box" id="rb-'+c.id+'">'+
+        '<textarea placeholder="Reply to '+esc((((c.profiles||{}).full_name)||'them').split(" ")[0])+'\u2026"></textarea>'+
+        '<div class="row"><button class="go" data-send="'+c.id+'">Reply</button>'+
+        '<button class="no" data-cancel="'+c.id+'">Cancel</button></div>'+
+      '</div>';
+  }).join('') : '<p class="none">No discussion yet. This is where it belongs \u2014 not in a DM.</p>';
+
+  // reply open/close/send
+  $('cmList').querySelectorAll('[data-reply]').forEach(function(b){
+    b.addEventListener('click', function(){
+      var box = document.getElementById('rb-'+b.dataset.reply);
+      $('cmList').querySelectorAll('.reply-box.on').forEach(function(x){
+        if (x !== box) x.classList.remove('on');
+      });
+      box.classList.toggle('on');
+      if (box.classList.contains('on')) {
+        var ta = box.querySelector('textarea');
+        attachAC(ta); ta.focus();
+      }
+    });
+  });
+  $('cmList').querySelectorAll('[data-cancel]').forEach(function(b){
+    b.addEventListener('click', function(){
+      document.getElementById('rb-'+b.dataset.cancel).classList.remove('on');
+    });
+  });
+  $('cmList').querySelectorAll('[data-send]').forEach(function(b){
+    b.addEventListener('click', async function(){
+      var box = document.getElementById('rb-'+b.dataset.send);
+      var ta = box.querySelector('textarea');
+      var body = ta.value.trim(); if (!body) return;
+      var r = await sb.from('comments').insert({
+        engagement_id: T.engagement_id, task_id: T.id, author_id: me.id,
+        parent_comment_id: b.dataset.send, body: body, mentions: mentionsIn(body)
+      });
+      if (r.error) return say(r.error.message, false);
+      ta.value = ''; box.classList.remove('on');
+      loadComments();
+    });
+  });
+
+  // reaction silhouette opens the same picker as everywhere else
+  $('cmList').querySelectorAll('.cm-react').forEach(function(b){
+    b.addEventListener('click', function(e){
+      e.stopPropagation();
+      var cid = b.dataset.c;
+      openPicker(b, async function(emo){
+        var ex = (cmRx[cid]||{})[emo];
+        if (ex && ex.mine) {
+          await sb.from('comment_reactions').delete()
+            .eq('comment_id', cid).eq('profile_id', me.id).eq('emoji', emo);
+        } else {
+          await sb.from('comment_reactions').insert({ comment_id:cid, profile_id:me.id, emoji:emo });
+        }
+        loadComments();
+      });
+    });
+  });
 
   $('cmList').querySelectorAll('.cm-rx button').forEach(function(b){
     b.addEventListener('click', async function(){
       var e = b.dataset.e;
-      if (e === 'pick') {
-        var cid = b.dataset.c;
-        openPicker(b, async function(emo){
-          await sb.from('comment_reactions').insert({ comment_id:cid, profile_id:me.id, emoji:emo });
-          loadComments();
-        });
-        return;
-      }
       var ex = (cmRx[b.dataset.c]||{})[e];
       if (ex && ex.mine) {
         await sb.from('comment_reactions').delete()
@@ -400,6 +544,115 @@ async function loadTaskReactions(){
   });
 }
 
+/* @name pulls someone in; /name references another task or engagement.
+   Both are stored plainly and rendered as chips, so the raw text stays
+   readable if anyone reads it outside the app. */
+function mentionsIn(body){
+  var out = [];
+  people.forEach(function(p){
+    var h = p.username || (p.full_name||'').split(' ')[0].toLowerCase();
+    if (!h) return;
+    if (new RegExp('@' + h + '\\b', 'i').test(body)) out.push(p.id);
+  });
+  return out;
+}
+
+function linkify(body){
+  var html = esc(body);
+  people.forEach(function(p){
+    var h = p.username || (p.full_name||'').split(' ')[0].toLowerCase();
+    if (!h) return;
+    html = html.replace(new RegExp('@' + h + '\\b', 'gi'),
+      '<span class="mention">@' + esc(p.full_name || h) + '</span>');
+  });
+  refIndex.forEach(function(r){
+    html = html.replace(new RegExp('/' + r.slug + '\\b', 'gi'),
+      '<a class="refchip" href="' + r.url + '">' + esc(r.label) + '</a>');
+  });
+  return html;
+}
+
+var refIndex = [];
+
+/* Autocomplete shared by the main box and every reply box. */
+function attachAC(ta){
+  if (ta.__ac) return; ta.__ac = true;
+  var ac = document.getElementById('ac');
+  var mode = null, from = -1, items = [], sel = 0;
+
+  function close(){ ac.classList.remove('on'); mode = null; }
+
+  function show(list, kind){
+    items = list; sel = 0;
+    if (!list.length) return close();
+    ac.innerHTML = '<div class="ac-h">' + (kind === '@' ? 'People' : 'Reference') + '</div>' +
+      list.map(function(x, i){
+        return '<div class="ac-i' + (i === 0 ? ' sel' : '') + '" data-i="' + i + '">' +
+          (kind === '@' ? '<span class="av">' + ini(x.label) + '</span>' : '') +
+          '<span><b>' + esc(x.label) + '</b>' +
+          (x.sub ? '<em style="display:block">' + esc(x.sub) + '</em>' : '') + '</span></div>';
+      }).join('');
+    var r = ta.getBoundingClientRect();
+    ac.style.left = r.left + 'px';
+    ac.style.top  = Math.min(r.bottom + 6, window.innerHeight - 250) + 'px';
+    ac.classList.add('on');
+
+    ac.querySelectorAll('.ac-i').forEach(function(el){
+      el.addEventListener('mousedown', function(ev){ ev.preventDefault(); pick(Number(el.dataset.i)); });
+    });
+  }
+
+  function pick(i){
+    var x = items[i]; if (!x) return;
+    var v = ta.value;
+    ta.value = v.slice(0, from) + (mode === '@' ? '@' + x.token : '/' + x.token) + ' ' + v.slice(ta.selectionStart);
+    close(); ta.focus();
+  }
+
+  ta.addEventListener('input', function(){
+    var pos = ta.selectionStart, v = ta.value;
+    var at = Math.max(v.lastIndexOf('@', pos - 1), v.lastIndexOf('/', pos - 1));
+    if (at < 0) return close();
+    var ch = v[at];
+    var before = at === 0 ? ' ' : v[at - 1];
+    if (!/\s/.test(before)) return close();
+    var term = v.slice(at + 1, pos);
+    if (/\s/.test(term)) return close();
+    mode = ch; from = at;
+
+    if (ch === '@') {
+      show(people.filter(function(p){
+        var h = p.username || (p.full_name||'').split(' ')[0].toLowerCase();
+        return !term || h.indexOf(term.toLowerCase()) === 0 ||
+               (p.full_name||'').toLowerCase().indexOf(term.toLowerCase()) === 0;
+      }).slice(0, 6).map(function(p){
+        return { label: p.full_name || p.email,
+                 sub: '@' + (p.username || ''),
+                 token: p.username || (p.full_name||'').split(' ')[0].toLowerCase() };
+      }), '@');
+    } else {
+      show(refIndex.filter(function(r){
+        return !term || r.slug.indexOf(term.toLowerCase()) > -1 ||
+               r.label.toLowerCase().indexOf(term.toLowerCase()) > -1;
+      }).slice(0, 6).map(function(r){
+        return { label: r.label, sub: r.kind, token: r.slug };
+      }), '/');
+    }
+  });
+
+  ta.addEventListener('keydown', function(e){
+    if (!ac.classList.contains('on')) return;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      sel = Math.max(0, Math.min(items.length - 1, sel + (e.key === 'ArrowDown' ? 1 : -1)));
+      ac.querySelectorAll('.ac-i').forEach(function(el, i){ el.classList.toggle('sel', i === sel); });
+    } else if (e.key === 'Enter' || e.key === 'Tab') {
+      e.preventDefault(); pick(sel);
+    } else if (e.key === 'Escape') { close(); }
+  });
+  ta.addEventListener('blur', function(){ setTimeout(close, 140); });
+}
+
 window.vcInit = async function(){
   sb = window.__sb; me = window.__user;
   var id = new URLSearchParams(location.search).get('id');
@@ -420,7 +673,7 @@ window.vcInit = async function(){
   if (!tq.data) { $('wrap').innerHTML = '<p class="loading">Could not find that task.</p>'; return; }
   T = tq.data;
 
-  var pq = await sb.from('profiles').select('id, full_name, email').eq('is_active', true);
+  var pq = await sb.from('profiles').select('id, full_name, email, username, avatar_url').eq('is_active', true);
   people = pq.data || [];
 
   var eng = T.engagements || {};
@@ -590,9 +843,7 @@ window.vcInit = async function(){
 
   $('cmSend').addEventListener('click', async function(){
     var b = $('cmNew').value.trim(); if (!b) return;
-    var ment = people.filter(function(p){
-      return b.toLowerCase().indexOf('@' + (p.full_name||'').split(' ')[0].toLowerCase()) > -1;
-    }).map(function(p){ return p.id; });
+    var ment = mentionsIn(b);
     var r = await sb.from('comments').insert({
       engagement_id: T.engagement_id, task_id: T.id, author_id: me.id,
       body: b, mentions: ment
@@ -601,6 +852,18 @@ window.vcInit = async function(){
     $('cmNew').value = '';
     loadComments();
   });
+
+  // Things a / reference can point at.
+  var others = await sb.from('tasks')
+    .select('id, title').eq('engagement_id', T.engagement_id).neq('id', T.id).limit(40);
+  refIndex = (others.data || []).map(function(t){
+    return { slug: t.title.toLowerCase().replace(/[^a-z0-9]+/g,'-').slice(0,28),
+             label: t.title, kind: 'Task', url: '/task?id=' + t.id };
+  });
+  refIndex.push({ slug: (biz.toLowerCase().replace(/[^a-z0-9]+/g,'-')).slice(0,28),
+                  label: biz, kind: 'Engagement', url: '/internal' });
+
+  attachAC($('cmNew'));
 
   loadSubtasks();
   loadComments();

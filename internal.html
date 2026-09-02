@@ -49,6 +49,26 @@
   @media(max-width:700px){
     .track{grid-template-columns:1fr 1fr;gap:10px 6px;}
   }
+  .chkline{display:flex;align-items:center;gap:9px;font-size:14px;cursor:pointer;}
+  .chkline input{width:17px;height:17px;}
+  .bprow{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid #f3f4f6;}
+  .bprow b{flex:1;font-size:13.5px;font-weight:600;}
+  .bprow span{font-size:13px;color:#374151;}
+  .bst{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
+    padding:3px 9px;border-radius:999px;}
+  .bst.upcoming{background:#f1f3f6;color:#6b7280;}
+  .bst.invoiced{background:#fdf0eb;color:#B45309;}
+  .bst.paid{background:#e7f7f0;color:#00875A;}
+  .bst.skipped{background:#f1f3f6;color:#9CA3AF;}
+  .accbar{height:4px;background:#EFF1F4;border-radius:2px;overflow:hidden;margin-bottom:9px;}
+  .accbar i{display:block;height:100%;background:#00A870;transition:width .3s;}
+  .accrow{display:grid;grid-template-columns:1.2fr 90px 150px 1fr;gap:9px;align-items:center;
+    padding:8px 0;border-bottom:1px solid #f3f4f6;}
+  .accrow b{font-size:13.5px;font-weight:600;}
+  .acckind{font-size:11.5px;color:#9CA3AF;text-transform:capitalize;}
+  .accrow select,.accid{padding:7px 9px;font-size:12.5px;font-family:inherit;
+    border:1px solid #d1d5db;border-radius:7px;background:#fff;}
+  @media(max-width:760px){ .accrow{grid-template-columns:1fr 1fr;} }
   .tmfilt{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
   .tmfilt button{border:1px solid #d1d5db;background:#fff;border-radius:999px;
     padding:6px 13px;font:500 12.5px/1 'Inter',sans-serif;color:#374151;cursor:pointer;}
@@ -515,6 +535,40 @@ if (window.__sb) {
         <p class="msg" id="tmMsg"></p>
       </div>
 
+      <div id="retBox" style="display:none;margin-top:26px;border-top:1px solid #e5e7eb;padding-top:20px">
+        <h2>Recurring billing</h2>
+        <p style="font-size:12.5px;color:#6b7280;margin-bottom:12px">
+          A retainer is one relationship billed every month, not a new project each time.
+          The engagement, its timeline and its history stay put; only the billing repeats.</p>
+        <label class="chkline">
+          <input type="checkbox" id="isRet"> <span>This is an ongoing retainer</span></label>
+        <div id="retFields" style="display:none">
+          <div class="row3" style="margin-top:12px">
+            <div class="field"><label for="retFee">Monthly fee ($)</label>
+              <input type="number" id="retFee" step="0.01"></div>
+            <div class="field"><label for="retDay">Bill on day</label>
+              <input type="number" id="retDay" min="1" max="28" placeholder="1"></div>
+            <div class="field"><label for="retEnds">Ends on (blank = rolling)</label>
+              <input type="date" id="retEnds"></div>
+          </div>
+          <div class="field"><label for="retTerm">What was actually agreed</label>
+            <input type="text" id="retTerm"
+              placeholder="Rolling monthly, 30 days notice either side"></div>
+          <button class="btn btn-2 btn-sm" id="retSave">Save billing terms</button>
+          <p class="msg" id="retMsg"></p>
+          <div id="retPeriods" style="margin-top:16px"></div>
+        </div>
+      </div>
+
+      <div id="accBox" style="display:none;margin-top:26px;border-top:1px solid #e5e7eb;padding-top:20px">
+        <h2>Account access</h2>
+        <p style="font-size:12.5px;color:#6b7280;margin-bottom:12px">
+          Nothing starts until these are granted. The client can see this list, so it is
+          also how they know what is waiting on them.</p>
+        <div id="accRows"></div>
+        <p class="msg" id="accMsg"></p>
+      </div>
+
       <div id="msBox" style="display:none;margin-top:26px;border-top:1px solid #e5e7eb;padding-top:20px">
         <h2>Timeline</h2>
         <p style="font-size:12.5px;color:#6b7280;margin-bottom:12px">
@@ -641,8 +695,11 @@ function load(e){
   if (!lis.length) addRow();
   recalc();
   applyPhase(e);
+  loadRetainer(e);
+  loadAccess(e);
   setTimeout(function(){ mobileSections(); stickySave(); }, 60);
   loadDelays(e && e.id);
+  wireRetainer();
   if ($('stage') && !$('stage').__ph) {
     $('stage').__ph = true;
     $('stage').addEventListener('change', function(){
@@ -698,6 +755,109 @@ var NEXT = {
   complete:   'Nothing outstanding.',
   closed:     'Nothing outstanding.'
 };
+
+async function loadRetainer(e){
+  var box = document.getElementById('retBox');
+  if (!e || !e.id) { box.style.display = 'none'; return; }
+  box.style.display = 'block';
+
+  $('isRet').checked   = !!e.is_retainer;
+  $('retFee').value    = e.monthly_fee  || '';
+  $('retDay').value    = e.billing_day  || '';
+  $('retEnds').value   = e.ends_on      || '';
+  $('retTerm').value   = e.term_note    || '';
+  $('retFields').style.display = e.is_retainer ? 'block' : 'none';
+
+  if (!e.is_retainer) { $('retPeriods').innerHTML = ''; return; }
+
+  var r = await sb.from('billing_periods').select('*')
+    .eq('engagement_id', e.id).order('period_start', { ascending:false }).limit(12);
+  if (r.error) { $('retPeriods').innerHTML = '<p class="none">'+esc(r.error.message)+'</p>'; return; }
+  var d = r.data || [];
+
+  $('retPeriods').innerHTML =
+    '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#9CA3AF;margin-bottom:7px">Billing history</div>' +
+    (d.length ? d.map(function(p){
+      var when = new Date(p.period_start+'T12:00:00')
+        .toLocaleDateString('en-US',{ month:'long', year:'numeric' });
+      return '<div class="bprow">'+
+        '<b>'+when+'</b>'+
+        '<span>'+money(p.fee)+'</span>'+
+        '<span class="bst '+p.status+'">'+p.status+'</span>'+
+        (p.invoice_url ? '<a class="lnk" href="'+esc(p.invoice_url)+'" target="_blank" rel="noopener">Invoice</a>' : '')+
+        '</div>';
+    }).join('')
+      : '<p class="none">No periods yet. The first opens on the 1st, or add one now.</p>') +
+    '<button class="btn btn-2 btn-sm" id="bpAdd" style="margin-top:10px">Open this month</button>';
+
+  var add = document.getElementById('bpAdd');
+  if (add) add.addEventListener('click', async function(){
+    var now = new Date();
+    var ps = new Date(now.getFullYear(), now.getMonth(), 1);
+    var pe = new Date(now.getFullYear(), now.getMonth()+1, 0);
+    var rr = await sb.from('billing_periods').insert({
+      engagement_id: e.id,
+      period_start: ps.toISOString().slice(0,10),
+      period_end:   pe.toISOString().slice(0,10),
+      fee: Number($('retFee').value) || 0
+    });
+    if (rr.error) return say('retMsg', rr.error.message, false);
+    loadRetainer(e);
+  });
+}
+
+/* Access is a delivery blocker, so it lives with delivery rather than in
+   someone's memory. */
+async function loadAccess(e){
+  var box = document.getElementById('accBox');
+  var ph = e ? phaseOf(e) : null;
+  if (!e || !e.id || ['pursuing','closed'].indexOf(ph) > -1) { box.style.display='none'; return; }
+
+  var r = await sb.from('access_items').select('*').eq('engagement_id', e.id).order('created_at');
+  if (r.error) { box.style.display='block';
+    $('accRows').innerHTML = '<p class="none">'+esc(r.error.message)+'</p>'; return; }
+  var d = r.data || [];
+  if (!d.length) { box.style.display='none'; return; }
+  box.style.display = 'block';
+
+  var STATES = { not_asked:'Not asked', requested:'Asked, waiting',
+                 granted:'Granted', denied:'Refused', not_applicable:'Not needed' };
+  var done = d.filter(function(x){ return ['granted','not_applicable'].indexOf(x.status)>-1; }).length;
+
+  $('accRows').innerHTML =
+    '<div class="accbar"><i style="width:'+Math.round(done/d.length*100)+'%"></i></div>'+
+    '<div style="font-size:12px;color:#6b7280;margin:-4px 0 10px">'+done+' of '+d.length+' sorted</div>'+
+    d.map(function(a){
+      return '<div class="accrow">'+
+        '<b>'+esc(a.platform)+'</b>'+
+        '<span class="acckind">'+esc(a.kind)+'</span>'+
+        '<select data-acc="'+a.id+'">'+
+          Object.keys(STATES).map(function(k){
+            return '<option value="'+k+'"'+(k===a.status?' selected':'')+'>'+STATES[k]+'</option>';
+          }).join('')+
+        '</select>'+
+        '<input class="accid" data-accid="'+a.id+'" value="'+esc(a.identifier||'')+
+          '" placeholder="Account ID or login">'+
+        '</div>';
+    }).join('');
+
+  $('accRows').querySelectorAll('[data-acc]').forEach(function(sel){
+    sel.addEventListener('change', async function(){
+      var patch = { status: this.value };
+      if (this.value === 'requested') patch.requested_at = new Date().toISOString();
+      if (this.value === 'granted')   patch.granted_at   = new Date().toISOString();
+      await sb.from('access_items').update(patch).eq('id', sel.dataset.acc);
+      loadAccess(e);
+    });
+  });
+  $('accRows').querySelectorAll('[data-accid]').forEach(function(inp){
+    inp.addEventListener('change', async function(){
+      await sb.from('access_items').update({ identifier: this.value.trim() || null })
+        .eq('id', inp.dataset.accid);
+      say('accMsg','Saved.', true);
+    });
+  });
+}
 
 function applyPhase(e){
   var bar = document.getElementById('phaseBar');
@@ -1108,6 +1268,29 @@ function stickySave(){
   bar.innerHTML = '<button class="btn" id="mSaveBtn">Save engagement</button>';
   document.body.appendChild(bar);
   document.getElementById('mSaveBtn').addEventListener('click', function(){ real.click(); });
+}
+
+function wireRetainer(){
+  var t = document.getElementById('isRet');
+  if (!t || t.__w) return;
+  t.__w = true;
+  t.addEventListener('change', function(){
+    document.getElementById('retFields').style.display = this.checked ? 'block' : 'none';
+  });
+  document.getElementById('retSave').addEventListener('click', async function(){
+    if (!current || !current.id) return say('retMsg','Save the engagement first.', false);
+    var r = await sb.from('engagements').update({
+      is_retainer: $('isRet').checked,
+      monthly_fee: Number($('retFee').value) || null,
+      billing_day: Number($('retDay').value) || null,
+      ends_on:     $('retEnds').value || null,
+      term_note:   $('retTerm').value.trim() || null
+    }).eq('id', current.id);
+    if (r.error) return say('retMsg', r.error.message, false);
+    say('retMsg','Saved. The next period opens on the 1st.', true);
+    Object.assign(current, { is_retainer: $('isRet').checked });
+    loadRetainer(current);
+  });
 }
 
 window.vcInit = async function(){

@@ -125,8 +125,8 @@ function peopleTable(rows, extraCol){
     (extraCol?'<th>'+extraCol+'</th>':'')+'<th>Status</th></tr></thead><tbody>'+
     rows.map(function(u){
       var av = u.avatar_url
-        ? '<span class="av" style="background-image:url('+u.avatar_url+')"></span>'
-        : '<span class="av">'+initials(u.full_name)+'</span>';
+        ? '<span class="av" data-profile="'+u.id+'" style="background-image:url('+u.avatar_url+')"></span>'
+        : '<span class="av" data-profile="'+u.id+'">'+initials(u.full_name)+'</span>';
       return '<tr><td>'+av+'<b>'+esc(u.full_name||'—')+'</b>'+
         '<div class="muted" style="margin-left:37px">'+esc(u.email)+'</div></td>'+
         '<td><span class="pill '+u.role+'">'+u.role.replace('_',' ')+'</span></td>'+

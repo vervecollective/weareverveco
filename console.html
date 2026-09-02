@@ -33,7 +33,7 @@
   .stages{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px;}
   .stage-btn{padding:9px 15px;border-radius:20px;border:1.5px solid var(--line);background:transparent;color:var(--muted);font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s;}
   .stage-btn:hover{border-color:rgba(217,83,30,.5);color:var(--cream);}
-  .stage-btn.active{background:var(--orange);border-color:var(--orange);color:#fff;}
+  .stage-btn.active{background:#9A3412;border-color:#9A3412;color:#fff;font-weight:700;box-shadow:0 2px 8px rgba(154,52,18,.28);}
 
   .cols{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start;}
   @media(max-width:1000px){.cols{grid-template-columns:1fr;}}
@@ -151,6 +151,18 @@ function pw(){return localStorage.getItem(PW)||'';}
 function api(p,o){o=o||{};o.headers=Object.assign({'Content-Type':'application/json','Authorization':'Bearer '+(window.__token||'')},o.headers||{});return fetch(p,o);}
 function money(n){return '$'+(Number(n)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function esc(s){var d=document.createElement('div');d.textContent=s||'';return d.innerHTML;}
+
+/* Where an engagement actually is, mapped to where the script should open.
+   Defaulting every account to Discovery meant the console never reflected
+   reality — you had to remember and click. */
+var STAGE_FOR = {
+  new_lead:'discovery', appointmentscheduled:'discovery', qualifiedtobuy:'discovery',
+  presentationscheduled:'scope', proposal_sent:'scope',
+  decisionmakerboughtin:'contract', contractsent:'contract', contract_sent:'contract',
+  closedwon:'kickoff', won:'kickoff',
+  delivering:'checkin',
+  complete:'close', closedlost:'close', closed_lost:'close', lost:'close'
+};
 
 var STAGES = [
   {id:'discovery', label:'1 · Discovery call'},
@@ -344,7 +356,27 @@ function loadEngagements(){
     });
 }
 
+/* Picking an engagement jumps the script to where that account actually is.
+   Defaulting every account to Discovery meant the console never reflected
+   reality \u2014 you had to remember where you were and click. */
+async function jumpToStage(engId){
+  if (!engId) return;
+  var sb2 = window.__sb;
+  var r = await sb2.from('engagements').select('stage').eq('id', engId).maybeSingle();
+  var st = r.data && r.data.stage ? String(r.data.stage) : null;
+  var want = st ? STAGE_FOR[st] : null;
+  if (want && want !== stage) { stage = want; render(); }
+  var btn = document.querySelector('.stage-btn[data-s="' + stage + '"]');
+  if (btn && btn.scrollIntoView) btn.scrollIntoView({ block:'nearest', inline:'center', behavior:'smooth' });
+}
+
 function vcInit(){
+  var es = document.getElementById('engSel');
+  if (es && !es.__jump) {
+    es.__jump = true;
+    es.addEventListener('change', function(){ jumpToStage(this.value); });
+  }
+
   loadEngagements().then(function(){
     renderStages();renderScript();renderCapture();renderDeposit();
   }).catch(function(){

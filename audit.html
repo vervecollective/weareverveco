@@ -64,6 +64,22 @@
   @media(max-width:700px){.rr{grid-template-columns:1fr;gap:3px;}}
   .rnote{font-size:12.5px;color:#6b7280;margin-top:12px;padding-top:10px;border-top:1px solid #e5e7eb;}
 
+
+  .picker{background:#FAFBFC;border:1px solid #EBECEF;border-radius:12px;
+    padding:16px 18px;margin-bottom:20px;}
+  .pk-h{margin-bottom:12px;}
+  .pk-h b{display:block;font-size:14px;font-weight:700;}
+  .pk-h span{font-size:12.5px;color:#6b7280;}
+  .pkg{margin-bottom:13px;}
+  .pkg h4{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+    color:#9CA3AF;margin-bottom:7px;}
+  .pkchips{display:flex;flex-wrap:wrap;gap:6px;}
+  .chip{border:1px solid #E4E6EA;background:#fff;border-radius:999px;padding:6px 13px;
+    font:500 12.5px/1.3 'Inter',sans-serif;color:#374151;cursor:pointer;text-align:left;}
+  .chip:hover{border-color:#9A3412;}
+  .chip.on.bad{background:#FEF2F2;border-color:#F0A9A9;color:#991B1B;font-weight:600;}
+  .chip.on.good{background:#E7F7F0;border-color:#9AD9BE;color:#00875A;font-weight:600;}
+  .chip.on:before{content:"\2713 ";}
 </style>
 <!-- Google Tag Manager -->
 <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
@@ -161,6 +177,14 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         are defensible, forecasts are not.</div>
       </div>
     </details>
+
+    <div class="picker">
+      <div class="pk-h">
+        <b>What did you see?</b>
+        <span>Click what applies. It writes the wording for you — edit it after.</span>
+      </div>
+      <div id="pkGroups"></div>
+    </div>
 
     <div class="field"><label for="story">1. The story — what is actually happening here?</label>
       <textarea id="story" rows="3" placeholder="They post consistently but reach collapsed in month two…"></textarea></div>
@@ -307,6 +331,83 @@ async function loadPast(){
   }).join('');
 }
 
+/* The observations that actually recur. Picking one writes a sentence into the
+   right field, so a report is assembled rather than composed from nothing. Each
+   carries where it goes and whether it is a strength or a gap. */
+var FINDINGS = [
+  ['Reach and audience', [
+    ['g','Reach fell off a cliff','Reach dropped sharply and has not recovered, which usually means the content stopped matching what the audience came for.','Look at what changed in the month reach fell, not at posting volume.'],
+    ['g','Followers up, reach flat','The follower count keeps rising while reach does not, so the audience being added is not the audience engaging.','Stop optimising for follower growth and start optimising for saves and shares.'],
+    ['s','Reach is growing steadily','Reach is climbing month over month without paid support.',''],
+    ['g','Posting into a dead audience','Engagement rate is below half a percent, which is a reach problem rather than a volume problem.','Cut posting frequency and put the effort into three posts a month worth sharing.']
+  ]],
+  ['Content', [
+    ['g','No consistent point of view','The account posts regularly but nothing links the posts, so there is nothing to follow.','Pick one thing to be known for and let the next ten posts be about that.'],
+    ['g','All promotion, no reason to follow','Almost every post asks for something. There is little a stranger would save or send to someone else.','Aim for four useful posts to every one that sells.'],
+    ['s','Strong, consistent visual identity','The grid reads as one brand rather than several.',''],
+    ['g','Inconsistent posting','Long gaps followed by bursts. The algorithm reads that as an inactive account.','A slower cadence you can hold beats a fast one you cannot.']
+  ]],
+  ['Conversion path', [
+    ['g','No path from profile to purchase','There is no clear route from the bio to a page where someone can actually buy or enquire.','One link, one page, one action.'],
+    ['g','Link goes to a homepage','The bio link lands on a general homepage rather than the thing the post was about.','Send traffic to the page that matches the promise.'],
+    ['g','No tracking on the destination','Nothing measures whether social traffic does anything once it lands.','Install conversion tracking before spending anything on ads.'],
+    ['s','Clear, single call to action','The profile makes the next step obvious.','']
+  ]],
+  ['Paid readiness', [
+    ['g','Not ready for paid yet','Running ads now would amplify a positioning problem rather than solve one.','Fix the offer and the landing page first. Ads make a weak page fail faster.'],
+    ['s','Ready for a controlled test','The fundamentals are sound enough that a small test budget would teach us something.','Start at a level where a month of learning costs less than a bad hire.'],
+    ['g','Ads running with no target','Money is being spent without a defined cost per acquisition, so nobody can say whether it works.','Set a target cost per acquisition before touching budget.']
+  ]]
+];
+
+function fieldFor(kind){ return kind === 's' ? 'strengths' : 'gaps'; }
+
+function appendTo(id, text){
+  var el = document.getElementById(id);
+  if (!el) return;
+  var cur = el.value.trim();
+  if (cur.indexOf(text) > -1) return;      // already said
+  el.value = cur ? cur + ' ' + text : text;
+}
+
+function removeFrom(id, text){
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.value = el.value.replace(text, '').replace(/\s{2,}/g, ' ').trim();
+}
+
+function buildPicker(){
+  var host = document.getElementById('pkGroups');
+  if (!host) return;                       // page is wiped for roles without access
+  host.innerHTML = FINDINGS.map(function(g, gi){
+    return '<div class="pkg"><h4>'+esc(g[0])+'</h4><div class="pkchips">'+
+      g[1].map(function(f, fi){
+        return '<button type="button" class="chip '+(f[0]==='s'?'good':'bad')+'" '+
+          'data-g="'+gi+'" data-f="'+fi+'">'+esc(f[1])+'</button>';
+      }).join('')+'</div></div>';
+  }).join('');
+
+  document.querySelectorAll('#pkGroups .chip').forEach(function(b){
+    b.addEventListener('click', function(){
+      var f = FINDINGS[b.dataset.g][1][b.dataset.f];
+      var on = b.classList.toggle('on');
+      if (on) {
+        appendTo(fieldFor(f[0]), f[2]);
+        if (f[3]) appendTo('recs', f[3]);
+      } else {
+        removeFrom(fieldFor(f[0]), f[2]);
+        if (f[3]) removeFrom('recs', f[3]);
+      }
+      var picked = document.querySelectorAll('#pkGroups .chip.on.bad').length;
+      var p = document.getElementById('priority');
+      if (picked === 1 && !p.value.trim()) {
+        var first = document.querySelector('#pkGroups .chip.on.bad');
+        if (first) p.value = FINDINGS[first.dataset.g][1][first.dataset.f][3] || '';
+      }
+    });
+  });
+}
+
 window.vcInit = async function(){
   sb = window.__sb; me = window.__user;
   if (window.__role === 'contractor' || window.__role === 'client') {
@@ -359,6 +460,7 @@ window.vcInit = async function(){
     var res = await sb.from('audits').insert(payload);
     if(res.error) return say(res.error.message, false);
     say('Audit saved to this engagement.', true);
+    buildPicker();
     loadPast();
   });
 

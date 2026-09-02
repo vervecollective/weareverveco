@@ -127,6 +127,12 @@
           <div id="milestones"><div class="empty">No milestones set yet.</div></div>
         </div>
 
+        <div class="card" id="docsCard" style="display:none">
+          <h2>Your documents</h2>
+          <p class="hint">Everything you have signed with us.</p>
+          <div id="docsList"></div>
+        </div>
+
         <div class="card" id="delivCard" style="display:none">
           <h2>Your files</h2>
           <p class="hint">Have a look and tell us if anything needs changing.</p>
@@ -201,12 +207,16 @@ function msg(id,t,ok){var m=document.getElementById(id);m.textContent=t;m.classN
 window.vcInit = async function(){
   var sb = window.__sb, me = window.__user;
 
+  /* Row-level security already limits this to their own engagements, so fetch
+     all of them. Previously this took .limit(1) and a client with two projects
+     silently saw one. */
   var eq = await sb.from('engagements')
     .select('id, title, stage, track, start_date, amount_total, amount_paid, payment_status, stripe_invoice_url, client_visible_note, client_id, clients(business_name)')
-    .order('created_at', { ascending:false })
-    .limit(1);
+    .order('created_at', { ascending:false });
 
-  var eng = eq.data && eq.data[0];
+  var all = eq.data || [];
+  var wanted = new URLSearchParams(location.search).get('e');
+  var eng = (wanted && all.filter(function(x){ return x.id === wanted; })[0]) || all[0];
   if (!eng) {
     document.getElementById('projLede').textContent = 'Nothing active right now.';
     document.getElementById('noproj').style.display = 'block';
@@ -214,6 +224,23 @@ window.vcInit = async function(){
   }
 
   document.getElementById('proj').style.display = 'block';
+
+  if (all.length > 1) {
+    var sw = document.createElement('div');
+    sw.className = 'card';
+    sw.style.cssText = 'padding:16px 20px;margin-bottom:18px';
+    sw.innerHTML = '<label for="projPick" style="display:block;font-size:12px;font-weight:600;' +
+      'color:#374151;margin-bottom:7px">Your projects</label>' +
+      '<select id="projPick" style="width:100%;padding:11px 13px;font-size:14px">' +
+      all.map(function(x){
+        var nm = x.title || (x.clients && x.clients.business_name) || 'Project';
+        return '<option value="'+x.id+'"'+(x.id===eng.id?' selected':'')+'>'+esc(nm)+'</option>';
+      }).join('') + '</select>';
+    document.getElementById('proj').prepend(sw);
+    document.getElementById('projPick').addEventListener('change', function(){
+      location.href = '/project?e=' + this.value;
+    });
+  }
   var biz = (eng.clients && eng.clients.business_name) || '';
   document.getElementById('projTitle').textContent = eng.title || biz || 'Your Project';
   document.getElementById('projLede').textContent = biz ? ('Verve Collective \u00b7 ' + biz) : 'Verve Collective';
@@ -256,6 +283,35 @@ window.vcInit = async function(){
         '<span class="ms-b"><b>'+esc(m.label)+
           (LBL[m.status] ? '<span class="badge '+m.status+'">'+LBL[m.status]+'</span>' : '')+'</b></span>'+
         '<span class="ms-date">'+fdate(m.due_date)+'</span></div>';
+    }).join('');
+  }
+
+  // their signed agreements, so they never have to ask for a copy
+  var docq = await sb.from('documents')
+    .select('kind, status, signed_at, file_url, sent_at')
+    .eq('engagement_id', eng.id)
+    .in('status', ['sent','viewed','signed'])
+    .order('created_at', { ascending:false });
+  if (docq.data && docq.data.length) {
+    document.getElementById('docsCard').style.display = 'block';
+    var KIND = {
+      client_services_agreement:'Client Services Agreement',
+      statement_of_work:'Statement of Work',
+      model_release:'Appearance & Property Release'
+    };
+    var DST = { signed:['Signed','#00A870'], viewed:['Opened','#B45309'], sent:['Awaiting your signature','#B45309'] };
+    document.getElementById('docsList').innerHTML = docq.data.map(function(d){
+      var st = DST[d.status] || DST.sent;
+      var dt = d.signed_at || d.sent_at;
+      return '<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #f3f4f6">'+
+        '<span style="flex:1;min-width:0"><b style="font-size:14px">'+esc(KIND[d.kind]||d.kind)+'</b>'+
+        (dt ? '<div style="font-size:12.5px;color:#5C6470">'+
+              new Date(dt).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})+'</div>' : '')+
+        '</span>'+
+        '<span style="font-size:11px;font-weight:700;color:'+st[1]+'">'+st[0]+'</span>'+
+        (d.file_url ? '<a href="'+esc(d.file_url)+'" target="_blank" rel="noopener" '+
+          'style="font-size:13px;font-weight:600;color:#9A3412;text-decoration:none">Download</a>' : '')+
+        '</div>';
     }).join('');
   }
 

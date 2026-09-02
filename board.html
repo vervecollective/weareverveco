@@ -817,7 +817,13 @@ window.vcInit = async function(){
 
   $('del').addEventListener('click', async function(){
     if (!current) return;
-    if (!window.confirm('Delete this task?')) return;
+    var okT = await window.vcConfirm({
+      title: 'Delete this task?',
+      body: current.title,
+      list: ['Its subtasks', 'Its comments and reactions'],
+      confirm: 'Delete task'
+    });
+    if (!okT) return;
     var r = await sb.from('tasks').delete().eq('id', current.id);
     if (r.error) return say(r.error.message, false);
     shut(); load();

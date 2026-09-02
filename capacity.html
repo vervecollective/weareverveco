@@ -115,7 +115,7 @@ function paint(){
     var w2 = Math.min(pctWith, 100) - w1;
 
     return '<div class="p">'+
-      '<div class="who"><span class="av" style="background:'+(p.colour||'#111827')+'">'+ini(p.full_name)+'</span>'+
+      '<div class="who"><span class="av" data-profile="'+p.id+'" style="background:'+(p.colour||'#111827')+'">'+ini(p.full_name)+'</span>'+
         '<span><b>'+esc(p.full_name||'\u2014')+
           (p.accepting_work === false ? ' <span style="font-size:10px;font-weight:700;background:#f1f5f9;color:#64748b;padding:1px 6px;border-radius:20px">Not taking work</span>' : '')+
         '</b>'+

@@ -397,13 +397,12 @@ async function loadChans(){
   }).join('') : '<p style="font-size:13px;color:#5C6470;padding:14px">'+
       (tab==='unread' ? 'Nothing unread.' : 'No conversations yet.')+'</p>';
 
-  $('chans').querySelectorAll('[data-menu]').forEach(function(b){
-    b.addEventListener('click', function(e){ e.stopPropagation(); openChMenu(b, b.dataset.menu); });
-  });
+  /* No per-render listeners: they are re-attached on every paint and easy to
+     lose. One delegated listener on document survives every re-render. */
 
   $('chans').querySelectorAll('.ch').forEach(function(el){
     el.addEventListener('click', function(e){
-      if (e.target.closest('[data-menu]')) return;
+      if (e.target.closest('[data-menu]') || e.target.closest('#chMenu')) return;
       openCh(el.dataset.id);
     });
   });
@@ -642,6 +641,20 @@ function showPane(which){
   $('files').style.display   = which === 'files' ? 'block' : 'none';
   if (which === 'files') loadFiles();
 }
+
+/* Installed once, at load. Works no matter how often the list repaints. */
+document.addEventListener('click', function(e){
+  var btn = e.target.closest('[data-menu]');
+  var mn  = document.getElementById('chMenu');
+  if (btn) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (typeof openChMenu === 'function') openChMenu(btn, btn.dataset.menu);
+    return;
+  }
+  // A click anywhere else closes it, unless it landed inside the menu.
+  if (mn && !e.target.closest('#chMenu')) mn.classList.remove('on');
+});
 
 window.vcInit = async function(){
   sb = window.__sb; me = window.__user;
@@ -925,11 +938,6 @@ window.vcInit = async function(){
   $('send').addEventListener('click', send);
   $('box').addEventListener('keydown', function(e){
     if (e.key==='Enter' && !e.shiftKey){ e.preventDefault(); send(); }
-  });
-
-  document.addEventListener('click', function(){
-    var mn = document.getElementById('chMenu');
-    if (mn) mn.classList.remove('on');
   });
 
   document.querySelectorAll('.tb').forEach(function(b){

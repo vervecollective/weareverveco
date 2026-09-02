@@ -353,7 +353,7 @@ async function paint(){
       var mid=b.dataset.m, e=b.dataset.e;
       if (e==='open'){
         // Only one bar open at a time — several at once is the noise we removed.
-        var bar = b.parentNode.querySelector('.qbar');
+        var bar = b.closest('.m') ? b.closest('.m').querySelector('.qbar') : null;
         var wasOpen = bar && bar.classList.contains('open');
         $('feed').querySelectorAll('.qbar.open').forEach(function(x){ x.classList.remove('open'); });
         $('feed').querySelectorAll('.react-hint.active').forEach(function(x){ x.classList.remove('active'); });

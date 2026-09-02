@@ -1445,3 +1445,86 @@ body.vc-mini .vc-tray{left:72px !important;width:300px !important;top:60px !impo
   .vc-busy:after{animation:none;}
   .vc-skel{animation:none;}
 }
+
+
+/* ================= chat dock ================= */
+.vc-dock{position:fixed;bottom:20px;right:20px;z-index:1300;}
+.vc-dock-btn{width:54px;height:54px;border-radius:50%;background:#111827;color:#fff;
+  border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 6px 22px rgba(16,24,40,.28);transition:transform .16s,background .16s;position:relative;}
+.vc-dock-btn:hover{transform:scale(1.06);background:#1F2937;}
+.vc-dock-btn svg{width:23px;height:23px;}
+.vc-dock.open .vc-dock-btn{background:#9A3412;}
+.vc-dock-n{position:absolute;top:-2px;right:-2px;min-width:21px;height:21px;padding:0 6px;
+  border-radius:999px;background:#E2445C;color:#fff;font:800 11px/1 'Inter',sans-serif;
+  display:none;align-items:center;justify-content:center;border:2.5px solid #F6F7F9;}
+.vc-dock.has .vc-dock-btn{background:#9A3412;}
+@keyframes vcPing{
+  0%,100%{transform:scale(1);} 30%{transform:scale(1.16);} 60%{transform:scale(.96);}
+}
+.vc-dock.ping .vc-dock-btn{animation:vcPing .7s ease 2;}
+
+.vc-dock-panel{position:absolute;bottom:66px;right:0;width:340px;height:440px;background:#fff;
+  border:1px solid #E4E6EA;border-radius:16px;box-shadow:0 18px 48px rgba(16,24,40,.22);
+  display:none;flex-direction:column;overflow:hidden;}
+.vc-dock.open .vc-dock-panel{display:flex;animation:dockIn .2s cubic-bezier(.32,.72,0,1) both;}
+@keyframes dockIn{from{opacity:0;transform:translateY(14px) scale(.97);}to{opacity:1;transform:none;}}
+
+.vc-dock-h{display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:13px 15px;border-bottom:1px solid #EFF1F4;flex-shrink:0;}
+.vc-dock-h b{font-size:14px;font-weight:700;letter-spacing:-.01em;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis;}
+.vc-dock-acts{display:flex;align-items:center;gap:3px;flex-shrink:0;}
+.vc-dock-acts a,.vc-dock-acts button{background:none;border:none;color:#9CA3AF;cursor:pointer;
+  padding:5px;border-radius:6px;display:flex;line-height:0;font-size:18px;text-decoration:none;}
+.vc-dock-acts svg{width:15px;height:15px;}
+.vc-dock-acts a:hover,.vc-dock-acts button:hover{background:#F1F3F6;color:#111827;}
+
+.vc-dock-b{flex:1;overflow-y:auto;padding:8px;}
+.vc-dock-row{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:9px;cursor:pointer;}
+.vc-dock-row:hover{background:#F3F4F6;}
+.vc-dock-row.muted b{color:#9CA3AF;}
+.vc-dock-av{width:32px;height:32px;border-radius:50%;background:#111827;color:#fff;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font:700 11px/1 'Inter',sans-serif;}
+.vc-dock-av.sm{width:24px;height:24px;font-size:9px;}
+.vc-dock-t{flex:1;min-width:0;}
+.vc-dock-t b{font-size:13px;font-weight:600;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.vc-dock-t em{font-size:11.5px;font-style:normal;color:#5C6470;display:block;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.vc-dock-u{background:#E2445C;color:#fff;font:800 10px/1 'Inter',sans-serif;border-radius:999px;
+  min-width:18px;height:18px;display:flex;align-items:center;justify-content:center;padding:0 5px;}
+.vc-dock-none{font-size:13px;color:#9CA3AF;text-align:center;padding:40px 16px;line-height:1.7;}
+.vc-dock-none a{color:#9A3412;font-weight:600;}
+
+.vc-dock-m{display:flex;gap:8px;margin-bottom:9px;align-items:flex-end;}
+.vc-dock-m.mine{justify-content:flex-end;}
+.vc-dock-bub{max-width:76%;background:#F1F3F6;border-radius:14px 14px 14px 4px;
+  padding:9px 12px;font-size:13.5px;line-height:1.5;color:#242830;word-break:break-word;}
+.vc-dock-m.mine .vc-dock-bub{background:#9A3412;color:#fff;border-radius:14px 14px 4px 14px;}
+.vc-dock-bub img{max-width:100%;border-radius:9px;margin-top:5px;display:block;}
+.vc-dock-bub a{color:inherit;text-decoration:underline;}
+
+.vc-dock-c{display:flex;gap:7px;align-items:flex-end;padding:10px 12px;
+  border-top:1px solid #EFF1F4;flex-shrink:0;}
+.vc-dock-c textarea{flex:1;border:none;background:#F1F3F6;border-radius:11px;padding:9px 12px;
+  font:400 13.5px/1.5 'Inter',sans-serif;resize:none;max-height:90px;
+  -webkit-appearance:none;appearance:none;}
+.vc-dock-c textarea:focus{outline:none;background:#fff;box-shadow:0 0 0 2px #9A3412;}
+.vc-dock-c button{background:#9A3412;color:#fff;border:none;width:34px;height:34px;
+  border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.vc-dock-c button svg{width:15px;height:15px;}
+.vc-dock-c button:hover{background:#7C2D12;}
+
+@media(max-width:860px){
+  .vc-dock{bottom:14px;right:14px;}
+  .vc-dock-btn{width:50px;height:50px;}
+  .vc-dock-panel{position:fixed;bottom:0;left:0;right:0;top:auto;width:100%;height:76vh;
+    border-radius:18px 18px 0 0;}
+  .vc-dock.open .vc-dock-panel{animation:dockUp .24s cubic-bezier(.32,.72,0,1) both;}
+  @keyframes dockUp{from{transform:translateY(100%);}to{transform:none;}}
+  .vc-dock-c textarea{font-size:16px;}
+}
+@media (prefers-reduced-motion: reduce){
+  .vc-dock.ping .vc-dock-btn{animation:none;}
+  .vc-dock.open .vc-dock-panel{animation:none;}
+}

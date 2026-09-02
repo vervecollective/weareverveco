@@ -15,6 +15,7 @@
   h1{font-size:23px;font-weight:700;letter-spacing:-.02em;}
   .lede{color:#6b7280;font-size:14px;margin-bottom:26px;}
 
+  .tiles.second{margin-top:0;margin-bottom:22px;}
   .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px;}
   @media(max-width:860px){.tiles{grid-template-columns:repeat(2,1fr);}}
   .tile{background:#fff;border:1px solid #e5e7eb;border-radius:11px;padding:17px;text-decoration:none;
@@ -150,6 +151,13 @@ window.vcInit = async function(){
     return;
   }
 
+  // One round trip for the headline numbers; the lists below still need detail.
+  var dash = {};
+  try {
+    var dr = await sb.rpc('my_dashboard');
+    dash = dr.data || {};
+  } catch (e) { dash = {}; }
+
   var eq = await sb.from('engagements')
     .select('id, title, stage, amount_total, amount_paid, payment_status, start_date, updated_at, clients(business_name)');
   var engs = eq.data || [];
@@ -181,39 +189,37 @@ window.vcInit = async function(){
   var mq = await sb.from('milestones').select('*, engagements(clients(business_name))').neq('status','done');
   var ms = mq.data || [];
 
-  // Tiles
+  // Tiles. Each one answers a question you would otherwise have to go and ask.
+  function tile(n, label, sub, href, tone){
+    return '<a class="tile ' + (tone||'') + '" href="' + href + '">' +
+      '<div class="n">' + n + '</div><div class="l">' + label + '</div>' +
+      (sub ? '<div class="s">' + sub + '</div>' : '') + '</a>';
+  }
+
+  var overdue = Number(dash.overdue || 0);
+  var slipping = Number(dash.slipping || 0);
+  var blockedN = Number(dash.blocked || 0);
+  var stalledN = Number(dash.stalled || 0);
+
   $('tiles').innerHTML =
-    '<a class="tile '+(outstanding?'warn':'good')+'" href="/internal"><div class="n">'+money(outstanding)+
-      '</div><div class="l">Outstanding</div><div class="s">across '+engs.length+' engagements</div></a>'+
-    '<a class="tile '+(props.length?'warn':'')+'" href="/internal"><div class="n">'+props.length+
-      '</div><div class="l">Proposals out</div><div class="s">'+
-      props.filter(function(p){return p.status==='viewed';}).length+' opened</div></a>'+
-    '<a class="tile '+(bills.length?'bad':'good')+'" href="/pay"><div class="n">'+bills.length+
-      '</div><div class="l">Invoices to approve</div><div class="s">from contractors</div></a>'+
-    '<a class="tile '+(stalls.length?'bad':'good')+'" href="/internal"><div class="n">'+stalls.length+
-      '</div><div class="l">Going quiet</div><div class="s">need chasing</div></a>'+
-    '<a class="tile" href="/capacity"><div class="n">'+live.length+
-      '</div><div class="l">Live engagements</div><div class="s">in delivery</div></a>';
+    tile(overdue, 'Overdue on you',
+         overdue ? 'Oldest first below' : 'Nothing late',
+         '/mywork', overdue ? 'bad' : 'good') +
+    tile(Number(dash.due_soon || 0), 'Due in 48 hours', 'Yours', '/mywork',
+         Number(dash.due_soon || 0) ? 'warn' : '') +
+    tile(bills.length, 'Invoices to approve', 'From contractors', '/pay',
+         bills.length ? 'bad' : 'good') +
+    tile(money(outstanding), 'Outstanding', 'Across ' + engs.length + ' engagements', '/internal',
+         outstanding ? 'warn' : 'good');
 
-  var sq = await sb.from('stalled').select('*').not('reason','is',null);
-  var stalls = sq.data || [];
+  // A second row for the things that are nobody\u2019s task but everybody\u2019s problem.
+  var row2 =
+    tile(slipping, 'Work slipping', 'Past its date', '/board', slipping ? 'bad' : 'good') +
+    tile(blockedN, 'Blocked', 'Waiting on something', '/board', blockedN ? 'warn' : '') +
+    tile(stalledN, 'Deals gone quiet', 'Need chasing', '/internal', stalledN ? 'warn' : 'good') +
+    tile(Number(dash.this_week || 0), 'Milestones this week', 'Client-facing dates', '/timeline');
+  $('tiles').insertAdjacentHTML('afterend', '<div class="tiles second">' + row2 + '</div>');
 
-  var STALL = {
-    proposal_unopened: ['#b91c1c','has not opened the proposal',
-      'Sent %d days ago, never opened. That is a delivery problem \u2014 check the address, or text them the link.'],
-    proposal_cold: ['#b45309','opened the proposal and went quiet',
-      'Opened %v times but no reply in %d days. Ask directly whether the scope is wrong.'],
-    proposal_stale: ['#b45309','has a proposal with no movement',
-      'Nothing for %d days. Time for the day-14 message, or close it out.'],
-    contract_unsigned: ['#b91c1c','has not signed the agreement',
-      'Sent %d days ago. Nothing starts until it is signed \u2014 chase it today.'],
-    call_not_held: ['#b45309','booked a call that has not happened',
-      'Booked %d days ago with nothing since. Confirm or release the slot.'],
-    lead_untouched: ['#D9531E','is an untouched lead',
-      '%d days since they came in. The first response window is long gone.'],
-    client_quiet: ['#6b7280','has gone quiet',
-      'No activity for %d days on a live account. Silence from a paying client is rarely good news.']
-  };
 
   // Needs you — ordered by cost of delay
   var att = [];

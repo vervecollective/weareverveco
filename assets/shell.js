@@ -438,8 +438,11 @@ if (role !== 'client') {
                   return '<div class="vc-peek-c"><span class="vc-peek-av">' + iv + '</span>' +
                     '<span class="vc-peek-cb"><em>' + esc(nm) + ' \u00b7 <i>' + when + '</i></em>' +
                     esc(c.body) +
-                    (kids ? '<button class="vc-peek-more" data-thread="' + c.id + '">' +
-                      kids + (kids === 1 ? ' reply' : ' replies') + '</button>' : '') +
+                    '<span class="vc-peek-cacts">' +
+                      '<button class="vc-peek-more" data-thread="' + c.id + '">' +
+                        (kids ? kids + (kids === 1 ? ' reply' : ' replies') : 'Reply') +
+                      '</button>' +
+                    '</span>' +
                     '</span></div>';
                 }).join('')
               : '<p class="vc-peek-load">No comments yet. Say the first thing.</p>') +
@@ -831,10 +834,16 @@ if (role !== 'client') {
         esc(c.body) + '</span></div>';
     };
 
+    const who = ((root && root.profiles && root.profiles.full_name) || 'them').split(' ')[0];
     b.innerHTML = (root ? row(root, false) : '') +
-      (kids || []).map((k) => row(k, true)).join('') +
-      '<div class="vc-peek-add"><textarea id="vcThreadNew" rows="2" placeholder="Reply"></textarea>' +
-      '<button id="vcThreadSend">Reply</button></div>';
+      ((kids && kids.length)
+        ? '<div class="vc-thread-sep">' + kids.length +
+          (kids.length === 1 ? ' reply' : ' replies') + '</div>' +
+          kids.map((k) => row(k, true)).join('')
+        : '<p class="vc-thread-none">No replies yet.</p>') +
+      '<div class="vc-peek-add">' +
+        '<textarea id="vcThreadNew" rows="2" placeholder="Reply to ' + esc(who) + '\u2026"></textarea>' +
+        '<button id="vcThreadSend">Reply</button></div>';
 
     const send = document.getElementById('vcThreadSend');
     const ta = document.getElementById('vcThreadNew');

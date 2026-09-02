@@ -57,6 +57,34 @@
   .msg{font-size:13px;margin-top:10px;display:none;}
   .msg.show{display:block;} .msg.ok{color:#047857;} .msg.err{color:#b91c1c;}
   .muted{color:#9ca3af;font-size:12.5px;}
+  .veil{position:fixed;inset:0;background:rgba(16,24,40,.45);z-index:80;display:none;}
+  .veil.on{display:block;}
+  .modal{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(440px,93vw);
+    background:#fff;border-radius:14px;z-index:90;display:none;box-shadow:0 24px 60px rgba(16,24,40,.28);}
+  .modal.on{display:block;}
+  .modal-h{padding:20px 22px 14px;border-bottom:1px solid #EBECEF;}
+  .modal-h b{font-size:17px;font-weight:700;letter-spacing:-.02em;}
+  .modal-h p{font-size:13px;color:#5C6470;margin-top:4px;line-height:1.5;}
+  .modal-b{padding:18px 22px 20px;}
+  .modal-b .fld{margin-bottom:14px;}
+  .modal-b label{display:block;font-size:12.5px;font-weight:600;color:#374151;margin-bottom:6px;}
+  .modal-b input[type=email],.modal-b input[type=text]{width:100%;padding:11px 13px;font-size:14px;
+    font-family:inherit;border:1px solid #D8DAE0;border-radius:9px;}
+  .admrow{display:flex;gap:11px;align-items:flex-start;padding:12px;background:#F9FAFB;
+    border-radius:9px;margin-bottom:14px;cursor:pointer;}
+  .admrow input{width:auto;margin-top:3px;}
+  .admrow span{display:flex;flex-direction:column;}
+  .admrow b{font-size:13.5px;font-weight:600;}
+  .admrow em{font-size:12px;font-style:normal;color:#5C6470;margin-top:2px;line-height:1.45;}
+  .modal-f{display:flex;gap:9px;justify-content:flex-end;margin-top:6px;}
+  .btn-ghost{background:none;border:none;font:600 13.5px/1 'Inter',sans-serif;color:#5C6470;
+    cursor:pointer;padding:11px 14px;}
+  .msg{font-size:13px;margin-top:10px;display:none;}
+  .msg.show{display:block;} .msg.ok{color:#065F46;} .msg.err{color:#991B1B;}
+  .pill.adm{background:#1E3A8A !important;color:#fff !important;}
+  .admToggle{display:block;margin-top:6px;background:none;border:none;padding:0;
+    font:600 11.5px/1 'Inter',sans-serif;color:#5C6470;cursor:pointer;text-decoration:underline;}
+  .admToggle:hover{color:#9A3412;}
 </style>
 </head>
 <body>
@@ -129,7 +157,12 @@ function peopleTable(rows, extraCol){
         : '<span class="av" data-profile="'+u.id+'">'+initials(u.full_name)+'</span>';
       return '<tr><td>'+av+'<b>'+esc(u.full_name||'—')+'</b>'+
         '<div class="muted" style="margin-left:37px">'+esc(u.email)+'</div></td>'+
-        '<td><span class="pill '+u.role+'">'+u.role.replace('_',' ')+'</span></td>'+
+        '<td><span class="pill '+u.role+'">'+u.role.replace('_',' ')+'</span>'+
+          (u.is_admin && u.role!=='owner' ? ' <span class="pill adm">admin</span>' : '')+
+          (window.__role==='owner' && u.role!=='owner' && u.role!=='client'
+            ? '<button class="admToggle" data-id="'+u.id+'" data-on="'+(!!u.is_admin)+'">'+
+              (u.is_admin?'Remove admin':'Make admin')+'</button>' : '')+
+        '</td>'+
         (extraCol?'<td>'+(u._extra||'<span class="muted">—</span>')+'</td>':'')+
         '<td>'+(u.is_active?'<span class="pill client">Active</span>':'<span class="pill off">Disabled</span>')+'</td></tr>';
     }).join('')+'</tbody></table>';
@@ -146,7 +179,7 @@ window.vcInit = async function(){
   }
 
   var r = await sb.from('profiles')
-    .select('id, full_name, email, role, is_active, avatar_url')
+    .select('id, full_name, email, role, is_active, avatar_url, is_admin')
     .order('created_at');
   var all = r.data || [];
 
@@ -154,13 +187,16 @@ window.vcInit = async function(){
   var cons = all.filter(function(u){ return u.role==='contractor'; });
   var clis = all.filter(function(u){ return u.role==='client'; });
 
-  var inviteBtn = '<a class="btn" href="/settings">Invite someone</a>';
+  // Inviting from the tab you are already on beats bouncing to Settings.
+  function inviteBtn(role){
+    return '<button class="btn inviteHere" data-role="'+role+'">Invite someone</button>';
+  }
 
   $('teamBody').innerHTML = team.length
-    ? peopleTable(team)
+    ? '<div style="margin-bottom:14px">'+inviteBtn('account_owner')+'</div>' + peopleTable(team)
     : emptyState('team','No team members yet',
         'Right now it is just you. Account owners run their own client accounts inside your system, and your split with them is set in Settings.',
-        inviteBtn);
+        inviteBtn('account_owner'));
 
   if (cons.length) {
     var cd = await sb.from('contractor_details').select('*');
@@ -171,19 +207,107 @@ window.vcInit = async function(){
         ? esc(d.crafts.join(', ')) + (d.part_107 ? ' <span class="muted">· Part 107</span>' : '')
         : '<span class="muted">No craft set</span>';
     });
-    $('conBody').innerHTML = peopleTable(cons, 'Craft');
+    $('conBody').innerHTML = '<div style="margin-bottom:14px">'+inviteBtn('contractor')+'</div>' + peopleTable(cons, 'Craft');
   } else {
     $('conBody').innerHTML = emptyState('cam','No contractors yet',
       'Invite a videographer, photographer, drone pilot, or editor. They get their own login and see only the jobs you offer them — never client pricing or your margin.',
-      inviteBtn);
+      inviteBtn('contractor'));
   }
 
   $('cliBody').innerHTML = clis.length
-    ? peopleTable(clis)
+    ? '<div style="margin-bottom:14px">'+inviteBtn('client')+'</div>' + peopleTable(clis)
     : emptyState('cli','No client logins yet',
         'Give a client a login and they can see their own project status, timeline, and outstanding balance — and message you without email. They cannot see pricing internals or any other client.',
-        inviteBtn);
+        inviteBtn('client'));
 };
+
+  // ── Invite ────────────────────────────────────────────────────────────
+  var ROLE_SAYS = {
+    account_owner: 'They run their own client accounts inside your system. They see only their own clients.',
+    contractor:    'They see the jobs you offer them and what they are paid \u2014 never client pricing or your margin.',
+    client:        'They see their own project status, timeline, files and balance. Nothing about any other client.'
+  };
+
+  function openInvite(role){
+    var v = document.getElementById('invVeil'), m = document.getElementById('invModal');
+    document.getElementById('invRole').value = role;
+    document.getElementById('invSays').textContent = ROLE_SAYS[role] || '';
+    document.getElementById('invTitle').textContent =
+      'Invite ' + (role === 'client' ? 'a client' : role === 'contractor' ? 'a contractor' : 'an account owner');
+    document.getElementById('invEmail').value = '';
+    document.getElementById('invName').value = '';
+    document.getElementById('invAdmin').checked = false;
+    document.getElementById('invAdminRow').style.display = role === 'account_owner' ? 'flex' : 'none';
+    document.getElementById('invMsg').className = 'msg';
+    v.classList.add('on'); m.classList.add('on');
+    setTimeout(function(){ document.getElementById('invEmail').focus(); }, 100);
+  }
+  function shutInvite(){
+    document.getElementById('invVeil').classList.remove('on');
+    document.getElementById('invModal').classList.remove('on');
+  }
+
+  document.addEventListener('click', function(e){
+    var b = e.target.closest('.inviteHere');
+    if (b) { e.preventDefault(); openInvite(b.dataset.role); }
+  });
+  document.getElementById('invVeil').addEventListener('click', shutInvite);
+  document.getElementById('invCancel').addEventListener('click', shutInvite);
+
+  document.getElementById('invSend').addEventListener('click', async function(){
+    var email = document.getElementById('invEmail').value.trim();
+    var name  = document.getElementById('invName').value.trim();
+    var role  = document.getElementById('invRole').value;
+    var msg   = document.getElementById('invMsg');
+    if (!email || email.indexOf('@') < 0) {
+      msg.textContent = 'A real email address, please.'; msg.className = 'msg show err'; return;
+    }
+    var btn = document.getElementById('invSend');
+    btn.disabled = true; msg.textContent = 'Sending\u2026'; msg.className = 'msg show';
+
+    var sess = (await sb.auth.getSession()).data.session;
+    try {
+      var res = await fetch('https://otqrkxjtojqlpzzvqavp.supabase.co/functions/v1/invite-user', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', 'Authorization':'Bearer ' + sess.access_token },
+        body: JSON.stringify({ email: email, full_name: name || null, role: role })
+      });
+      var out = await res.json();
+      btn.disabled = false;
+      if (!res.ok) { msg.textContent = out.error || 'That did not work.'; msg.className = 'msg show err'; return; }
+      // Admin is a separate write, so it works whether or not the invite
+      // function knows about the flag.
+      if (document.getElementById('invAdmin').checked) {
+        await sb.from('profiles').update({ is_admin: true }).eq('email', email);
+      }
+      msg.textContent = 'Invited. They will get an email to set a password.';
+      msg.className = 'msg show ok';
+      setTimeout(function(){ shutInvite(); window.vcInit(); }, 1400);
+    } catch (err) {
+      btn.disabled = false;
+      msg.textContent = 'Could not reach the server.'; msg.className = 'msg show err';
+    }
+  });
 </script>
+<div class="veil" id="invVeil"></div>
+<div class="modal" id="invModal">
+  <div class="modal-h"><b id="invTitle">Invite someone</b><p id="invSays"></p></div>
+  <div class="modal-b">
+    <input type="hidden" id="invRole">
+    <div class="fld"><label for="invEmail">Their email</label>
+      <input type="email" id="invEmail" placeholder="name@example.com"></div>
+    <div class="fld"><label for="invName">Their name</label>
+      <input type="text" id="invName" placeholder="Optional \u2014 they can set it themselves"></div>
+    <label class="admrow" id="invAdminRow" style="display:none">
+      <input type="checkbox" id="invAdmin">
+      <span><b>Make them an admin</b><em>Admins can change shared things like resources and board columns. Most people do not need this.</em></span>
+    </label>
+    <div class="modal-f">
+      <button class="btn-ghost" id="invCancel">Cancel</button>
+      <button class="btn" id="invSend">Send invite</button>
+    </div>
+    <p class="msg" id="invMsg"></p>
+  </div>
+</div>
 </body>
 </html>

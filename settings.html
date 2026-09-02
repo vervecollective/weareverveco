@@ -328,6 +328,106 @@ function initials(n){ return (n||'').split(' ').map(function(p){return p[0];}).f
 function vcInit(){
   var sb = window.__sb, me = window.__profile || {}, role = window.__role || 'contractor';
 
+  function esc(v){ var d=document.createElement('div'); d.textContent = v==null?'':v; return d.innerHTML; }
+
+  var CRAFTS = ['Videographer','Photographer','Drone pilot','Editor','Social creator',
+                'Paid media','Product marketing','Copywriter','Designer','Producer','Assistant'];
+  var LVL = { learning:'Still learning', proficient:'Proficient', expert:'Expert' };
+
+  async function loadCrafts(){
+    var r = await sb.from('contractor_crafts').select('*').eq('profile_id', me.id).order('craft');
+    var d = r.data || [];
+    $('craftRows').innerHTML = d.length ? d.map(function(c){
+      return '<div class="cfrow"><b>'+esc(c.craft)+'</b>'+
+        '<select data-cf="'+esc(c.craft)+'">'+
+          Object.keys(LVL).map(function(k){
+            return '<option value="'+k+'"'+(k===c.level?' selected':'')+'>'+LVL[k]+'</option>';
+          }).join('')+'</select>'+
+        '<button class="lnk warn" data-cfx="'+esc(c.craft)+'">Remove</button></div>';
+    }).join('') : '<p class="none">Nothing yet. Add what you do below.</p>';
+
+    $('cfNew').innerHTML = CRAFTS.filter(function(c){
+      return !d.some(function(x){ return x.craft === c; }); })
+      .map(function(c){ return '<option>'+c+'</option>'; }).join('') ||
+      '<option value="">All added</option>';
+
+    $('craftRows').querySelectorAll('[data-cf]').forEach(function(sel){
+      sel.addEventListener('change', async function(){
+        await sb.from('contractor_crafts').update({ level:this.value })
+          .eq('profile_id', me.id).eq('craft', sel.dataset.cf);
+        msg('cfMsg','Saved.', true);
+      });
+    });
+    $('craftRows').querySelectorAll('[data-cfx]').forEach(function(b){
+      b.addEventListener('click', async function(){
+        await sb.from('contractor_crafts').delete()
+          .eq('profile_id', me.id).eq('craft', b.dataset.cfx);
+        loadCrafts();
+      });
+    });
+  }
+
+  async function loadPortfolio(){
+    var r = await sb.from('portfolio_items').select('*').eq('profile_id', me.id).order('sort_order');
+    var d = r.data || [];
+    $('portRows').innerHTML = d.length ? d.map(function(p){
+      return '<div class="ptrow"><span class="ptb"><b>'+esc(p.title)+'</b>'+
+        '<em>'+esc([p.craft,p.industry].filter(Boolean).join(' \u00b7 '))+'</em></span>'+
+        '<a href="'+esc(p.url)+'" target="_blank" rel="noopener" class="lnk">Open</a>'+
+        '<button class="lnk warn" data-ptx="'+p.id+'">Remove</button></div>';
+    }).join('') : '<p class="none">Nothing yet.</p>';
+
+    $('portRows').querySelectorAll('[data-ptx]').forEach(function(b){
+      b.addEventListener('click', async function(){
+        await sb.from('portfolio_items').delete().eq('id', b.dataset.ptx);
+        loadPortfolio();
+      });
+    });
+  }
+
+  if (role !== 'client') {
+    $('craftCard').style.display = 'block';
+    $('portCard').style.display  = 'block';
+    $('ptCraft').innerHTML = '<option value="">\u2014</option>' +
+      CRAFTS.map(function(c){ return '<option>'+c+'</option>'; }).join('');
+
+    $('cfAdd').addEventListener('click', async function(){
+      if (!$('cfNew').value) return;
+      var r = await sb.from('contractor_crafts')
+        .insert({ profile_id: me.id, craft: $('cfNew').value, level: $('cfLvl').value });
+      if (r.error) return msg('cfMsg', r.error.message, false);
+      loadCrafts();
+    });
+
+    $('ptAdd').addEventListener('click', async function(){
+      if (!$('ptTitle').value.trim()) return msg('ptMsg','Give it a name.', false);
+      if (!$('ptUrl').value.trim())   return msg('ptMsg','Add a link.', false);
+      var r = await sb.from('portfolio_items').insert({
+        profile_id: me.id, title: $('ptTitle').value.trim(), url: $('ptUrl').value.trim(),
+        craft: $('ptCraft').value || null, industry: $('ptInd').value.trim() || null });
+      if (r.error) return msg('ptMsg', r.error.message, false);
+      $('ptTitle').value=''; $('ptUrl').value=''; $('ptInd').value='';
+      loadPortfolio();
+    });
+
+    loadCrafts();
+    loadPortfolio();
+  }
+
+  /* Email is what a client login, an invoice and a 1099 are all filed under.
+     Changing it is a request, not a self-service action. */
+  if (role === 'contractor' || role === 'client') {
+    var em = $('email');
+    if (em) {
+      em.disabled = true;
+      em.style.background = '#F1F3F6';
+      em.insertAdjacentHTML('afterend',
+        '<p class="sub" style="margin-top:6px">Ask us and we will change it \u2014 it is what ' +
+        'your login and your invoices are filed under. ' +
+        '<a href="/messages" style="color:#9A3412;font-weight:600">Message us</a>.</p>');
+    }
+  }
+
   // tabs by role
   var allowed = TABS.filter(function(t){ return t.roles.indexOf(role) !== -1; });
   $('tabs').innerHTML = allowed.map(function(t,i){

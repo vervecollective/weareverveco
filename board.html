@@ -15,6 +15,18 @@
   h1{font-size:22px;font-weight:700;letter-spacing:-.02em;}
   .lede{color:#6b7280;font-size:14px;margin-bottom:20px;}
 
+  .views{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-bottom:14px;}
+  .v{padding:7px 14px;border:1px solid #D8DAE0;border-radius:999px;background:#fff;
+    font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;color:#374151;
+    display:inline-flex;align-items:center;gap:7px;}
+  .v:hover{border-color:#9A3412;color:#9A3412;}
+  .v.on{background:#9A3412;border-color:#9A3412;color:#fff;font-weight:600;}
+  .v .n{font-size:11px;font-weight:700;opacity:.75;}
+  .v .x{opacity:0;font-size:14px;line-height:1;margin-left:-2px;}
+  .v:hover .x{opacity:.6;}
+  .v .x:hover{opacity:1;}
+  .v-add{border-style:dashed;color:#9CA3AF;}
+  .v-add:hover{color:#9A3412;}
   .bar{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:22px;}
   .bar .f{flex:1;min-width:150px;}
   .bar{align-items:flex-end;}
@@ -151,6 +163,7 @@
   <h1>Board</h1>
   <p class="lede">The work underneath the milestones. Internal unless you share it.</p>
 
+  <div class="views" id="views"></div>
   <div class="bar">
     <div class="f"><label for="org">Organization</label>
       <select id="org"><option value="">All organizations</option></select></div>
@@ -700,6 +713,84 @@ async function load(){
   render();
 }
 
+var views = [], activeView = null;
+
+/* A saved view is the filter set you keep coming back to. Storing it beats
+   rebuilding the same four dropdowns every morning. */
+function currentFilters(){
+  return {
+    org:      $('org') ? $('org').value : '',
+    eng:      engId || '',
+    assignee: $('assignee') ? $('assignee').value : '',
+    show:     $('filt') ? $('filt').value : 'all'
+  };
+}
+
+function applyFilters(f){
+  if (!f) return;
+  if ($('org') && f.org !== undefined) $('org').value = f.org || '';
+  if ($('assignee')) $('assignee').value = f.assignee === 'me' ? me.id : (f.assignee || '');
+  if ($('filt')) $('filt').value = f.show || 'all';
+  if (f.eng) { engId = f.eng; if ($('eng')) $('eng').value = f.eng; }
+}
+
+async function loadViews(){
+  var r = await sb.from('saved_views').select('*')
+    .eq('surface','board').order('sort_order');
+  views = r.data || [];
+  paintViews();
+}
+
+function paintViews(){
+  $('views').innerHTML =
+    views.map(function(v){
+      return '<button class="v'+(activeView===v.id?' on':'')+'" data-v="'+v.id+'">'+
+        esc(v.name)+
+        (v.profile_id === me.id ? '<span class="x" data-del="'+v.id+'">\u00d7</span>' : '')+
+      '</button>';
+    }).join('') +
+    '<button class="v v-add" id="vAdd">+ Save this view</button>';
+
+  $('views').querySelectorAll('[data-v]').forEach(function(b){
+    b.addEventListener('click', function(e){
+      if (e.target.dataset.del) return;
+      var v = views.filter(function(x){ return x.id === b.dataset.v; })[0];
+      if (!v) return;
+      if (activeView === v.id) { activeView = null; paintViews(); return; }
+      activeView = v.id;
+      applyFilters(v.filters);
+      paintViews();
+      load();
+    });
+  });
+
+  $('views').querySelectorAll('[data-del]').forEach(function(x){
+    x.addEventListener('click', async function(e){
+      e.stopPropagation();
+      var ok = await window.vcConfirm({
+        title: 'Delete this view?',
+        body: 'Only the saved filter goes. No tasks are affected.',
+        confirm: 'Delete'
+      });
+      if (!ok) return;
+      await sb.from('saved_views').delete().eq('id', x.dataset.del);
+      if (activeView === x.dataset.del) activeView = null;
+      loadViews();
+    });
+  });
+
+  $('vAdd').addEventListener('click', async function(){
+    var name = window.prompt('Name this view');
+    if (!name || !name.trim()) return;
+    var r = await sb.from('saved_views').insert({
+      profile_id: me.id, name: name.trim(), surface: 'board',
+      filters: currentFilters(), sort_order: views.length
+    });
+    if (r.error) return say(r.error.message, false);
+    loadViews();
+  });
+}
+
 window.vcInit = async function(){
   sb = window.__sb; me = window.__user;
 
@@ -749,6 +840,7 @@ window.vcInit = async function(){
 
   $('org').addEventListener('change', paintEngs);
   paintEngs();
+  loadViews();
 
   $('eng').addEventListener('change', function(){ engId = this.value; load(); });
   $('vBoard').addEventListener('click', function(){
@@ -757,7 +849,7 @@ window.vcInit = async function(){
   $('vList').addEventListener('click', function(){
     view='list'; $('vList').classList.add('on'); $('vBoard').classList.remove('on'); render();
   });
-  $('filt').addEventListener('change', render);
+  $('filt').addEventListener('change', function(){ activeView = null; paintViews(); render(); });
   $('assignee').addEventListener('change', render);
   $('clearF').addEventListener('click', function(){
     $('org').value = ''; $('filt').value = 'all'; $('assignee').value = '';

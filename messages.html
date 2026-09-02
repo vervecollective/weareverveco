@@ -445,7 +445,8 @@ window.vcInit = async function(){
   });
 
   $('pEmo').addEventListener('click', async function(e){
-    var b = e.target.closest('button'); if (!b) return;
+    var b = e.target.closest('button[data-e]'); if (!b) return;
+    e.stopPropagation();
     var target = $('pick').dataset.target;
     if (target){
       $('pick').dataset.target=''; $('pick').classList.remove('on');

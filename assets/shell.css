@@ -1661,3 +1661,57 @@ body.vc-previewing .vc-topbar{top:38px;}
   .vc-dock-n{position:absolute !important;top:-2px;right:-2px;
     border:2.5px solid #F6F7F9 !important;margin:0;}
 }
+
+
+/* ================= mentions and references =================
+   Slight colour, not loud. A mention should read as a person, and a reference
+   as a thing, without either shouting over the sentence around it. */
+.mention,
+body.vc-shelled .mention{
+  display:inline-block;
+  color:#7C2D12 !important;
+  background:linear-gradient(180deg,#FDF0EB,#FBE6DD) !important;
+  border:1px solid #F5D5C6;
+  padding:1px 7px !important; border-radius:5px !important;
+  font-weight:600 !important; font-size:.94em;
+  line-height:1.45; text-decoration:none;
+  transition:background .16s, transform .12s;
+}
+.mention:hover{ background:#FBE6DD !important; transform:translateY(-1px); }
+
+.refchip,
+body.vc-shelled .refchip{
+  display:inline-block;
+  color:#1E3A8A !important;
+  background:linear-gradient(180deg,#EFF6FF,#E3EDFD) !important;
+  border:1px solid #CFE0FA;
+  padding:1px 7px !important; border-radius:5px !important;
+  font-weight:600 !important; font-size:.94em;
+  line-height:1.45; text-decoration:none !important;
+  transition:background .16s, transform .12s;
+}
+.refchip:hover{ background:#E3EDFD !important; transform:translateY(-1px); }
+
+/* The picker: a small, calm panel that arrives rather than appears. */
+.ac,.epick{ animation:acIn .15s cubic-bezier(.32,.72,0,1) both; }
+@keyframes acIn{
+  from{opacity:0; transform:translateY(6px) scale(.985);}
+  to{opacity:1; transform:none;}
+}
+.ac-i{ transition:background .12s; }
+.ac-i.sel{
+  background:linear-gradient(90deg,#FDF0EB,#FFF7F4) !important;
+  box-shadow:inset 2px 0 0 #9A3412;
+}
+.ac-i .av{ transition:transform .12s; }
+.ac-i.sel .av{ transform:scale(1.08); }
+/* A hint that Tab or Enter accepts the highlighted row. */
+.ac-i.sel:after{
+  content:'\21B5'; margin-left:auto; font-size:11px; color:#9A3412; opacity:.7;
+}
+.ac-i{ display:flex; align-items:center; }
+
+@media (prefers-reduced-motion: reduce){
+  .ac,.epick{animation:none;}
+  .mention:hover,.refchip:hover{transform:none;}
+}

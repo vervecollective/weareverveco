@@ -183,6 +183,13 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       <div class="sec-hd"><h2>How you hear from us</h2>
         <p>In-app notifications always appear in the bell. These control what also reaches your inbox.</p></div>
       <div class="sec-bd">
+        <div id="browserRow" style="display:flex;align-items:center;gap:12px;padding:14px;
+          background:#F6F7F9;border-radius:10px;margin-bottom:16px">
+          <span style="flex:1"><b style="font-size:14px;display:block">Browser notifications</b>
+            <em id="browserState" style="font-size:12.5px;font-style:normal;color:#5C6470">Checking…</em></span>
+          <button class="btn btn-2" id="browserBtn" style="white-space:nowrap">Turn on</button>
+        </div>
+
         <label class="np"><input type="checkbox" id="npEmail"><span>
           <b>Email me</b><em>Turn this off and nothing is emailed. The bell still works.</em></span></label>
 
@@ -581,6 +588,49 @@ function vcInit(){
 
   loadStatuses();
   loadOrgs();
+
+  // ── browser notifications ──
+  // Permission can only be requested from a real click, so this needs a button.
+  (function(){
+    var btn = $('browserBtn'), st = $('browserState');
+    if (!btn) return;
+
+    function paint(){
+      if (!('Notification' in window)) {
+        st.textContent = 'This browser does not support them.';
+        btn.style.display = 'none'; return;
+      }
+      if (Notification.permission === 'granted') {
+        st.textContent = 'On. New notifications appear even when this tab is in the background.';
+        btn.textContent = 'Send a test'; btn.disabled = false;
+      } else if (Notification.permission === 'denied') {
+        st.textContent = 'Blocked in your browser settings. Click the padlock in the address bar to allow them.';
+        btn.textContent = 'Blocked'; btn.disabled = true;
+      } else {
+        st.textContent = 'Off. Turn these on to see notifications while you are in another tab.';
+        btn.textContent = 'Turn on'; btn.disabled = false;
+      }
+    }
+    paint();
+
+    btn.addEventListener('click', async function(){
+      if (Notification.permission === 'granted') {
+        new Notification('Verve Collective', {
+          body: 'That is what a notification will look like.',
+          icon: '/assets/logo-email.png'
+        });
+        return;
+      }
+      var res = await Notification.requestPermission();
+      paint();
+      if (res === 'granted') {
+        new Notification('Verve Collective', {
+          body: 'Browser notifications are on.',
+          icon: '/assets/logo-email.png'
+        });
+      }
+    });
+  })();
 
   // ── notification preferences ──
   var NP = [['npEmail','email_enabled'],['npMention','email_mention'],['npMessage','email_message'],

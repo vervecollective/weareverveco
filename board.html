@@ -77,7 +77,7 @@
   .drop-ph{height:40px;border:2px dashed #9A3412;border-radius:10px;background:#FDF0EB;
     margin-bottom:9px;animation:phIn .14s ease both;}
   @keyframes phIn{from{opacity:0;transform:scaleY(.6);}to{opacity:1;transform:none;}}
-  .t.dragging{opacity:.35;transform:rotate(1.5deg);}
+  .t.drag{opacity:.35;transform:rotate(1.5deg);}
   .t{transition:box-shadow .14s,transform .14s;}
   .t-meta{display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
   .av{width:22px;height:22px;border-radius:50%;background:#111827;color:#fff;
@@ -412,7 +412,16 @@ function renderList(shown){
 
 function wire(){
   document.querySelectorAll('.t').forEach(function(el){
-    el.addEventListener('click', function(){ open(el.dataset.id); });
+    el.addEventListener('click', function(e){
+      // Shift-click peeks in the drawer; a plain click opens the full task page.
+      if (e.shiftKey) { open(el.dataset.id); return; }
+      location.href = '/task?id=' + el.dataset.id;
+    });
+    el.addEventListener('dragend', function(){
+      el.classList.remove('drag');
+      var ph = document.querySelector('.drop-ph'); if (ph) ph.remove();
+      document.querySelectorAll('.col.over').forEach(function(c){ c.classList.remove('over'); });
+    });
     el.addEventListener('dragstart', function(e){
       el.classList.add('drag');
       e.dataTransfer.setData('text/plain', el.dataset.id);
@@ -425,7 +434,7 @@ function wire(){
     col.addEventListener('dragover', function(e){
       e.preventDefault(); col.classList.add('over');
       // Slide a gap open where the card would land.
-      var after = null, cards = Array.prototype.slice.call(col.querySelectorAll('.t:not(.dragging)'));
+      var after = null, cards = Array.prototype.slice.call(col.querySelectorAll('.t:not(.drag)'));
       for (var i = 0; i < cards.length; i++) {
         var box = cards[i].getBoundingClientRect();
         if (e.clientY < box.top + box.height / 2) { after = cards[i]; break; }

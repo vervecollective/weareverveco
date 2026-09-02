@@ -285,11 +285,13 @@
 </section>
 
 <script>
-(() => {
+/* This block used to run at parse time, before the shell had authenticated,
+   so window.__sb was still undefined and every call threw
+   "Cannot read properties of undefined". It now waits for auth. */
+function vcProposalsInit() {
   const root = document.getElementById('vc-proposals');
   if (!root) return;
 
-  // ── Adjust this line if your Supabase client is not called `supabase` ──
   const VC_TOKEN = async () => {
     const { data } = await window.__sb.auth.getSession();
     return data?.session?.access_token || null;
@@ -435,7 +437,13 @@
       }
     }
   })();
-})();
+}
+
+if (window.__sb) {
+  vcProposalsInit();
+} else {
+  window.addEventListener('vc-auth-ready', vcProposalsInit, { once: true });
+}
 </script>
 
       <div id="delivBox" style="display:none;margin-top:26px;border-top:1px solid #e5e7eb;padding-top:20px">

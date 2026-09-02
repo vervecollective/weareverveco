@@ -47,6 +47,13 @@
   input:focus,select:focus,textarea:focus{outline:none;border-color:var(--vc-accent);
     box-shadow:0 0 0 3px var(--vc-accent-soft);}
   input:disabled{background:var(--vc-surface);color:var(--vc-text-3);}
+  .np{display:flex;align-items:flex-start;gap:12px;padding:11px 0;cursor:pointer;
+    border-bottom:1px solid #F4F5F7;}
+  .np:last-child{border-bottom:none;}
+  .np input{width:auto;margin-top:3px;flex-shrink:0;}
+  .np span{display:flex;flex-direction:column;}
+  .np b{font-size:14px;font-weight:600;}
+  .np em{font-size:12.5px;font-style:normal;color:#5C6470;margin-top:1px;}
   .help{font-size:12px;color:var(--vc-text-3);margin-top:5px;}
 
   .btn{background:var(--vc-accent);color:#fff;border:none;border-radius:6px;
@@ -171,6 +178,48 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   </div>
 
   <!-- TEAM -->
+  <div class="pane" id="pane-notify">
+    <div class="sec">
+      <div class="sec-hd"><h2>How you hear from us</h2>
+        <p>In-app notifications always appear in the bell. These control what also reaches your inbox.</p></div>
+      <div class="sec-bd">
+        <label class="np"><input type="checkbox" id="npEmail"><span>
+          <b>Email me</b><em>Turn this off and nothing is emailed. The bell still works.</em></span></label>
+
+        <div id="npKinds" style="margin-top:18px;padding-top:16px;border-top:1px solid #EBECEF">
+          <p style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5C6470;margin-bottom:12px">Email me about</p>
+          <label class="np"><input type="checkbox" id="npMention"><span>
+            <b>Mentions</b><em>Someone @mentions you in a task comment</em></span></label>
+          <label class="np"><input type="checkbox" id="npMessage"><span>
+            <b>Direct messages</b><em>Someone messages you and you are not online</em></span></label>
+          <label class="np"><input type="checkbox" id="npAssigned"><span>
+            <b>Work assigned to you</b><em>A task is given to you</em></span></label>
+          <label class="np"><input type="checkbox" id="npOffer"><span>
+            <b>Job offers and replies</b><em>You are offered a job, or someone answers one</em></span></label>
+          <label class="np"><input type="checkbox" id="npPayment"><span>
+            <b>Payments</b><em>An invoice is paid or a payment fails</em></span></label>
+          <label class="np"><input type="checkbox" id="npPayout"><span>
+            <b>Your share</b><em>A payout is approved or sent to you</em></span></label>
+          <label class="np"><input type="checkbox" id="npDocument"><span>
+            <b>Documents and deliverables</b><em>Something is signed, or work is handed over</em></span></label>
+          <label class="np"><input type="checkbox" id="npTask"><span>
+            <b>Every task status change</b><em>Noisy. Off unless you want everything.</em></span></label>
+        </div>
+
+        <div style="margin-top:18px;padding-top:16px;border-top:1px solid #EBECEF">
+          <p style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5C6470;margin-bottom:10px">Quiet hours</p>
+          <p class="help" style="margin-bottom:12px">Nothing is emailed during these hours. Central time.</p>
+          <div class="row">
+            <div class="fld"><label for="npFrom">From</label><input type="time" id="npFrom"></div>
+            <div class="fld"><label for="npTo">Until</label><input type="time" id="npTo"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sec-ft"><span class="msg" id="npMsg"></span>
+        <button class="btn" id="npSave">Save preferences</button></div>
+    </div>
+  </div>
+
   <div class="pane" id="pane-team">
     <div class="sec">
       <div class="sec-hd"><h2>People</h2><p>Everyone with access. Roles decide what they can see.</p></div>
@@ -247,6 +296,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 var TABS = [
   {id:'profile',  label:'Profile',  roles:['owner','account_owner','contractor','client']},
   {id:'account',  label:'Account',  roles:['owner','account_owner','contractor','client']},
+  {id:'notify',   label:'Notifications', roles:['owner','account_owner','contractor','client']},
   {id:'team',     label:'Team',     roles:['owner']},
   {id:'business', label:'Business', roles:['owner']}
 ];
@@ -531,6 +581,41 @@ function vcInit(){
 
   loadStatuses();
   loadOrgs();
+
+  // ── notification preferences ──
+  var NP = [['npEmail','email_enabled'],['npMention','email_mention'],['npMessage','email_message'],
+            ['npAssigned','email_assigned'],['npOffer','email_offer'],['npPayment','email_payment'],
+            ['npPayout','email_payout'],['npDocument','email_document'],['npTask','email_task_status']];
+
+  (async function loadPrefs(){
+    if (!$('npEmail')) return;
+    var r = await sb.from('notification_prefs').select('*').eq('profile_id', window.__user.id).maybeSingle();
+    var p = r.data || {};
+    NP.forEach(function(x){ if ($(x[0])) $(x[0]).checked = p[x[1]] !== false; });
+    if (p.email_task_status !== true && $('npTask')) $('npTask').checked = false;
+    if ($('npFrom')) $('npFrom').value = (p.quiet_from || '').slice(0,5);
+    if ($('npTo'))   $('npTo').value   = (p.quiet_to   || '').slice(0,5);
+
+    // Turning email off should visibly disable the rest, not leave it ambiguous.
+    function sync(){
+      var on = $('npEmail').checked;
+      $('npKinds').style.opacity = on ? '1' : '.4';
+      $('npKinds').style.pointerEvents = on ? 'auto' : 'none';
+    }
+    $('npEmail').addEventListener('change', sync);
+    sync();
+  })();
+
+  if ($('npSave')) {
+    $('npSave').addEventListener('click', async function(){
+      var payload = { profile_id: window.__user.id, updated_at: new Date().toISOString() };
+      NP.forEach(function(x){ if ($(x[0])) payload[x[1]] = $(x[0]).checked; });
+      payload.quiet_from = $('npFrom').value || null;
+      payload.quiet_to   = $('npTo').value   || null;
+      var r = await sb.from('notification_prefs').upsert(payload, { onConflict:'profile_id' });
+      msg('npMsg', r.error ? r.error.message : 'Saved.', !r.error);
+    });
+  }
 
   $('saveProfile').addEventListener('click', async function(){
     $('saveProfile').disabled = true;

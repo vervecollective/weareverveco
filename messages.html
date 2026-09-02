@@ -13,7 +13,39 @@
   body{font-family:'Inter',system-ui,sans-serif;color:#111827;line-height:1.55;-webkit-font-smoothing:antialiased;}
   .wrap{padding:0 !important;max-width:none !important;height:100vh;display:flex;}
   .list{width:272px;border-right:1px solid #EBECEF;display:flex;flex-direction:column;background:#FCFCFD;}
-  .list-h{padding:18px 18px 14px;border-bottom:1px solid #EBECEF;}
+  .list-h{padding:16px 16px 12px;border-bottom:1px solid #EBECEF;}
+  .iconbtn{background:none;border:none;color:#5C6470;cursor:pointer;padding:6px;
+    border-radius:7px;display:flex;line-height:0;}
+  .iconbtn svg{width:17px;height:17px;}
+  .iconbtn:hover{background:#F1F3F6;color:#111827;}
+  #searchBox{width:100%;margin-top:10px;padding:9px 12px;font-size:13.5px;font-family:inherit;
+    border:1px solid #D8DAE0;border-radius:8px;}
+  #searchBox:focus{outline:none;border-color:#9A3412;}
+  .tabs{display:flex;gap:4px;margin-top:12px;}
+  .tb{flex:1;border:none;background:none;padding:7px;border-radius:7px;
+    font:600 12.5px/1 'Inter',sans-serif;color:#5C6470;cursor:pointer;}
+  .tb.on{background:#F1F3F6;color:#111827;}
+  .ch .menu{opacity:0;background:none;border:none;color:#9CA3AF;cursor:pointer;
+    padding:3px;border-radius:5px;flex-shrink:0;line-height:0;}
+  .ch:hover .menu{opacity:1;}
+  .ch .menu:hover{background:#E4E7EC;color:#111827;}
+  .ch .menu svg{width:15px;height:15px;}
+  .ch.muted .b b{color:#9CA3AF;}
+  .chmenu{position:fixed;background:#fff;border:1px solid #E4E6EA;border-radius:10px;
+    box-shadow:0 12px 32px rgba(16,24,40,.18);z-index:95;display:none;padding:5px;min-width:186px;}
+  .chmenu.on{display:block;}
+  .chmenu button{display:block;width:100%;text-align:left;border:none;background:none;
+    padding:9px 11px;border-radius:7px;font:500 13.5px/1 'Inter',sans-serif;
+    color:#111827;cursor:pointer;}
+  .chmenu button:hover{background:#F3F4F6;}
+  .chmenu button.danger{color:#991B1B;}
+  .sr{padding:11px 12px;border-radius:9px;cursor:pointer;margin-bottom:3px;}
+  .sr:hover{background:#F1F3F6;}
+  .sr b{font-size:12.5px;font-weight:600;display:block;}
+  .sr span{font-size:12.5px;color:#5C6470;display:block;margin-top:2px;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .sr em{font-size:11px;font-style:normal;color:#9CA3AF;}
+  .hint{font-size:11.5px;color:#9CA3AF;padding:0 24px 10px;}
   .list-h b{font-size:17px;font-weight:700;letter-spacing:-.02em;}
   .newbtn{width:100%;margin-top:12px;padding:10px;border:1px solid #D8DAE0;border-radius:9px;
     background:#fff;font:600 13.5px/1 'Inter',sans-serif;cursor:pointer;color:#111827;}
@@ -146,7 +178,20 @@
 <body>
 <div class="wrap">
   <div class="list">
-    <div class="list-h"><b>Messages</b><button class="newbtn" id="newBtn">+ New message</button></div>
+    <div class="list-h">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <b>Messages</b>
+        <button class="iconbtn" id="searchBtn" title="Search messages" aria-label="Search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button>
+      </div>
+      <input type="text" id="searchBox" placeholder="Search all messages" style="display:none">
+      <div class="tabs">
+        <button class="tb on" data-t="all">All</button>
+        <button class="tb" data-t="unread">Unread</button>
+      </div>
+      <button class="newbtn" id="newBtn">+ New message</button>
+    </div>
     <div class="chans" id="chans"></div>
   </div>
   <div class="pane" id="pane">
@@ -177,6 +222,7 @@
         <textarea id="box" rows="1" placeholder="Write a message"></textarea>
         <button class="send" id="send">Send</button>
       </div>
+      <p class="hint">Shift + Enter starts a new line.</p>
     </div>
   </div>
 </div>
@@ -189,6 +235,8 @@
     <input type="text" id="gname" placeholder="Group name (optional)" style="display:none">
     <button class="gbtn" id="startBtn" disabled>Start</button>
   </div>
+<div class="chmenu" id="chMenu"></div>
+
 </div>
 
 <script>
@@ -215,6 +263,7 @@ function esc(s){var d=document.createElement('div');d.textContent=s==null?'':s;r
 function ini(n){return (n||'?').split(' ').map(function(p){return p[0];}).filter(Boolean).join('').slice(0,2).toUpperCase();}
 
 var sb, me, chans=[], people={}, cur=null, online={}, rxMap={}, sub=null, typeTimer=null, picked=[];
+var tab='all', searching=false;
 
 function when(ts){
   var d=new Date(ts), n=new Date();
@@ -256,13 +305,23 @@ async function react(mid, e){
 
 async function loadChans(){
   var r = await sb.from('channels')
-    .select('*, channel_members(profile_id, last_read_at), messages(body, created_at, author_id)')
+    .select('*, channel_members(profile_id, last_read_at, muted, pinned, manually_unread), messages(body, created_at, author_id)')
     .order('last_message_at',{ascending:false});
   chans = (r.data||[]).filter(function(c){
     return (c.channel_members||[]).some(function(m){ return m.profile_id === me.id; });
   });
 
-  $('chans').innerHTML = chans.length ? chans.map(function(c){
+  var list = chans.filter(function(c){
+    if (tab !== 'unread') return true;
+    var msgs = (c.messages||[]);
+    var mine = (c.channel_members||[]).filter(function(m){return m.profile_id===me.id;})[0];
+    if (mine && mine.manually_unread) return true;
+    return msgs.some(function(m){
+      return m.author_id!==me.id && mine && new Date(m.created_at) > new Date(mine.last_read_at||0);
+    });
+  });
+
+  $('chans').innerHTML = list.length ? list.map(function(c){
     var msgs = (c.messages||[]).slice().sort(function(a,b){return a.created_at<b.created_at?1:-1;});
     var last = msgs[0];
     var mine = (c.channel_members||[]).filter(function(m){return m.profile_id===me.id;})[0];
@@ -274,14 +333,28 @@ async function loadChans(){
     var av = (o && o.avatar_url)
       ? '<span class="av" style="background-image:url('+esc(o.avatar_url)+')">'+dot+'</span>'
       : '<span class="av">'+ini(titleOf(c))+dot+'</span>';
-    return '<div class="ch'+(cur&&cur.id===c.id?' on':'')+'" data-id="'+c.id+'">'+av+
+    var mineRow = (c.channel_members||[]).filter(function(m){return m.profile_id===me.id;})[0];
+    return '<div class="ch'+(cur&&cur.id===c.id?' on':'')+
+      ((mineRow&&mineRow.muted)?' muted':'')+'" data-id="'+c.id+'">'+av+
       '<span class="b"><b>'+esc(titleOf(c))+'</b>'+
       '<span>'+esc(last ? (last.body||'Sent a file').slice(0,42) : 'No messages yet')+'</span></span>'+
-      (unread?'<span class="n">'+unread+'</span>':'')+'</div>';
-  }).join('') : '<p style="font-size:13px;color:#5C6470;padding:14px">No conversations yet.</p>';
+      (unread?'<span class="n">'+unread+'</span>':'')+
+      '<button class="menu" data-menu="'+c.id+'" aria-label="More">'+
+        '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/>'+
+        '<circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>'+
+      '</div>';
+  }).join('') : '<p style="font-size:13px;color:#5C6470;padding:14px">'+
+      (tab==='unread' ? 'Nothing unread.' : 'No conversations yet.')+'</p>';
+
+  $('chans').querySelectorAll('[data-menu]').forEach(function(b){
+    b.addEventListener('click', function(e){ e.stopPropagation(); openChMenu(b, b.dataset.menu); });
+  });
 
   $('chans').querySelectorAll('.ch').forEach(function(el){
-    el.addEventListener('click', function(){ openCh(el.dataset.id); });
+    el.addEventListener('click', function(e){
+      if (e.target.closest('[data-menu]')) return;
+      openCh(el.dataset.id);
+    });
   });
 }
 
@@ -388,7 +461,8 @@ async function openCh(id){
   $('hName').textContent = titleOf(cur);
   $('hOn').textContent = (o && online[o.id]) ? 'Active now' : '';
   await paint();
-  await sb.from('channel_members').update({last_read_at:new Date().toISOString()})
+  await sb.from('channel_members')
+    .update({ last_read_at:new Date().toISOString(), manually_unread:false })
     .eq('channel_id',id).eq('profile_id',me.id);
   loadChans();
 
@@ -398,6 +472,82 @@ async function openCh(id){
     .on('postgres_changes',{event:'*',schema:'public',table:'reactions'}, paint)
     .on('postgres_changes',{event:'*',schema:'public',table:'typing',filter:'channel_id=eq.'+id}, showTyping)
     .subscribe();
+}
+
+/* Per-chat actions live where the chat does, not in a settings page. */
+function openChMenu(anchor, cid){
+  var c = chans.filter(function(x){ return x.id === cid; })[0];
+  if (!c) return;
+  var mine = (c.channel_members||[]).filter(function(m){ return m.profile_id === me.id; })[0] || {};
+  var mn = document.getElementById('chMenu');
+
+  mn.innerHTML =
+    '<button data-a="unread">Mark as unread</button>' +
+    '<button data-a="mute">' + (mine.muted ? 'Unmute' : 'Mute') + '</button>' +
+    '<button data-a="copy">Copy link</button>' +
+    (c.kind === 'group' ? '<button class="danger" data-a="leave">Leave group</button>' : '');
+
+  var r = anchor.getBoundingClientRect();
+  mn.style.top  = Math.min(r.bottom + 6, window.innerHeight - 190) + 'px';
+  mn.style.left = Math.min(r.left - 150, window.innerWidth - 200) + 'px';
+  mn.classList.add('on');
+
+  mn.querySelectorAll('button').forEach(function(b){
+    b.addEventListener('click', async function(e){
+      e.stopPropagation();
+      mn.classList.remove('on');
+      var a = b.dataset.a;
+
+      if (a === 'unread') {
+        await sb.from('channel_members')
+          .update({ manually_unread: true, last_read_at: new Date(0).toISOString() })
+          .eq('channel_id', cid).eq('profile_id', me.id);
+        if (cur && cur.id === cid) { cur = null; $('live').style.display='none'; $('blank').style.display='flex'; }
+        loadChans();
+
+      } else if (a === 'mute') {
+        await sb.from('channel_members').update({ muted: !mine.muted })
+          .eq('channel_id', cid).eq('profile_id', me.id);
+        loadChans();
+
+      } else if (a === 'copy') {
+        navigator.clipboard.writeText(location.origin + '/messages?c=' + cid);
+        b.textContent = 'Copied';
+
+      } else if (a === 'leave') {
+        var ok = window.vcConfirm
+          ? await window.vcConfirm({ title:'Leave this group?',
+              body:'You stop receiving its messages. Others keep the conversation.',
+              confirm:'Leave' })
+          : true;
+        if (!ok) return;
+        await sb.from('channel_members').delete().eq('channel_id', cid).eq('profile_id', me.id);
+        if (cur && cur.id === cid) { cur = null; $('live').style.display='none'; $('blank').style.display='flex'; }
+        loadChans();
+      }
+    });
+  });
+}
+
+/* Search spans every conversation you are in, which is the thing a chat list
+   alone can never answer. */
+async function runSearch(q){
+  var box = $('chans');
+  if (!q || q.length < 2) { searching = false; loadChans(); return; }
+  searching = true;
+  var r = await sb.rpc('search_messages', { q: q });
+  var d = r.data || [];
+  box.innerHTML = d.length ? d.map(function(x){
+    return '<div class="sr" data-c="'+x.channel_id+'">'+
+      '<b>'+esc(x.author_name||'Someone')+' \u00b7 '+esc(x.channel_name||'Conversation')+'</b>'+
+      '<span>'+esc(x.body)+'</span>'+
+      '<em>'+new Date(x.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'})+'</em>'+
+      '</div>';
+  }).join('') : '<p style="font-size:13px;color:#5C6470;padding:14px">Nothing found.</p>';
+
+  box.querySelectorAll('.sr').forEach(function(el){
+    el.addEventListener('click', function(){ openCh(el.dataset.c); });
+  });
 }
 
 window.vcInit = async function(){
@@ -591,6 +741,35 @@ window.vcInit = async function(){
   $('send').addEventListener('click', send);
   $('box').addEventListener('keydown', function(e){
     if (e.key==='Enter' && !e.shiftKey){ e.preventDefault(); send(); }
+  });
+
+  document.addEventListener('click', function(){
+    var mn = document.getElementById('chMenu');
+    if (mn) mn.classList.remove('on');
+  });
+
+  document.querySelectorAll('.tb').forEach(function(b){
+    b.addEventListener('click', function(){
+      document.querySelectorAll('.tb').forEach(function(x){ x.classList.remove('on'); });
+      b.classList.add('on');
+      tab = b.dataset.t;
+      loadChans();
+    });
+  });
+
+  $('searchBtn').addEventListener('click', function(){
+    var sBox = $('searchBox');
+    var on = sBox.style.display === 'none';
+    sBox.style.display = on ? 'block' : 'none';
+    if (on) sBox.focus();
+    else { sBox.value = ''; searching = false; loadChans(); }
+  });
+
+  var sTimer;
+  $('searchBox').addEventListener('input', function(){
+    clearTimeout(sTimer);
+    var v = this.value.trim();
+    sTimer = setTimeout(function(){ runSearch(v); }, 300);
   });
 
   await loadChans();

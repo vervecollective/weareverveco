@@ -1073,3 +1073,17 @@ body.vc-shelled .eng-item .st{margin-top:8px !important;display:inline-block !im
   .m .react-hint{display:flex;opacity:.45;}
   .m .react-hint.active{opacity:1;}
 }
+
+
+/* ---- reaction affordance sits beside the name, not floating far right ---- */
+.m .react-hint{
+  position:static !important;
+  width:22px !important; height:22px !important;
+  margin-left:6px; flex-shrink:0; vertical-align:middle;
+}
+.m .react-hint svg{width:15px;height:15px;}
+/* It belongs in the header row, next to the timestamp. */
+.m .hd{display:flex !important; align-items:center !important; gap:8px !important;}
+.m.cont .hd{display:flex !important;}
+.m.cont .hd b, .m.cont .hd em{display:none;}
+.m.cont .react-hint{margin-left:0;}

@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Resources — Verve Collective</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/shell.css">
+<script type="module" src="/assets/shell.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',system-ui,sans-serif;color:#111827;line-height:1.55;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1160px;margin:0;padding:32px 36px 90px;}
+  h1{font-size:26px;font-weight:700;letter-spacing:-.02em;}
+  .lede{color:#5C6470;font-size:15px;margin-bottom:24px;}
+
+  .bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:22px;}
+  .chip{padding:8px 15px;border:1px solid #D8DAE0;border-radius:999px;background:#fff;
+    font-size:13.5px;font-weight:500;cursor:pointer;font-family:inherit;color:#374151;}
+  .chip:hover{border-color:#9A3412;color:#9A3412;}
+  .chip.on{background:#9A3412;border-color:#9A3412;color:#fff;font-weight:600;}
+
+  .grid-r{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px;}
+  .r{background:#fff;border:1px solid #EBECEF;border-radius:12px;padding:18px;
+    text-decoration:none;color:inherit;display:flex;flex-direction:column;gap:9px;
+    box-shadow:0 1px 2px rgba(16,24,40,.04);transition:box-shadow .16s,transform .16s;position:relative;}
+  .r:hover{box-shadow:0 5px 16px rgba(16,24,40,.1);transform:translateY(-2px);}
+  .r-top{display:flex;align-items:center;gap:11px;}
+  .ic{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;
+    justify-content:center;flex-shrink:0;}
+  .ic svg{width:19px;height:19px;}
+  .ic.doc{background:#E8F0FE;color:#1A73E8;}
+  .ic.sheet{background:#E6F4EA;color:#0F9D58;}
+  .ic.slides{background:#FEF7E0;color:#F9AB00;}
+  .ic.folder{background:#FFF4E5;color:#B45309;}
+  .ic.brand{background:#FDF0EB;color:#9A3412;}
+  .ic.pdf{background:#FCE8E6;color:#D93025;}
+  .ic.video{background:#F3E8FD;color:#7C3AED;}
+  .ic.link{background:#F1F2F4;color:#5C6470;}
+  .r b{font-size:14.5px;font-weight:600;line-height:1.35;}
+  .r p{font-size:13px;color:#5C6470;line-height:1.55;}
+  .r .tag{font-size:10.5px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.06em;}
+  .pin{position:absolute;top:14px;right:14px;color:#9A3412;}
+  .pin svg{width:14px;height:14px;}
+  .who{font-size:11px;color:#9CA3AF;margin-top:2px;}
+
+  .add{background:#fff;border:1px dashed #D8DAE0;border-radius:12px;padding:20px;margin-top:22px;}
+  .add h2{font-size:15px;font-weight:600;margin-bottom:3px;}
+  .add p{font-size:13px;color:#5C6470;margin-bottom:16px;}
+  label{display:block;font-size:12.5px;font-weight:600;color:#374151;margin-bottom:6px;}
+  input,select,textarea{width:100%;padding:10px 12px;font-size:14px;font-family:inherit;
+    border:1px solid #D8DAE0;border-radius:8px;}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+  .fld{margin-bottom:14px;}
+  .btn{background:#9A3412;color:#fff;border:none;border-radius:8px;padding:11px 20px;
+    font:600 14px/1 'Inter',sans-serif;cursor:pointer;}
+  .msg{font-size:13px;margin-top:10px;display:none;}
+  .msg.show{display:block;} .msg.ok{color:#065F46;} .msg.err{color:#991B1B;}
+  .empty{grid-column:1/-1;text-align:center;padding:48px 20px;color:#5C6470;font-size:14px;}
+  .empty b{display:block;color:#111827;font-size:16px;font-weight:700;margin-bottom:6px;}
+  .del{position:absolute;bottom:12px;right:12px;background:none;border:none;color:#C4C7D0;
+    cursor:pointer;font-size:16px;line-height:1;display:none;padding:4px;}
+  .r:hover .del{display:block;}
+  .del:hover{color:#991B1B;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Resources</h1>
+  <p class="lede">Brand assets, templates and playbooks. Everything lives in Drive — these are the links.</p>
+
+  <div class="bar" id="cats"></div>
+  <div class="grid-r" id="list"></div>
+
+  <div class="add" id="addBox" style="display:none">
+    <h2>Add a resource</h2>
+    <p>Paste a Drive, Frame.io or Dropbox link. Make sure sharing is set so the right people can open it.</p>
+    <div class="row">
+      <div class="fld"><label for="rTitle">Title</label><input type="text" id="rTitle" placeholder="Brand assets"></div>
+      <div class="fld"><label for="rUrl">Link</label><input type="text" id="rUrl" placeholder="https://drive.google.com/..."></div>
+    </div>
+    <div class="fld"><label for="rDesc">What is it, and when would someone need it</label>
+      <input type="text" id="rDesc" placeholder="Logo files, colours, fonts. Use these, not screenshots."></div>
+    <div class="row3">
+      <div class="fld"><label for="rKind">Type</label>
+        <select id="rKind">
+          <option value="doc">Document</option><option value="sheet">Spreadsheet</option>
+          <option value="slides">Slides</option><option value="folder">Folder</option>
+          <option value="brand">Brand assets</option><option value="pdf">PDF</option>
+          <option value="video">Video</option><option value="link">Link</option>
+        </select></div>
+      <div class="fld"><label for="rCat">Category</label>
+        <select id="rCat">
+          <option value="brand">Brand</option><option value="production">Production</option>
+          <option value="crew">Crew</option><option value="money">Money</option>
+          <option value="ops">Operations</option><option value="general">General</option>
+        </select></div>
+      <div class="fld"><label for="rWho">Who can see it</label>
+        <select id="rWho">
+          <option value="all">Everyone on the team</option>
+          <option value="staff">Staff only</option>
+        </select></div>
+    </div>
+    <button class="btn" id="rAdd">Add resource</button>
+    <p class="msg" id="rMsg"></p>
+  </div>
+</div>
+
+<script>
+function $(i){return document.getElementById(i);}
+function esc(s){var d=document.createElement('div');d.textContent=s==null?'':s;return d.innerHTML;}
+var sb, me, role, all = [], cat = '';
+
+var ICONS = {
+  doc:'M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M9 13h6M9 17h4',
+  sheet:'M4 4h16v16H4zM4 10h16M4 15h16M10 4v16',
+  slides:'M3 4h18v12H3zM12 16v4M8 20h8',
+  folder:'M3 6h6l2 2.5h10V19H3z',
+  brand:'m12 3 2.6 5.3 5.9.9-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.2l5.9-.9z',
+  pdf:'M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M9 15h6',
+  video:'m22 8-6 4 6 4zM2 6h14v12H2z',
+  link:'M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1'
+};
+var CATS = [['','Everything'],['brand','Brand'],['production','Production'],
+            ['crew','Crew'],['money','Money'],['ops','Operations'],['general','General']];
+
+function render(){
+  $('cats').innerHTML = CATS.map(function(c){
+    var n = c[0] ? all.filter(function(r){ return r.category===c[0]; }).length : all.length;
+    if (c[0] && !n) return '';
+    return '<button class="chip'+(cat===c[0]?' on':'')+'" data-c="'+c[0]+'">'+c[1]+
+      (n?' <span style="opacity:.6">'+n+'</span>':'')+'</button>';
+  }).join('');
+  $('cats').querySelectorAll('.chip').forEach(function(b){
+    b.addEventListener('click', function(){ cat = b.dataset.c; render(); });
+  });
+
+  var shown = cat ? all.filter(function(r){ return r.category===cat; }) : all;
+  shown = shown.slice().sort(function(a,b){
+    if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+    return (a.sort_order||0)-(b.sort_order||0);
+  });
+
+  $('list').innerHTML = shown.length ? shown.map(function(r){
+    var staffOnly = (r.visible_to||[]).indexOf('contractor') === -1;
+    return '<a class="r" href="'+esc(r.url)+'" target="_blank" rel="noopener">'+
+      (r.pinned ? '<span class="pin"><svg viewBox="0 0 24 24" fill="currentColor">'+
+        '<path d="M12 2 9 9l-7 .6 5.3 4.6L5.8 21 12 17.3 18.2 21l-1.5-6.8L22 9.6 15 9z"/></svg></span>' : '')+
+      '<div class="r-top"><span class="ic '+esc(r.kind)+'">'+
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" '+
+        'stroke-linecap="round" stroke-linejoin="round"><path d="'+(ICONS[r.kind]||ICONS.link)+'"/></svg>'+
+      '</span><b>'+esc(r.title)+'</b></div>'+
+      (r.description ? '<p>'+esc(r.description)+'</p>' : '')+
+      '<span class="tag">'+esc(r.category)+'</span>'+
+      (staffOnly ? '<span class="who">Staff only</span>' : '')+
+      (role==='owner' ? '<button class="del" data-id="'+r.id+'">&times;</button>' : '')+
+      '</a>';
+  }).join('') : '<div class="empty"><b>Nothing here yet</b>'+
+    (role==='owner' ? 'Add a link below and it appears for whoever you choose.'
+                    : 'Ask Trae to add what you need.')+'</div>';
+
+  $('list').querySelectorAll('.del').forEach(function(b){
+    b.addEventListener('click', async function(e){
+      e.preventDefault(); e.stopPropagation();
+      if (!window.confirm('Remove this resource? The file itself is untouched.')) return;
+      await sb.from('resources').delete().eq('id', b.dataset.id);
+      load();
+    });
+  });
+}
+
+async function load(){
+  var r = await sb.from('resources').select('*').order('sort_order');
+  all = r.data || [];
+  render();
+}
+
+window.vcInit = async function(){
+  sb = window.__sb; me = window.__user; role = window.__role;
+
+  if (role === 'client') {
+    document.querySelector('.wrap').innerHTML =
+      '<h1>Resources</h1><p class="lede">Your files are on <b>My Project</b>.</p>';
+    return;
+  }
+
+  if (role === 'owner' || role === 'account_owner') $('addBox').style.display = 'block';
+
+  $('rAdd').addEventListener('click', async function(){
+    var t = $('rTitle').value.trim(), u = $('rUrl').value.trim();
+    if (!t || !u) { $('rMsg').textContent='Give it a title and a link.'; $('rMsg').className='msg show err'; return; }
+    if (!/^https?:\/\//.test(u)) { $('rMsg').textContent='The link needs to start with https://'; $('rMsg').className='msg show err'; return; }
+
+    var vis = $('rWho').value === 'staff'
+      ? ['owner','account_owner']
+      : ['owner','account_owner','contractor'];
+
+    var res = await sb.from('resources').insert({
+      title: t, url: u,
+      description: $('rDesc').value.trim() || null,
+      kind: $('rKind').value, category: $('rCat').value,
+      visible_to: vis, created_by: me.id, sort_order: all.length
+    });
+    if (res.error) { $('rMsg').textContent=res.error.message; $('rMsg').className='msg show err'; return; }
+    $('rMsg').textContent='Added.'; $('rMsg').className='msg show ok';
+    $('rTitle').value=''; $('rUrl').value=''; $('rDesc').value='';
+    load();
+  });
+
+  load();
+};
+</script>
+</body>
+</html>

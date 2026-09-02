@@ -46,6 +46,22 @@
   .day input[type=time]{padding:9px 11px;font-size:13.5px;}
   .day.off .t{opacity:.35;pointer-events:none;}
 
+  .splits{display:flex;flex-direction:column;gap:9px;margin-bottom:18px;}
+  .sp{display:flex;align-items:center;gap:12px;padding:14px 16px;background:#fff;
+    border:1px solid #EBECEF;border-radius:11px;}
+  .sp b{font-size:14px;font-weight:600;flex-shrink:0;}
+  .sp span{font-size:12.5px;color:#5C6470;flex:1;}
+  .sp em{font-size:14px;font-style:normal;font-weight:700;color:#00875A;white-space:nowrap;}
+  .gate{list-style:none;counter-reset:g;margin-bottom:18px;}
+  .gate li{counter-increment:g;position:relative;padding:0 0 15px 36px;}
+  .gate li:before{content:counter(g);position:absolute;left:0;top:0;width:24px;height:24px;
+    border-radius:50%;background:#FDF0EB;color:#9A3412;font-size:12px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;}
+  .gate b{display:block;font-size:14.5px;font-weight:600;}
+  .gate span{font-size:13px;color:#5C6470;line-height:1.55;}
+  .note{font-size:13px;color:#5C6470;line-height:1.65;padding:14px 16px;
+    background:#F6F7F9;border-radius:10px;}
+  .note b{color:#111827;font-weight:600;}
   .foot{display:flex;align-items:center;gap:16px;padding-top:22px;}
   .btn{background:#9A3412;color:#fff;border:none;border-radius:10px;padding:13px 26px;
     font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;
@@ -142,6 +158,46 @@
         <p class="help">Never put full bank details here. We confirm the account with you directly.</p>
       </div>
 
+      <!-- 6: account owner — the split -->
+      <div class="step" id="s6">
+        <h1>How you get paid</h1>
+        <p class="say">You keep a share of the margin on accounts you run. The rate depends on who found the client.</p>
+        <div class="splits">
+          <div class="sp"><b>Verve found them</b><span>Handed to you signed</span><em>You keep 60%</em></div>
+          <div class="sp"><b>You found them</b><span>Using Verve’s brand and system</span><em>You keep 80%</em></div>
+          <div class="sp"><b>You found them</b><span>Your own brand, our system</span><em>You keep 90%</em></div>
+        </div>
+        <p class="note">The share is of gross margin — what is left after contractors are paid, not the invoice total.
+          You see it live while you build a scope. Paid on money actually collected, never on money still owed.</p>
+      </div>
+
+      <!-- 7: contractor — the paperwork gate -->
+      <div class="step" id="s7">
+        <h1>Before your first job</h1>
+        <p class="say">Three things, then you can be offered work. This is a real gate, not a formality.</p>
+        <ol class="gate">
+          <li><b>Contractor agreement</b><span>What we expect of each other, and how you get paid.</span></li>
+          <li><b>IP assignment</b><span>Without this we legally cannot license your footage to a client, so nothing can start.</span></li>
+          <li><b>W-9</b><span>Needed before we can send you money.</span></li>
+        </ol>
+        <p class="note"><b>We pay within 15 days of approving your invoice</b> — whether or not the client
+          has paid us. That timing is our problem, not yours. Declining a job is always fine; tell us early rather than late.</p>
+      </div>
+
+      <!-- 8: client — what the portal is -->
+      <div class="step" id="s8">
+        <h1>What you will see</h1>
+        <p class="say">One page with everything about your project. No chasing us for updates.</p>
+        <ol class="gate">
+          <li><b>Where things stand</b><span>A progress track and a plain sentence explaining the current stage.</span></li>
+          <li><b>Your timeline</b><span>Our dates. Anything marked <b>Needs you</b> in amber is waiting on you.</span></li>
+          <li><b>Your files</b><span>Approve them or tell us what to change, right there.</span></li>
+          <li><b>Billing</b><span>What is paid, what is owed, and a button to pay it.</span></li>
+        </ol>
+        <p class="note"><b>About ad spend.</b> Your card sits on Google and Meta directly — you see every dollar
+          in real time, in those platforms. Our invoice only ever shows what you pay us to manage it. The two are never blended.</p>
+      </div>
+
       <!-- 5 -->
       <div class="step" id="s5">
         <h1>That is everything.</h1>
@@ -185,9 +241,12 @@ const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
 /* Contractors need all five steps. Staff and clients need far less \u2014 asking
    a client for their gear list would be absurd. */
-const STEPS = role === 'contractor' ? [1,2,3,4,5]
-            : role === 'client'     ? [1,5]
-            : [1,3,5];
+/* Each role is being onboarded to a different job, so they get a different
+   path rather than a trimmed version of one. */
+const STEPS = role === 'contractor'    ? [1,7,2,3,4,5]
+            : role === 'client'        ? [1,8,5]
+            : role === 'account_owner' ? [1,6,3,5]
+            :                            [1,3,5];
 let at = 0;
 let crafts = [];
 let win = {};
@@ -244,7 +303,13 @@ const ART = {
   4: { rows:[['Invoice approved','#00A870','$600'],['Paid by ACH','#00A870','Sent']],
        title:'Getting paid', note:'Within 15 days of approval, whether or not the client has paid us.' },
   5: { rows:[['My Work','#9A3412','Start here'],['Jobs','#A25DDC','Offers'],['Pay','#00A870','Invoices']],
-       title:'Where things live', note:'Everything is in the menu on the left. You will not need to hunt.' }
+       title:'Where things live', note:'Everything is in the menu on the left. You will not need to hunt.' },
+  6: { rows:[['Client invoice','#00A870','$4,150'],['Paid to crew','#C4C7D0','\u2212 $950'],['Your share, 60%','#9A3412','$1,920']],
+       title:'How the split works', note:'Calculated live while you scope. No surprises at the end of a month.' },
+  7: { rows:[['Contractor agreement','#00A870','Sign'],['IP assignment','#00A870','Sign'],['W-9','#FDAB3D','Send']],
+       title:'Your paperwork', note:'Once these are in, you can be offered work. Not before.' },
+  8: { rows:[['Kickoff','#00A870','Done'],['Brand assets','#FDAB3D','Needs you'],['First cuts','#C4C7D0','Sep 18']],
+       title:'Your timeline', note:'Amber means we are waiting on you. It is the fastest way to unblock your own project.' }
 };
 
 function paintArt(n){
@@ -267,9 +332,18 @@ function show(){
 
   if (n === 5) {
     const links = role === 'contractor'
-      ? [['My Work','Everything assigned to you'],['Jobs','Offers and call sheets'],['Pay','Invoice us and track it']]
+      ? [['My Work','Everything assigned to you, across accounts'],
+         ['Jobs','Offers, call sheets, and handing work over'],
+         ['Pay','Your invoices and what you are owed'],
+         ['Messages','Reach us without email']]
       : role === 'client'
-      ? [['My Project','Progress, dates, files and billing']]
+      ? [['My Project','Progress, dates, files and billing'],
+         ['Ask us something','On that same page \u2014 it comes straight to us']]
+      : role === 'account_owner'
+      ? [['Home','What needs you today, worst first'],
+         ['Engagements','Scope, price and invoice your own accounts'],
+         ['Board','The work itself'],
+         ['Pay','Your share, once it is collected']]
       : [['Home','What needs you today'],['Engagements','Scope, price, invoice'],['Board','The work itself']];
     $('tour').innerHTML = links.map(l =>
       `<div class="rw"><span class="dot" style="background:#9A3412"></span>

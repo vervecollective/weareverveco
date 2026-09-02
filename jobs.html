@@ -60,6 +60,10 @@
     line-height:1;padding:0;width:auto;}
   .totalbox{margin-top:14px;padding-top:12px;border-top:1px solid #e5e7eb;font-size:13.5px;color:#111827;}
   .totalbox b{color:#047857;}
+  .rline{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #eef0f3;}
+  .rline .rname{font-size:13.5px;font-weight:600;flex:1;}
+  .rline .rpay{font-size:13px;color:#6b7280;}
+  .rline .acts{display:flex;gap:6px;}
   .rrow{display:grid;grid-template-columns:1fr 1.3fr 118px 30px;gap:8px;align-items:center;margin-bottom:6px;}
   .rrow select,.rrow input{padding:9px 10px;font-size:13.5px;font-family:inherit;
     border:1px solid #d1d5db;border-radius:8px;background:#fff;}
@@ -209,7 +213,7 @@ var sb, me, role, contractors=[];
 
 async function loadJobs(){
   var q = sb.from('assignments')
-    .select('*, assignment_days(*), engagements(title, clients(business_name))')
+    .select('*, assignment_days(*), assignment_roles(*), engagements(title, clients(business_name))')
     .order('work_date',{ascending:true});
   if (role === 'contractor') q = q.eq('contractor_id', me.id);
   var r = await q;
@@ -269,22 +273,79 @@ async function loadJobs(){
       sched + perks +
       '<div class="scope">'+esc(a.scope)+
         (a.deliverables?'\n\nDeliverables: '+esc(a.deliverables):'')+'</div>'+ logistics +
-      (canRespond
-        ? '<div class="acts"><button class="btn btn-sm accept" data-id="'+a.id+'">Accept this job</button>'+
-          '<button class="btn btn-2 btn-sm decline" data-id="'+a.id+'">Decline</button></div>'
-        : '')+
+      /* A shoot can carry more than one role for the same person. Each is
+         answered on its own — someone may want the video and not the stills. */
+      ((a.assignment_roles || []).filter(function(r){ return r.contractor_id === me.id; })
+        .map(function(r){
+          var open = r.status === 'offered';
+          return '<div class="rline">'+
+            '<span class="rname">'+esc(r.craft)+'</span>'+
+            '<span class="rpay">'+(r.pay_amount ? money(r.pay_amount) : '\u2014')+'</span>'+
+            (open
+              ? '<span class="acts">'+
+                  '<button class="btn btn-sm accept" data-r="'+r.id+'">Accept</button>'+
+                  '<button class="btn btn-2 btn-sm decline" data-r="'+r.id+'">Decline</button>'+
+                '</span>'
+              : '<span class="st '+r.status+'">'+r.status+'</span>')+
+            '</div>';
+        }).join('') || '')+
       '</div>';
   }).join('');
 
   el.querySelectorAll('.accept').forEach(function(b){
-    b.addEventListener('click', function(){ respond(b.dataset.id, 'accepted'); });
+    b.addEventListener('click', function(){ respondRole(b.dataset.r, 'accepted'); });
   });
   el.querySelectorAll('.decline').forEach(function(b){
-    b.addEventListener('click', function(){
-      if(!window.confirm('Decline this job? That is completely fine \u2014 we would rather know now.')) return;
-      respond(b.dataset.id, 'declined');
+    b.addEventListener('click', async function(){
+      var ok = window.vcConfirm
+        ? await window.vcConfirm({ title:'Decline this role?',
+            body:'That is completely fine \u2014 we would rather know now than late. '+
+                 'Any other role you have on this shoot is unaffected.',
+            confirm:'Decline' })
+        : window.confirm('Decline this role?');
+      if (ok) respondRole(b.dataset.r, 'declined');
     });
   });
+}
+
+/* Answering a role. The assignment itself only moves once every role has been
+   answered, so a half-answered shoot never looks settled. */
+async function respondRole(roleId, status){
+  var r = await sb.from('assignment_roles')
+    .update({ status: status, responded_at: new Date().toISOString() })
+    .eq('id', roleId).select('assignment_id, craft').single();
+  if (r.error) return alert(r.error.message);
+
+  var aid = r.data.assignment_id;
+  var all = await sb.from('assignment_roles').select('status').eq('assignment_id', aid);
+  var rows = all.data || [];
+  var pending  = rows.filter(function(x){ return x.status === 'offered'; }).length;
+  var accepted = rows.filter(function(x){ return x.status === 'accepted'; }).length;
+
+  if (!pending) {
+    await sb.from('assignments')
+      .update({ status: accepted ? 'accepted' : 'declined',
+                responded_at: new Date().toISOString() })
+      .eq('id', aid);
+  }
+
+  try {
+    var { data:{ session } } = await sb.auth.getSession();
+    await fetch('https://otqrkxjtojqlpzzvqavp.supabase.co/functions/v1/notify', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},
+      body: JSON.stringify({
+        to_owner: true,
+        subject: (me.full_name || 'A contractor') + ' ' + status + ' ' + r.data.craft,
+        heading: r.data.craft + ' ' + status,
+        body: (me.full_name || 'They') + ' ' + status + ' the ' + r.data.craft +
+              ' role.' + (pending ? ' ' + pending + ' role(s) still unanswered.' : ''),
+        cta_url: 'https://weareverveco.com/jobs', cta_label: 'Open Jobs'
+      })
+    });
+  } catch (e) {}
+
+  window.vcInit();
 }
 
 async function respond(id, status){

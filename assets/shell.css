@@ -1528,3 +1528,58 @@ body.vc-mini .vc-tray{left:72px !important;width:300px !important;top:60px !impo
   .vc-dock.ping .vc-dock-btn{animation:none;}
   .vc-dock.open .vc-dock-panel{animation:none;}
 }
+
+
+/* ================= engagements on a phone ================= */
+@media(max-width:860px){
+  /* Sections fold, so the page is navigable rather than five screens of form. */
+  body.vc-shelled .sec-toggle{
+    display:flex !important; align-items:center; justify-content:space-between;
+    cursor:pointer; padding:15px 0 !important; margin:0 !important;
+    border-top:1px solid #EFF1F4; font-size:15px !important; font-weight:600 !important;
+    text-transform:none !important; letter-spacing:-.01em !important; color:#111827 !important;
+    -webkit-tap-highlight-color:transparent;
+  }
+  body.vc-shelled .sec-toggle .chev{
+    width:17px;height:17px;color:#9CA3AF;flex-shrink:0;transition:transform .2s;
+  }
+  body.vc-shelled .collapsed .sec-toggle .chev{transform:rotate(-90deg);}
+  body.vc-shelled .collapsed .sec-body{display:none;}
+  body.vc-shelled .sec-body{padding-bottom:10px;animation:secOpen .2s ease both;}
+  @keyframes secOpen{from{opacity:0;transform:translateY(-5px);}to{opacity:1;transform:none;}}
+
+  /* A save bar that follows you down the page. */
+  .msavebar{position:fixed;left:0;right:0;bottom:0;z-index:1200;
+    padding:12px 16px calc(12px + env(safe-area-inset-bottom));
+    background:rgba(255,255,255,.96);backdrop-filter:blur(10px);
+    border-top:1px solid #E4E6EA;}
+  .msavebar .btn{width:100%;padding:15px !important;font-size:15px !important;}
+  /* Room for it, and for the chat bubble. */
+  body.vc-shelled .wrap{padding-bottom:96px !important;}
+  .vc-dock{bottom:78px !important;}
+
+  /* Fields sized for thumbs, and 16px so iOS does not zoom. */
+  body.vc-shelled .field input,
+  body.vc-shelled .field select,
+  body.vc-shelled .field textarea{
+    font-size:16px !important; padding:13px 14px !important; min-height:48px;
+  }
+  body.vc-shelled .field label{font-size:13px !important; margin-bottom:7px !important;}
+  body.vc-shelled .field{margin-bottom:16px !important;}
+
+  /* Line items stop being a table and become stacked cards. */
+  body.vc-shelled #lineBox table,
+  body.vc-shelled #lineBox thead{display:none;}
+  body.vc-shelled .li-row{
+    display:block !important; background:#FAFBFC; border:1px solid #EBECEF;
+    border-radius:11px; padding:13px; margin-bottom:10px;
+  }
+  body.vc-shelled .li-row input{width:100% !important; margin-bottom:8px;}
+
+  /* The engagement list scrolls sideways instead of pushing the form down. */
+  body.vc-shelled .cols > div:first-child .card{padding:14px !important;}
+  body.vc-shelled #list{display:flex;gap:9px;overflow-x:auto;padding-bottom:4px;
+    -webkit-overflow-scrolling:touch;}
+  body.vc-shelled #list .eng-item{min-width:190px;flex-shrink:0;margin:0 !important;}
+  body.vc-shelled #list .empty{min-width:100%;}
+}

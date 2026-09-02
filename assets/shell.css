@@ -1231,3 +1231,39 @@ body.vc-mini .vc-navgroup + .vc-navitem{
 .vc-idmenu #vcIdOut{border-top:1px solid #F1F2F4;margin-top:4px;padding-top:11px;}
 /* The report panel now centres rather than anchoring to a corner button. */
 .vc-rep{bottom:auto;top:50%;left:50%;right:auto;transform:translate(-50%,-50%);}
+
+
+/* ---- report panel on a phone ---- */
+@media(max-width:860px){
+  .vc-rep{
+    top:auto !important; bottom:0 !important; left:0 !important; right:0 !important;
+    transform:none !important; width:100% !important;
+    border-radius:16px 16px 0 0 !important; max-height:88vh; overflow-y:auto;
+  }
+  .vc-rep.on{animation:repUp .24s cubic-bezier(.32,.72,0,1) both;}
+  @keyframes repUp{from{transform:translateY(100%);}to{transform:none;}}
+  .vc-rep-h{padding:18px 20px 13px;}
+  .vc-rep-b{padding:16px 20px 26px;}
+  .vc-rep-kinds{display:grid;grid-template-columns:1fr;gap:7px;}
+  .vc-rep-kinds button{width:100%;text-align:left;padding:12px 14px;font-size:14px;}
+  .vc-rep textarea{font-size:16px;}          /* stops iOS zooming on focus */
+  .vc-rep-f{flex-direction:column-reverse;gap:8px;}
+  .vc-rep-f button{width:100%;padding:14px;}
+  /* A grab handle, so it reads as a sheet rather than a stuck panel. */
+  .vc-rep:before{content:'';display:block;width:38px;height:4px;border-radius:999px;
+    background:#D8DAE0;margin:10px auto 0;}
+}
+
+/* ---- collapsed rail: the bell was overlapping the brand mark ---- */
+body.vc-mini .vc-bell{
+  position:static !important; transform:none !important;
+  margin:10px auto 0 !important; display:flex !important;
+}
+body.vc-mini .vc-brand{
+  flex-direction:column !important; gap:0 !important;
+  padding:16px 0 12px !important; align-items:center !important;
+}
+body.vc-mini .vc-bell:hover{background:#F1F2F4;box-shadow:none;}
+body.vc-mini .vc-bell-n{top:-2px;right:2px;}
+/* Tray clears the rail instead of sitting under it. */
+body.vc-mini .vc-tray{left:72px !important;width:300px !important;top:60px !important;}

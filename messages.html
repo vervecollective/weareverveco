@@ -104,6 +104,9 @@
   .ggrid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
   .ggrid img{width:100%;border-radius:9px;cursor:pointer;display:block;background:#F1F2F4;}
   .ggrid img:hover{outline:2px solid #9A3412;}
+  .giphy-mark{text-align:center;font-size:10.5px;color:#9CA3AF;padding:10px 0 4px;
+    letter-spacing:.03em;}
+  .giphy-mark b{color:#5C6470;font-weight:800;letter-spacing:.06em;}
   .nogif{font-size:12.5px;color:#5C6470;padding:16px;text-align:center;line-height:1.6;}
 
   .veil{position:fixed;inset:0;background:rgba(16,24,40,.45);z-index:80;display:none;}
@@ -160,6 +163,7 @@
           <div class="pick-b" id="pGif" style="display:none">
             <input class="gq" id="gq" type="text" placeholder="Search GIFs">
             <div class="ggrid" id="ggrid"></div>
+            <div class="giphy-mark">Powered by <b>GIPHY</b></div>
           </div>
         </div>
         <button class="tool" id="emoBtn" title="Emoji" aria-label="Emoji">
@@ -437,7 +441,7 @@ window.vcInit = async function(){
   $('tGif').addEventListener('click', function(){
     $('tGif').classList.add('on'); $('tEmo').classList.remove('on');
     $('pEmo').style.display='none'; $('pGif').style.display='block';
-    if (!$('ggrid').innerHTML) loadGifs('yes');
+    if (!$('ggrid').innerHTML) loadGifs('');
   });
 
   $('pEmo').addEventListener('click', async function(e){
@@ -454,23 +458,28 @@ window.vcInit = async function(){
 
   /* GIFs need a free Giphy key. Without one the tab says so rather than
      showing a broken grid \u2014 and the paperclip already handles GIF files. */
-  var GIPHY = window.__GIPHY_KEY || '';
+  var GIPHY = window.__GIPHY_KEY || 'JXN6mwDA7OUX9lgRKGKudbF0RRFLXBHQ';
   async function loadGifs(q){
     var g = $('ggrid');
-    if (!GIPHY){
-      g.innerHTML = '<p class="nogif" style="grid-column:1/-1">GIF search needs a free Giphy key. '+
-        'Until then, drop a GIF in with the paperclip \u2014 that works today.</p>';
-      return;
-    }
-    g.innerHTML = '<p class="nogif" style="grid-column:1/-1">Searching\u2026</p>';
+    g.innerHTML = '<p class="nogif" style="grid-column:1/-1">Loading\u2026</p>';
     try {
-      var res = await fetch('https://api.giphy.com/v1/gifs/search?api_key='+GIPHY+
-        '&q='+encodeURIComponent(q)+'&limit=18&rating=pg-13');
+      // Empty query shows what is trending, which is a better opening state
+      // than results for a word nobody typed.
+      var url = q
+        ? 'https://api.giphy.com/v1/gifs/search?api_key='+GIPHY+
+          '&q='+encodeURIComponent(q)+'&limit=18&rating=pg-13&lang=en'
+        : 'https://api.giphy.com/v1/gifs/trending?api_key='+GIPHY+'&limit=18&rating=pg-13';
+      var res = await fetch(url);
       var d = await res.json();
-      g.innerHTML = (d.data||[]).map(function(x){
-        var u = x.images && x.images.fixed_width_downsampled && x.images.fixed_width_downsampled.url;
-        return u ? '<img src="'+u+'" data-u="'+u+'" alt="">' : '';
-      }).join('') || '<p class="nogif" style="grid-column:1/-1">Nothing found.</p>';
+      var items = (d.data||[]).map(function(x){
+        var im = x.images || {};
+        var small = (im.fixed_width_downsampled || im.fixed_width_small || im.fixed_width || {}).url;
+        var full  = (im.fixed_width || im.original || {}).url;
+        if (!small || !full) return '';
+        return '<img src="'+small+'" data-u="'+full+'" alt="'+
+               (x.title||'GIF').replace(/"/g,'')+'" loading="lazy">';
+      }).join('');
+      g.innerHTML = items || '<p class="nogif" style="grid-column:1/-1">Nothing found. Try another word.</p>';
       g.querySelectorAll('img').forEach(function(img){
         img.addEventListener('click', async function(){
           if (!cur) return;

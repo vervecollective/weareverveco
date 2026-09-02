@@ -41,34 +41,32 @@ window.__profile = profile;
 
 /* ---- navigation, filtered by role ---- */
 const NAV = [
-  { group: 'Work', items: [
-    { href: '/hub',      label: 'Home',        icon: 'home',   roles: ['owner','account_owner','contractor','client'] },
-    { href: '/console',  label: 'Call Console',icon: 'phone',  roles: ['owner','account_owner'] },
-    { href: '/internal', label: 'Engagements', icon: 'folder', roles: ['owner','account_owner'] },
-    { href: '/mywork', label: 'My Work', icon: 'check', roles: ['owner','account_owner','contractor'] },
-    { href: '/messages', label: 'Messages', icon: 'chat', roles: ['owner','account_owner','contractor'] },
-    { href: '/board', label: 'Board', icon: 'board', roles: ['owner','account_owner','contractor'] },
-    { href: '/calendar', label: 'Calendar', icon: 'cal', roles: ['owner','account_owner','contractor'] },
-    { href: '/timeline', label: 'Timeline', icon: 'gantt', roles: ['owner','account_owner'] },
-    { href: '/capacity', label: 'Capacity', icon: 'gauge', roles: ['owner','account_owner'] },
-    { href: '/audit', label: 'Audits', icon: 'chart', roles: ['owner','account_owner'] },
-    { href: '/documents', label: 'Documents', icon: 'doc', roles: ['owner','account_owner'] },
-    { href: '/jobs',     label: 'Jobs',        icon: 'camera', roles: ['owner','account_owner','contractor'] },
-    { href: '/pay',      label: 'Pay',         icon: 'cash',   roles: ['owner','account_owner','contractor'] },
-    { href: '/project',  label: 'My Project',  icon: 'chart',  roles: ['client'] },
+  { group: 'Today', items: [
+    { href: '/hub',      label: 'Home',      icon: 'home',  roles: ['owner','account_owner','contractor','client'] },
+    { href: '/mywork',   label: 'My Work',   icon: 'check', roles: ['owner','account_owner','contractor'] },
+    { href: '/messages', label: 'Messages',  icon: 'chat',  roles: ['owner','account_owner','contractor'] },
+    { href: '/project',  label: 'My Project',icon: 'chart', roles: ['client'] },
   ]},
-  { group: 'Team', items: [
-    { href: '/team', label: 'People', icon: 'users', roles: ['owner','account_owner'] },
+  { group: 'Plan', items: [
+    { href: '/board',    label: 'Board',     icon: 'board', roles: ['owner','account_owner','contractor'] },
+    { href: '/calendar', label: 'Calendar',  icon: 'cal',   roles: ['owner','account_owner','contractor'] },
+    { href: '/timeline', label: 'Timeline',  icon: 'gantt', roles: ['owner','account_owner'] },
+    { href: '/capacity', label: 'Capacity',  icon: 'gauge', roles: ['owner','account_owner'] },
+  ]},
+  { group: 'Clients', items: [
+    { href: '/console',  label: 'Call Console', icon: 'phone',  roles: ['owner','account_owner'] },
+    { href: '/internal', label: 'Engagements',  icon: 'folder', roles: ['owner','account_owner'] },
+    { href: '/audit',    label: 'Audits',       icon: 'chart',  roles: ['owner','account_owner'] },
+    { href: '/documents',label: 'Documents',    icon: 'doc',    roles: ['owner','account_owner'] },
+  ]},
+  { group: 'Crew', items: [
+    { href: '/jobs', label: 'Jobs',   icon: 'camera', roles: ['owner','account_owner','contractor'] },
+    { href: '/pay',  label: 'Pay',    icon: 'cash',   roles: ['owner','account_owner','contractor'] },
+    { href: '/team', label: 'People', icon: 'users',  roles: ['owner','account_owner'] },
   ]},
   { group: 'Account', items: [
     { href: '/settings', label: 'Settings', icon: 'gear', roles: ['owner','account_owner','contractor','client'] },
-    { href: '/help', label: 'Help', icon: 'help', roles: ['owner','account_owner','contractor','client'] },
-  ]},
-  { group: 'Business', items: [
-    { href: '/admin.html', label: 'Site Content', icon: 'edit', roles: ['owner'] },
-    { href: 'https://app.hubspot.com/contacts/51849674/objects/0-3/views/all/board', label: 'HubSpot', icon: 'ext', roles: ['owner','account_owner'], ext: true },
-    { href: 'https://dashboard.stripe.com/invoices', label: 'Stripe', icon: 'ext', roles: ['owner'], ext: true },
-    { href: 'https://qbo.intuit.com', label: 'QuickBooks', icon: 'ext', roles: ['owner'], ext: true },
+    { href: '/help',     label: 'Help',     icon: 'help', roles: ['owner','account_owner','contractor','client'] },
   ]},
 ];
 
@@ -177,6 +175,23 @@ document.body.appendChild(scrim);
 
 const me = document.querySelector('.vc-topbar-me');
 if (me) me.textContent = initials;
+
+// Collapse the rail to icons. Remembered per device.
+const collapseBtn = document.createElement('button');
+collapseBtn.className = 'vc-collapse';
+collapseBtn.id = 'vcCollapse';
+collapseBtn.setAttribute('aria-label', 'Collapse menu');
+collapseBtn.innerHTML =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+  'stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>';
+shell.appendChild(collapseBtn);
+
+if (localStorage.getItem('vc-rail') === 'mini') document.body.classList.add('vc-mini');
+
+collapseBtn.addEventListener('click', () => {
+  const mini = document.body.classList.toggle('vc-mini');
+  localStorage.setItem('vc-rail', mini ? 'mini' : 'full');
+});
 
 document.getElementById('vcSignOut').addEventListener('click', async () => {
   await sb.auth.signOut();
@@ -436,7 +451,8 @@ if (role !== 'client') {
   tray.innerHTML =
     '<div class="vc-tray-h"><b>Notifications</b>' +
       '<button id="vcReadAll">Mark all read</button></div>' +
-    '<div class="vc-tray-b" id="vcTrayB"></div>';
+    '<div class="vc-tray-b" id="vcTrayB"></div>' +
+    '<div class="vc-tray-f"><button id="vcShowAll">Show read as well</button></div>';
 
   const brand = shell.querySelector('.vc-brand');
   if (brand) brand.after(bell);
@@ -463,12 +479,17 @@ if (role !== 'client') {
                  offer_accepted:'\u2713', offer_declined:'\u2715' };
 
   let items = [];
+  let showRead = false;
 
   async function load(){
     const { data } = await sb.from('notifications')
       .select('*').eq('profile_id', session.user.id)
       .order('created_at', { ascending:false }).limit(30);
-    items = data || [];
+    items = (data || []).sort((a, b) => {
+      const au = a.read_at ? 1 : 0, bu = b.read_at ? 1 : 0;
+      if (au !== bu) return au - bu;                       // unread first
+      return a.created_at < b.created_at ? 1 : -1;         // then newest
+    });
     const unread = items.filter(n => !n.read_at).length;
     const badge = document.getElementById('vcBellN');
     if (badge) {
@@ -480,12 +501,20 @@ if (role !== 'client') {
 
   function paint(){
     const b = document.getElementById('vcTrayB');
+    const shown = showRead ? items : items.filter((n) => !n.read_at);
+    const btn = document.getElementById('vcShowAll');
+    if (btn) btn.textContent = showRead ? 'Show unread only' : 'Show read as well';
+    if (!shown.length) {
+      b.innerHTML = '<p class="vc-tray-none">' +
+        (showRead ? 'Nothing here yet.' : 'You are all caught up.') + '</p>';
+      return;
+    }
     if (!items.length) {
       b.innerHTML = '<p class="vc-tray-none">Nothing yet. You will hear about mentions, ' +
                     'tasks assigned to you, and job offers.</p>';
       return;
     }
-    b.innerHTML = items.map(n =>
+    b.innerHTML = shown.map(n =>
       '<a class="vc-nt' + (n.read_at ? '' : ' unread') + '" href="' + (n.url || '#') + '" data-id="' + n.id + '">' +
         '<span class="vc-nt-i">' + (ICON[n.kind] || '\u25CF') + '</span>' +
         '<span class="vc-nt-b"><b>' + esc(n.title) + '</b>' +
@@ -495,17 +524,35 @@ if (role !== 'client') {
 
     b.querySelectorAll('.vc-nt').forEach((a) => {
       a.addEventListener('click', async () => {
+        a.classList.remove('unread');
+        const it = items.filter((x) => x.id === a.dataset.id)[0];
+        if (it) it.read_at = new Date().toISOString();
+        const left = items.filter((x) => !x.read_at).length;
+        const badge = document.getElementById('vcBellN');
+        if (badge) { badge.textContent = left > 9 ? '9+' : (left || ''); badge.style.display = left ? 'flex' : 'none'; }
         await sb.from('notifications').update({ read_at: new Date().toISOString() })
           .eq('id', a.dataset.id);
       });
     });
   }
 
+  document.getElementById('vcShowAll').addEventListener('click', (e) => {
+    e.stopPropagation();
+    showRead = !showRead;
+    paint();
+  });
+
   document.getElementById('vcReadAll').addEventListener('click', async (e) => {
     e.stopPropagation();
+    // Grey them immediately — waiting on a round trip made this feel broken.
+    tray.querySelectorAll('.vc-nt.unread').forEach((n) => n.classList.remove('unread'));
+    const badge = document.getElementById('vcBellN');
+    if (badge) { badge.textContent = ''; badge.style.display = 'none'; }
+
     await sb.from('notifications').update({ read_at: new Date().toISOString() })
       .eq('profile_id', session.user.id).is('read_at', null);
-    await load(); paint();
+    items.forEach((n) => { n.read_at = n.read_at || new Date().toISOString(); });
+    await load();
   });
 
   /* Browser notification, but only after the person opts in by clicking the

@@ -38,6 +38,22 @@
   input:focus,select:focus,textarea:focus{outline:none;border-color:#D9531E;box-shadow:0 0 0 3px #fdf0eb;}
   .field{margin-bottom:14px;}
   .row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .track{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:14px;}
+  .tstep{display:flex;flex-direction:column;gap:4px;}
+  .tstep i{display:block;height:4px;border-radius:2px;background:#E4E6EA;}
+  .tstep.done i{background:#00A870;}
+  .tstep b{font-size:11.5px;font-weight:600;color:#9CA3AF;letter-spacing:-.01em;}
+  .tstep em{font-size:10.5px;font-style:normal;color:#C4C7D0;}
+  .tstep.done b{color:#00875A;} .tstep.done em{color:#00A870;}
+  .tstep.now b{color:#111827;font-weight:700;} .tstep.now em{color:#B45309;font-weight:600;}
+  @media(max-width:700px){
+    .track{grid-template-columns:1fr 1fr;gap:10px 6px;}
+  }
+  .tmfilt{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+  .tmfilt button{border:1px solid #d1d5db;background:#fff;border-radius:999px;
+    padding:6px 13px;font:500 12.5px/1 'Inter',sans-serif;color:#374151;cursor:pointer;}
+  .tmfilt button.on{background:#9A3412;border-color:#9A3412;color:#fff;font-weight:600;}
+  .tmfilt button:hover{border-color:#9A3412;}
   .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
   @media(max-width:620px){.row,.row3{grid-template-columns:1fr;}}
 
@@ -477,11 +493,21 @@ if (window.__sb) {
         <p style="font-size:12.5px;color:#6b7280;margin-bottom:12px">
           Standing involvement, not shoot days. Hours here are what Capacity uses to answer
           whether we can take the next thing on.</p>
+        <div class="tmfilt" id="tmFilt"></div>
         <div id="teamRows"></div>
         <div class="row3" style="margin-top:12px">
           <div class="field"><label for="tmWho">Person</label><select id="tmWho"></select></div>
-          <div class="field"><label for="tmRole">Their role here</label>
-            <input type="text" id="tmRole" placeholder="Account lead, editor…"></div>
+          <div class="field"><label for="tmRole">What they do here</label>
+            <select id="tmRole" multiple size="4" style="height:auto;padding:7px">
+              <option>Account lead</option><option>Paid media</option>
+              <option>Product marketing</option><option>Videographer</option>
+              <option>Photographer</option><option>Drone pilot</option>
+              <option>Editor</option><option>Social creator</option>
+              <option>Copywriter</option><option>Designer</option>
+              <option>Producer</option><option>Assistant</option>
+            </select>
+            <p style="font-size:11.5px;color:#6b7280;margin-top:4px">
+              Hold Cmd or Ctrl for more than one.</p></div>
           <div class="field"><label for="tmHrs">Hours / week</label>
             <input type="number" id="tmHrs" step="0.5" placeholder="8"></div>
         </div>
@@ -692,13 +718,19 @@ function applyPhase(e){
       '</div>'+
       '<div style="font-size:12.5px;color:#5C6470;margin-top:7px">'+
         '<b style="color:#374151">Next:</b> '+esc(NEXT[ph])+'</div>'+
-      // The phases, so it is obvious where this one sits.
-      '<div style="display:flex;gap:5px;margin-top:12px">'+
+      /* The stages in order, coloured by where this one has got to. Done is
+         green because it is finished, not because it is good; the current one
+         is the account colour; what is left stays grey. */
+      '<div class="track">'+
         PHASES.slice(0,4).map(function(p){
           var at = PHASES.findIndex(function(x){ return x[0]===ph; });
           var i  = PHASES.findIndex(function(x){ return x[0]===p[0]; });
-          return '<span style="flex:1;height:3px;border-radius:2px;background:'+
-            (i <= at ? meta[3] : '#E4E6EA')+'"></span>';
+          var state = i < at ? 'done' : (i === at ? 'now' : 'todo');
+          return '<span class="tstep '+state+'">'+
+            '<i style="'+(state==='now' ? 'background:'+meta[3] : '')+'"></i>'+
+            '<b>'+esc(p[1])+'</b>'+
+            '<em>'+(state==='done' ? 'Done' : state==='now' ? 'Here now' : 'Not yet')+'</em>'+
+          '</span>';
         }).join('')+
       '</div>'+
     '</div>';
@@ -902,6 +934,8 @@ async function loadDeliverables(engId){
   });
 }
 
+var tmView = 'all';
+
 async function loadTeam(engId){
   var box = document.getElementById('teamBox');
   if (!engId) { box.style.display='none'; return; }
@@ -912,6 +946,36 @@ async function loadTeam(engId){
     .eq('engagement_id', engId);
   var rows = document.getElementById('teamRows');
   var data = r.data || [];
+
+  /* Who is actually running this, before the full list. Everything else is
+     support; this is the person a client would be handed to. */
+  var leads = data.filter(function(t){
+    return /account lead|owner|producer/i.test(t.role_label || ''); });
+  var crew  = data.filter(function(t){
+    return /videograph|photograph|drone|editor|social|design|copy|assistant/i.test(t.role_label || ''); });
+  var media = data.filter(function(t){
+    return /paid media|product marketing/i.test(t.role_label || ''); });
+
+  var GROUPS = [
+    ['all',   'Everyone',      data],
+    ['lead',  'Running it',    leads],
+    ['media', 'Media',         media],
+    ['crew',  'Crew',          crew]
+  ];
+
+  document.getElementById('tmFilt').innerHTML = GROUPS
+    .filter(function(g){ return g[0] === 'all' || g[2].length; })
+    .map(function(g){
+      return '<button data-tv="'+g[0]+'"'+(tmView===g[0]?' class="on"':'')+'>'+
+        g[1]+' <span style="opacity:.65">'+g[2].length+'</span></button>';
+    }).join('');
+
+  document.getElementById('tmFilt').querySelectorAll('[data-tv]').forEach(function(b){
+    b.addEventListener('click', function(){ tmView = b.dataset.tv; loadTeam(engId); });
+  });
+
+  var shown = (GROUPS.filter(function(g){ return g[0] === tmView; })[0] || GROUPS[0])[2];
+  data = shown;
 
   rows.innerHTML = data.length ? data.map(function(t){
     var p = t.profiles || {};
@@ -1122,7 +1186,8 @@ window.vcInit = async function(){
     var r = await sb.from('engagement_team').upsert({
       engagement_id: current.id,
       profile_id: $('tmWho').value,
-      role_label: $('tmRole').value.trim() || null,
+      role_label: Array.from($('tmRole').selectedOptions)
+        .map(function(o){ return o.value; }).join(' \u00b7 ') || null,
       weekly_hours: Number($('tmHrs').value) || 0
     }, { onConflict: 'engagement_id,profile_id' });
     var m = document.getElementById('tmMsg');

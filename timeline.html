@@ -94,6 +94,7 @@
   </div>
 
   <div class="chart"><div class="gantt-grid" id="grid"></div></div>
+  <div class="gantt-mobile" id="gm"></div>
 
   <div class="key">
     <span><i class="sw" style="background:#0B0D10"></i>Engagement</span>
@@ -302,7 +303,74 @@ async function draw(){
 
   $('grid').innerHTML = axis + body;
 
+  /* Same content, stacked. A 30-column grid is unusable on a phone, and
+     hiding the page entirely would be worse than showing it differently. */
+  var gm = '';
+  function gmGroup(l){ gm += '<div class="gm-grp">' + l + '</div>'; }
+  function gmRow(colour, title, sub, when, cls, k, r){
+    gm += '<div class="gm-row"' + (k && r ? ' data-k="'+k+'" data-r="'+r+'" style="cursor:pointer"' : '') + '>' +
+      '<span class="gm-bar" style="background:' + colour + '"></span>' +
+      '<span class="gm-b"><b>' + esc(title) + '</b>' + (sub ? '<span>' + esc(sub) + '</span>' : '') + '</span>' +
+      (when ? '<span class="gm-when ' + (cls||'') + '">' + esc(when) + '</span>' : '') + '</div>';
+  }
+  function rel(dstr){
+    if (!dstr) return '';
+    var d = new Date(dstr + 'T12:00:00'), t = new Date(); t.setHours(0,0,0,0);
+    var n = Math.round((d - t) / 86400000);
+    if (n < 0) return Math.abs(n) + 'd late';
+    if (n === 0) return 'Today';
+    if (n === 1) return 'Tomorrow';
+    if (n <= 7) return d.toLocaleDateString('en-US',{weekday:'short'});
+    return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  }
+  function relCls(dstr){
+    if (!dstr) return '';
+    var d = new Date(dstr + 'T12:00:00'), t = new Date(); t.setHours(0,0,0,0);
+    var n = Math.round((d - t) / 86400000);
+    return n < 0 ? 'late' : (n <= 2 ? 'soon' : '');
+  }
+
+  gmGroup('Engagement');
+  gmRow('#0B0D10', (eng.clients && eng.clients.business_name) || 'Client',
+    (eng.start_date || '') + (eng.ends_on ? ' \u2192 ' + eng.ends_on : ''),
+    '', '', 'engagement', eng.id);
+
+  if (shoots.length){
+    gmGroup('Production');
+    shoots.slice().sort(function(a,b){ return a.work_date < b.work_date ? -1 : 1; }).forEach(function(d){
+      var a = d.assignments || {};
+      gmRow('#7C3AED', a.role_on_job || 'Shoot',
+        d.call_time ? 'Call ' + d.call_time.slice(0,5) : 'Time to be confirmed',
+        rel(d.work_date), relCls(d.work_date), 'assignment', d.assignment_id);
+    });
+  }
+
+  if (ms.length){
+    gmGroup('Milestones');
+    ms.forEach(function(m){
+      var col = m.status === 'done' ? '#047857'
+              : m.status === 'blocked' ? '#991B1B'
+              : m.status === 'waiting_on_client' ? '#B45309' : '#94A3B8';
+      var lab = m.status === 'waiting_on_client' ? 'Needs the client'
+              : m.status === 'done' ? 'Done' : '';
+      gmRow(col, m.label, lab, m.due_date ? rel(m.due_date) : 'No date',
+        m.status === 'done' ? '' : relCls(m.due_date), 'milestone', m.id);
+    });
+  }
+
+  if (ts.length){
+    gmGroup('Work');
+    ts.forEach(function(t){
+      var who = t.profiles && t.profiles.full_name ? t.profiles.full_name.split(' ')[0] : 'Unassigned';
+      gmRow(t.status === 'done' ? '#9CA3AF' : (t.status === 'blocked' ? '#991B1B' : '#9A3412'),
+        t.title, who, rel(t.due_date), t.status === 'done' ? '' : relCls(t.due_date), 'task', t.id);
+    });
+  }
+
+  $('gm').innerHTML = gm || '<p class="gm-none">Nothing scheduled on this engagement yet.</p>';
+
   document.querySelectorAll('[data-k][data-r]').forEach(function(el){
+    if (el.__w) return; el.__w = true;
     el.addEventListener('click', function(){
       if (window.vcPeek) window.vcPeek(el.dataset.k, el.dataset.r);
     });

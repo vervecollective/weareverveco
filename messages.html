@@ -311,6 +311,13 @@ async function loadChans(){
     return (c.channel_members||[]).some(function(m){ return m.profile_id === me.id; });
   });
 
+  chans.sort(function(a,b){
+    var ap = ((a.channel_members||[]).filter(function(m){return m.profile_id===me.id;})[0]||{}).pinned;
+    var bp = ((b.channel_members||[]).filter(function(m){return m.profile_id===me.id;})[0]||{}).pinned;
+    if (!!ap !== !!bp) return ap ? -1 : 1;
+    return (a.last_message_at < b.last_message_at) ? 1 : -1;
+  });
+
   var list = chans.filter(function(c){
     if (tab !== 'unread') return true;
     var msgs = (c.messages||[]);
@@ -336,7 +343,7 @@ async function loadChans(){
     var mineRow = (c.channel_members||[]).filter(function(m){return m.profile_id===me.id;})[0];
     return '<div class="ch'+(cur&&cur.id===c.id?' on':'')+
       ((mineRow&&mineRow.muted)?' muted':'')+'" data-id="'+c.id+'">'+av+
-      '<span class="b"><b>'+esc(titleOf(c))+'</b>'+
+      '<span class="b"><b>'+((mineRow&&mineRow.pinned)?'\u2022 ':'')+esc(titleOf(c))+'</b>'+
       '<span>'+esc(last ? (last.body||'Sent a file').slice(0,42) : 'No messages yet')+'</span></span>'+
       (unread?'<span class="n">'+unread+'</span>':'')+
       '<button class="menu" data-menu="'+c.id+'" aria-label="More">'+
@@ -482,6 +489,7 @@ function openChMenu(anchor, cid){
   var mn = document.getElementById('chMenu');
 
   mn.innerHTML =
+    '<button data-a="pin">' + (mine.pinned ? 'Unpin' : 'Pin to top') + '</button>' +
     '<button data-a="unread">Mark as unread</button>' +
     '<button data-a="mute">' + (mine.muted ? 'Unmute' : 'Mute') + '</button>' +
     '<button data-a="copy">Copy link</button>' +
@@ -498,7 +506,12 @@ function openChMenu(anchor, cid){
       mn.classList.remove('on');
       var a = b.dataset.a;
 
-      if (a === 'unread') {
+      if (a === 'pin') {
+        await sb.from('channel_members').update({ pinned: !mine.pinned })
+          .eq('channel_id', cid).eq('profile_id', me.id);
+        loadChans();
+
+      } else if (a === 'unread') {
         await sb.from('channel_members')
           .update({ manually_unread: true, last_read_at: new Date(0).toISOString() })
           .eq('channel_id', cid).eq('profile_id', me.id);

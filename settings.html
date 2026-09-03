@@ -106,6 +106,10 @@
   .mfaOn .dot{background:#00A870;} .mfaOff .dot{background:#B45309;}
   .mfaOn b,.mfaOff b{font-size:14px;font-weight:700;}
   .mfaOn em,.mfaOff em{font-size:12.5px;font-style:normal;color:#6b7280;flex:1;}
+
+  .logoprev{width:52px;height:52px;border-radius:10px;background:#F1F3F6;flex-shrink:0;
+    background-size:cover;background-position:center;border:1px solid #E4E6EA;}
+  .logoprev.has{border-color:#D8DAE0;}
 </style>
 <!-- Google Tag Manager -->
 <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
@@ -442,6 +446,70 @@ function vcInit(){
       });
     });
   }
+
+  /* Branding is optional and personal. It appears on this person's own profile
+     card and their pages, never on a client's. */
+  (function(){
+    $('brandCard').style.display = 'block';
+
+    $('bizName').value      = me.business_name || '';
+    $('bizSite').value      = me.website       || '';
+    $('bizColour').value    = me.brand_colour  || '#9A3412';
+    $('bizColourHex').value = me.brand_colour  || '';
+    $('soIg').value         = me.instagram     || '';
+    $('soTt').value         = me.tiktok        || '';
+    $('soFb').value         = me.facebook      || '';
+    if (me.logo_url) {
+      $('logoPrev').style.backgroundImage = 'url(' + me.logo_url + ')';
+      $('logoPrev').classList.add('has');
+    }
+
+    // keep the picker and the hex field agreeing
+    $('bizColour').addEventListener('input', function(){ $('bizColourHex').value = this.value; });
+    $('bizColourHex').addEventListener('change', function(){
+      var v = this.value.trim();
+      if (/^#[0-9a-f]{6}$/i.test(v)) $('bizColour').value = v;
+    });
+
+    var logoUrl = me.logo_url || null;
+    $('bizLogoFile').addEventListener('change', async function(){
+      var f = this.files && this.files[0];
+      if (!f) return;
+      if (f.size > 2 * 1024 * 1024) { msg('brandMsg','Keep it under 2MB.', false); this.value=''; return; }
+      var path = 'logos/' + me.id + '-' + Date.now();
+      var up = await sb.storage.from('avatars').upload(path, f, { contentType: f.type, upsert: true });
+      if (up.error) { msg('brandMsg', up.error.message, false); return; }
+      logoUrl = sb.storage.from('avatars').getPublicUrl(path).data.publicUrl;
+      $('logoPrev').style.backgroundImage = 'url(' + logoUrl + ')';
+      $('logoPrev').classList.add('has');
+      msg('brandMsg','Logo uploaded. Save to keep it.', true);
+    });
+
+    function handle(v){
+      v = (v || '').trim();
+      if (!v) return null;
+      return v.replace(/^@/, '');       // store bare, render with the @
+    }
+
+    $('brandSave').addEventListener('click', async function(){
+      var hex = $('bizColourHex').value.trim();
+      if (hex && !/^#[0-9a-f]{6}$/i.test(hex))
+        return msg('brandMsg','Colour needs to look like #9A3412.', false);
+
+      var r = await sb.from('profiles').update({
+        business_name: $('bizName').value.trim() || null,
+        website:       $('bizSite').value.trim() || null,
+        logo_url:      logoUrl,
+        brand_colour:  hex || null,
+        instagram:     handle($('soIg').value),
+        tiktok:        handle($('soTt').value),
+        facebook:      handle($('soFb').value)
+      }).eq('id', me.id);
+
+      if (r.error) return msg('brandMsg', r.error.message, false);
+      msg('brandMsg','Saved.', true);
+    });
+  })();
 
   if (role !== 'client') {
     $('craftCard').style.display = 'block';
@@ -1003,7 +1071,45 @@ window.addEventListener('vc-auth-ready', vcInit);
 <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-M43X6GPH"
 height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <!-- End Google Tag Manager (noscript) --></body>
-</html><div class="card" id="craftCard" style="display:none">
+</html><div class="card" id="brandCard" style="display:none">
+      <h2>Your brand</h2>
+      <p class="sub">Optional, and it only shows on your own pages. If you run under a
+        business name, this is where it goes.</p>
+
+      <div class="row">
+        <div class="field"><label for="bizName">Business name</label>
+          <input type="text" id="bizName" placeholder="Leave blank to use your own name"></div>
+        <div class="field"><label for="bizSite">Website</label>
+          <input type="url" id="bizSite" placeholder="https://"></div>
+      </div>
+
+      <div class="row">
+        <div class="field"><label for="bizLogo">Logo</label>
+          <div style="display:flex;align-items:center;gap:12px">
+            <span id="logoPrev" class="logoprev"></span>
+            <input type="file" id="bizLogoFile" accept="image/*" style="font-size:12.5px">
+          </div></div>
+        <div class="field"><label for="bizColour">Brand colour</label>
+          <div style="display:flex;align-items:center;gap:10px">
+            <input type="color" id="bizColour" style="width:52px;height:40px;padding:3px">
+            <input type="text" id="bizColourHex" placeholder="#9A3412" style="flex:1">
+          </div></div>
+      </div>
+
+      <div class="row3">
+        <div class="field"><label for="soIg">Instagram</label>
+          <input type="text" id="soIg" placeholder="@handle"></div>
+        <div class="field"><label for="soTt">TikTok</label>
+          <input type="text" id="soTt" placeholder="@handle"></div>
+        <div class="field"><label for="soFb">Facebook</label>
+          <input type="text" id="soFb" placeholder="Page name or link"></div>
+      </div>
+
+      <button class="btn" id="brandSave">Save</button>
+      <p class="msg" id="brandMsg"></p>
+    </div>
+
+    <div class="card" id="craftCard" style="display:none">
       <h2>What you do</h2>
       <p class="sub">This is what the system matches you to work with. Be honest about
         the level — it is better to be offered the right jobs than more of them.</p>

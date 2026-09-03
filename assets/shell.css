@@ -1803,3 +1803,23 @@ body.vc-ms-open .vc-idbar{top:50px;}
   .vc-ms-f button{width:100%;}
   .vc-ms-later{margin-left:0;}
 }
+
+
+/* ---- two-step challenge ---- */
+.vc-mfa-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;
+  padding:24px;background:#F6F7F9;font-family:Inter,system-ui,sans-serif;}
+.vc-mfa{width:100%;max-width:360px;background:#fff;border-radius:16px;padding:34px 32px;
+  box-shadow:0 2px 4px rgba(16,24,40,.04),0 12px 40px rgba(16,24,40,.08);text-align:center;}
+.vc-mfa h1{font-size:22px;font-weight:700;letter-spacing:-.02em;margin-bottom:6px;color:#111827;}
+.vc-mfa p{font-size:14px;color:#5C6470;margin-bottom:20px;line-height:1.55;}
+.vc-mfa input{width:100%;padding:14px;font-size:24px;font-family:ui-monospace,monospace;
+  letter-spacing:.32em;text-align:center;border:1px solid #D8DAE0;border-radius:10px;
+  margin-bottom:14px;color:#111827;}
+.vc-mfa input:focus{outline:none;border-color:#9A3412;box-shadow:0 0 0 3px rgba(154,52,18,.1);}
+.vc-mfa button{width:100%;background:#9A3412;color:#fff;border:none;border-radius:10px;
+  padding:13px;font:600 15px/1 Inter,sans-serif;cursor:pointer;}
+.vc-mfa button:hover{background:#7C2D12;}
+.vc-mfa button:disabled{opacity:.5;}
+.vc-mfa-msg{font-size:13px;color:#991B1B;margin:12px 0 0;min-height:18px;}
+.vc-mfa a{font-size:12.5px;color:#9CA3AF;text-decoration:none;display:inline-block;margin-top:14px;}
+.vc-mfa a:hover{color:#9A3412;}

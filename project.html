@@ -100,6 +100,30 @@
   .fd-b b{font-size:13.5px;font-weight:600;display:block;}
   .fd-b em{font-size:11.5px;font-style:normal;color:#9ca3af;}
   #noproj{display:none;}
+
+  .rv{border:1px solid #EBECEF;border-left:3px solid #B45309;border-radius:11px;
+    padding:15px 17px;margin-bottom:11px;background:#fff;}
+  .rv.done{border-left-color:#00A870;background:#FBFDFC;}
+  .rv-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .rv-h b{font-size:15px;font-weight:600;flex:1;}
+  .rv-v{font-size:11.5px;font-weight:700;color:#6b7280;background:#f1f3f6;
+    padding:3px 9px;border-radius:999px;}
+  .rv-ok{font-size:11px;font-weight:700;color:#fff;background:#00A870;
+    padding:3px 10px;border-radius:999px;text-transform:uppercase;letter-spacing:.03em;}
+  .rv-ch{font-size:11px;font-weight:700;color:#fff;background:#B45309;
+    padding:3px 10px;border-radius:999px;text-transform:uppercase;letter-spacing:.03em;}
+  .rv-n{font-size:13.5px;color:#4B5563;margin-top:7px;line-height:1.55;}
+  .rv-open{display:inline-block;margin-top:11px;margin-right:10px;font-size:13.5px;
+    font-weight:600;color:#9A3412;text-decoration:none;}
+  .rv-open:hover{text-decoration:underline;}
+  .rv-open.dl{color:#00875A;}
+  .rv-act{display:flex;gap:9px;margin-top:14px;flex-wrap:wrap;}
+  .rv-act button{border:none;border-radius:9px;padding:11px 18px;
+    font:600 13.5px/1 Inter,sans-serif;cursor:pointer;}
+  .rv-yes{background:#00875A;color:#fff;}
+  .rv-yes:hover{background:#00704A;}
+  .rv-no{background:#fff;border:1px solid #D8DAE0 !important;color:#374151;}
+  .rv-no:hover{border-color:#B45309 !important;color:#B45309;}
 </style>
 </head>
 <body>
@@ -133,7 +157,14 @@
           <div id="docsList"></div>
         </div>
 
-        <div class="card" id="delivCard" style="display:none">
+        <div class="card" id="reviewCard" style="display:none">
+    <h2>For your review</h2>
+    <p class="hint">Open it, watch it, then tell us. If something needs changing, say what
+      — we would rather do it once properly than guess.</p>
+    <div id="reviewList"></div>
+  </div>
+
+  <div class="card" id="delivCard" style="display:none">
           <h2>Your files</h2>
           <p class="hint">Have a look and tell us if anything needs changing.</p>
           <div id="delivList"></div>
@@ -203,6 +234,75 @@ function money(n){return '$'+(Number(n)||0).toLocaleString('en-US',{minimumFract
 function fdate(d){ if(!d) return '\u2014';
   return new Date(d+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
 function msg(id,t,ok){var m=document.getElementById(id);m.textContent=t;m.className='msg show '+(ok?'ok':'err');}
+
+/* Versions sent to the client. Row-level security means anything still in
+   internal review is not visible here at all. */
+async function loadReview(engId){
+  var box = document.getElementById('reviewCard');
+  if (!engId) { box.style.display = 'none'; return; }
+
+  var r = await sb.from('deliverable_versions')
+    .select('*, deliverables(title)')
+    .eq('engagement_id', engId)
+    .in('status', ['with_client','changes_requested','approved'])
+    .order('submitted_at', { ascending:false });
+
+  if (r.error) { box.style.display='none'; return; }
+  var vs = r.data || [];
+  var live = vs.filter(function(v){ return v.status !== 'approved'; });
+  if (!vs.length) { box.style.display = 'none'; return; }
+  box.style.display = 'block';
+
+  document.getElementById('reviewList').innerHTML = vs.map(function(v){
+    var open = v.status === 'with_client';
+    return '<div class="rv'+(v.status==='approved'?' done':'')+'">'+
+      '<div class="rv-h"><b>'+esc((v.deliverables&&v.deliverables.title)||'Your file')+'</b>'+
+        '<span class="rv-v">Version '+v.version+'</span>'+
+        (v.status==='approved' ? '<span class="rv-ok">Approved</span>' : '')+
+        (v.status==='changes_requested' ? '<span class="rv-ch">Changes asked for</span>' : '')+
+      '</div>'+
+      (v.notes ? '<p class="rv-n">'+esc(v.notes)+'</p>' : '')+
+      (v.review_url
+        ? '<a class="rv-open" href="'+esc(v.review_url)+'" target="_blank" rel="noopener">Watch it \u2197</a>'
+        : '')+
+      (v.handoff_url && v.status === 'approved'
+        ? '<a class="rv-open dl" href="'+esc(v.handoff_url)+'" target="_blank" rel="noopener">Download the final file \u2197</a>'
+        : '')+
+      (open
+        ? '<div class="rv-act">'+
+            '<button class="rv-yes" data-ok="'+v.id+'">This is approved</button>'+
+            '<button class="rv-no" data-ch="'+v.id+'">I need changes</button>'+
+          '</div>'
+        : '')+
+      '</div>';
+  }).join('');
+
+  document.querySelectorAll('[data-ok]').forEach(function(b){
+    b.addEventListener('click', async function(){
+      var ok = window.vcConfirm
+        ? await window.vcConfirm({ title:'Approve this version?',
+            body:'We will treat this as final and prepare the full-resolution file.',
+            confirm:'Approve', danger:false })
+        : window.confirm('Approve this version?');
+      if (!ok) return;
+      await sb.from('deliverable_versions').update({ status:'approved' }).eq('id', b.dataset.ok);
+      loadReview(engId);
+    });
+  });
+
+  document.querySelectorAll('[data-ch]').forEach(function(b){
+    b.addEventListener('click', async function(){
+      var what = window.prompt('What needs changing? Be as specific as you can \u2014 ' +
+        'timecodes help a lot.');
+      if (!what || !what.trim()) return;
+      await sb.from('deliverable_versions')
+        .update({ status:'changes_requested', notes: what.trim() }).eq('id', b.dataset.ch);
+      await sb.from('client_requests').insert({
+        engagement_id: engId, body: 'Changes on version: ' + what.trim() });
+      loadReview(engId);
+    });
+  });
+}
 
 window.vcInit = async function(){
   var sb = window.__sb, me = window.__user;
@@ -318,6 +418,8 @@ window.vcInit = async function(){
   // deliverables shared with them
   var dq = await sb.from('deliverables').select('*')
     .eq('engagement_id', eng.id).eq('client_visible', true).order('sort_order');
+
+  loadReview(eng.id);
   if (dq.data && dq.data.length) {
     $('delivCard').style.display = 'block';
     var ST = { ready_for_review:['Ready for you','#b45309'], changes_requested:['Changes asked for','#b91c1c'],

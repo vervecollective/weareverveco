@@ -148,13 +148,20 @@ function paint(){
     '<div class="tile '+(stretched?'tight':'')+'"><div class="n">'+stretched+'</div><div class="l">People over 85%</div></div>'+
     '<div class="tile"><div class="n">'+engs.length+'</div><div class="l">Live engagements</div></div>';
 
-  if (unset.length) {
-    $('tiles').insertAdjacentHTML('afterend',
-      '<div class="verdict maybe" style="margin-bottom:22px"><b>'+unset.length+
-      (unset.length===1?' person has':' people have')+' not set their hours.</b>'+
-      'They are counted as zero, so the numbers below understate what is available. '+
-      'Ask them to set it in Settings \u2192 Profile \u2014 they know their own week better than we do.</div>');
+  /* Was insertAdjacentHTML, which added a banner on every render rather than
+     replacing one. */
+  var un = document.getElementById('unsetWarn');
+  if (!un) {
+    un = document.createElement('div');
+    un.id = 'unsetWarn';
+    $('tiles').insertAdjacentElement('afterend', un);
   }
+  un.innerHTML = unset.length
+    ? '<div class="verdict maybe" style="margin-bottom:22px"><b>'+unset.length+
+      (unset.length===1?' person has':' people have')+' not set their hours.</b> '+
+      'They are counted as zero, so the numbers below understate what is available. '+
+      'Ask them to set it in Settings \u2192 Profile \u2014 they know their own week better than we do.</div>'
+    : '';
 
   // Verdict
   var v = $('verdict');

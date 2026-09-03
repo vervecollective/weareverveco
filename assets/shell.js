@@ -1907,7 +1907,73 @@ try {
   })();
 } catch (vcErr) { console.error("shell feature failed:", vcErr); }
 
-window.dispatchEvent(new Event('vc-auth-ready'));
+
+/* ── Two-step sign-in ──────────────────────────────────────────────────────
+   Supabase issues a session at aal1 even when a factor exists. Without this
+   check, enrolling in 2FA would change nothing: the password alone would still
+   get you in. */
+try {
+  const { data: aal } = await sb.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (aal && aal.nextLevel === 'aal2' && aal.currentLevel !== 'aal2') {
+    const { data: fs } = await sb.auth.mfa.listFactors();
+    const factor = ((fs && fs.totp) || []).filter((f) => f.status === 'verified')[0];
+
+    if (factor) {
+      document.body.innerHTML =
+        '<div class="vc-mfa-wrap"><div class="vc-mfa">' +
+          '<h1>One more step</h1>' +
+          '<p>Open your authenticator app and enter the six digits it shows.</p>' +
+          '<input type="text" id="vcMfaCode" inputmode="numeric" maxlength="6" ' +
+            'autocomplete="one-time-code" autofocus>' +
+          '<button id="vcMfaGo">Continue</button>' +
+          '<p class="vc-mfa-msg" id="vcMfaMsg"></p>' +
+          '<a href="/login?signout=1" id="vcMfaOut">Sign in as someone else</a>' +
+        '</div></div>';
+
+      const go = async () => {
+        const code = document.getElementById('vcMfaCode').value.trim();
+        const msgEl = document.getElementById('vcMfaMsg');
+        if (code.length !== 6) { msgEl.textContent = 'Six digits.'; return; }
+        document.getElementById('vcMfaGo').disabled = true;
+
+        const ch = await sb.auth.mfa.challenge({ factorId: factor.id });
+        if (ch.error) {
+          msgEl.textContent = ch.error.message;
+          document.getElementById('vcMfaGo').disabled = false; return;
+        }
+        const v = await sb.auth.mfa.verify({
+          factorId: factor.id, challengeId: ch.data.id, code });
+        if (v.error) {
+          msgEl.textContent = 'That code did not work. Wait for the next one.';
+          document.getElementById('vcMfaGo').disabled = false;
+          document.getElementById('vcMfaCode').value = '';
+          return;
+        }
+        location.reload();
+      };
+
+      document.getElementById('vcMfaGo').addEventListener('click', go);
+      document.getElementById('vcMfaCode').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') go();
+      });
+      document.getElementById('vcMfaOut').addEventListener('click', async (e) => {
+        e.preventDefault();
+        await sb.auth.signOut();
+        location.href = '/login';
+      });
+
+      window.__mfaBlocked = true;
+    }
+  }
+} catch (mfaErr) {
+  console.error('mfa check failed:', mfaErr);
+}
+
+/* Nothing behind the challenge should load, or a page would render and fetch
+   data while the second factor is still outstanding. */
+if (!window.__mfaBlocked) {
+  window.dispatchEvent(new Event('vc-auth-ready'));
+}
 
 /* Pages define window.vcInit and expect it to run once auth resolves. Calling it
    here (rather than relying on each page to add its own listener) means a new

@@ -73,6 +73,10 @@
   .toplinks{display:flex;gap:14px;margin-bottom:18px;font-size:12.5px;}
   .toplinks a{color:var(--muted);text-decoration:none;}
   .toplinks a:hover{color:var(--orange-light);}
+
+  .savenote{font-size:12px;color:#9CA3AF;min-height:16px;margin-top:8px;}
+  .savenote.ok{color:#00875A;}
+  .savenote.err{color:#991B1B;}
 </style>
 <link rel="stylesheet" href="/assets/shell.css">
 <script type="module" src="/assets/shell.js"></script>
@@ -102,6 +106,7 @@
       <div class="panel" style="margin-bottom:20px;">
         <h2>Capture</h2>
         <div id="captureFields"></div>
+        <p class="savenote" id="saveNote"></p>
         <button class="btn btn-sec btn-sm" id="saveBtn">Save to engagement</button>
         <p class="status" id="saveStatus"></p>
       </div>
@@ -304,16 +309,79 @@ function renderStages(){
   document.getElementById('stages').innerHTML = STAGES.map(function(s){
     return '<button class="stage-btn'+(s.id===stage?' active':'')+'" data-s="'+s.id+'">'+s.label+'</button>';
   }).join('');
+
+  // Every field saves itself; nobody should have to remember a Save button.
+  (CAPTURE[stage] || []).forEach(function(x){
+    var el = document.getElementById(x.k);
+    if (!el || el.__as) return;
+    el.__as = true;
+    el.addEventListener('change', autosave);
+    el.addEventListener('blur', autosave);
+  });
   document.querySelectorAll('.stage-btn').forEach(function(b){
-    b.addEventListener('click',function(){stage=b.dataset.s;renderStages();renderScript();renderCapture();});
+    b.addEventListener('click',function(){
+      /* Whatever is typed but unsaved would otherwise be thrown away by the
+         re-render. Take it first, then move. */
+      grabCapture();
+      stage=b.dataset.s;
+      renderStages();renderScript();renderCapture();
+      autosave();
+    });
   });
 }
 function renderScript(){
   var s=SCRIPTS[stage];
   document.getElementById('scriptPanel').innerHTML='<h2>'+s.title+'</h2>'+s.html;
 }
+/* Read every visible capture field into the in-memory notes, so moving
+   between stages, or away from the page, never loses what was typed. */
+function grabCapture(){
+  if (!current) return;
+  current.console_notes = current.console_notes || {};
+  var f = CAPTURE[stage] || [];
+  f.forEach(function(x){
+    var el = document.getElementById(x.k);
+    if (el && el.value !== undefined) current.console_notes[x.k] = el.value;
+  });
+}
+
+var saveTimer = null;
+function autosave(){
+  if (!current || !current.id) return;
+  clearTimeout(saveTimer);
+  var note = document.getElementById('saveNote');
+  if (note) { note.textContent = 'Saving\u2026'; note.className = 'savenote'; }
+  saveTimer = setTimeout(async function(){
+    grabCapture();
+    /* sb is scoped inside vcInit, so reach for the shared client directly. */
+    var r = await window.__sb.from('engagements')
+      .update({ console_notes: current.console_notes }).eq('id', current.id);
+    if (note) {
+      note.textContent = r.error ? r.error.message : 'Saved';
+      note.className = 'savenote' + (r.error ? ' err' : ' ok');
+      if (!r.error) setTimeout(function(){ if (note.textContent==='Saved') note.textContent=''; }, 2200);
+    }
+  }, 800);
+}
+
+/* Facts learned once should not be asked for again. A later stage inherits
+   what an earlier one already captured. */
+var CARRY = {
+  scope:    { website:'website', spend:'spend', goal:'goal', budget:'spend' },
+  contract: { decision_maker:'decision_maker', budget:'spend', start:'start' },
+  kickoff:  { website:'website', goal:'goal', spend:'spend' },
+  checkin:  { goal:'goal', target_cpa:'target_cpa' },
+  close:    { goal:'goal', target_cpa:'target_cpa' }
+};
+
 function renderCapture(){
   var f=CAPTURE[stage]||[], saved=(current&&current.console_notes)||{};
+
+  // Inherit anything an earlier stage already answered.
+  var carry = CARRY[stage] || {};
+  Object.keys(carry).forEach(function(dest){
+    if (!saved[dest] && saved[carry[dest]]) saved[dest] = saved[carry[dest]];
+  });
   document.getElementById('captureFields').innerHTML=f.map(function(x){
     var v=saved[x.k]||'';
     if(x.type==='select') return '<div class="field"><label>'+x.label+'</label><select id="'+x.k+'"><option value="">—</option>'+x.opts.map(function(o){return '<option'+(o===v?' selected':'')+'>'+esc(o)+'</option>';}).join('')+'</select></div>';
@@ -369,6 +437,11 @@ async function jumpToStage(engId){
   var btn = document.querySelector('.stage-btn[data-s="' + stage + '"]');
   if (btn && btn.scrollIntoView) btn.scrollIntoView({ block:'nearest', inline:'center', behavior:'smooth' });
 }
+
+window.addEventListener('beforeunload', function(){
+  // A last grab, so closing the tab mid-sentence does not lose it.
+  try { grabCapture(); } catch (e) {}
+});
 
 function vcInit(){
   var es = document.getElementById('engSel');

@@ -64,6 +64,25 @@
   .warn{background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:13px 15px;
     font-size:13px;color:#78350f;margin-bottom:16px;}
   .warn b{color:#451a03;}
+
+  .chk{display:flex;gap:11px;align-items:flex-start;padding:12px 0;border-bottom:1px solid #f3f4f6;}
+  .chk .ci{width:20px;height:20px;border-radius:50%;flex-shrink:0;font-size:11px;font-weight:800;
+    display:flex;align-items:center;justify-content:center;background:#FEF3C7;color:#B45309;}
+  .chk.error .ci{background:#FEE2E2;color:#B91C1C;}
+  .chk .cb{flex:1;min-width:0;}
+  .chk .cb b{display:block;font-size:13.5px;font-weight:600;}
+  .chk .cb em{font-size:12.5px;font-style:normal;color:#6b7280;line-height:1.5;}
+  .owed{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid #f3f4f6;}
+  .owed b{flex:1;font-size:13.5px;font-weight:600;}
+  .owed .oa{font-size:13.5px;font-weight:600;}
+  .owed .op{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
+    padding:3px 9px;border-radius:999px;background:#f1f3f6;color:#6b7280;}
+  .owed.late .op{background:#FEE2E2;color:#B91C1C;}
+  .owed.due-soon .op{background:#FEF3C7;color:#B45309;}
+  .owed.in-window .op{background:#E7F7F0;color:#00875A;}
+  .lnk{background:none;border:none;font:600 12px/1 'Inter',sans-serif;color:#6b7280;
+    cursor:pointer;text-decoration:none;padding:5px 8px;border-radius:6px;}
+  .lnk:hover{background:#f1f3f6;color:#9A3412;}
 </style>
 </head>
 <body>
@@ -160,6 +179,20 @@
     <div class="field"><label for="rsNote">Note</label><input type="text" id="rsNote" placeholder="Optional"></div>
     <button class="btn" id="rsCreate">Raise payment</button>
     <p class="msg" id="rsMsg"></p>
+  </div>
+
+  <div class="card" id="checksCard" style="display:none">
+    <h2>Money checks</h2>
+    <p class="hint">Run continuously. Each row is something worth a person looking at
+      before it becomes a year-end surprise.</p>
+    <div id="checkRows"></div>
+  </div>
+
+  <div class="card" id="owedCard" style="display:none">
+    <h2>Who we owe</h2>
+    <p class="hint">We pay within 15 days of approving an invoice, whether or not the
+      client has paid us. This is how close we are to that.</p>
+    <div id="owedRows"></div>
   </div>
 
   <div class="card" id="payoutCard" style="display:none">
@@ -317,6 +350,8 @@ async function loadPayouts(){
   var r = await q;
   var rows = r.data || [];
 
+  if (role !== 'contractor') { loadChecks(); loadOwed(); }
+
   if (role === 'contractor') { card.style.display = 'none'; return; }
   card.style.display = 'block';
 
@@ -413,6 +448,44 @@ function previewRateMargin(){
     '<div style="background:'+tone[0]+';color:'+tone[1]+';border-radius:8px;padding:12px 14px;margin:10px 0;font-size:13px">'+
     '<b>Client pays '+money(price)+' \u00b7 they get '+money(rate)+' \u00b7 you keep '+money(m)+' ('+pct+'%)</b>'+
     '<div style="margin-top:3px">'+tone[2]+'</div></div>';
+}
+
+async function loadChecks(){
+  var box = document.getElementById('checksCard');
+  var r = await sb.from('money_checks').select('*');
+  box.style.display = 'block';
+  if (r.error) {
+    document.getElementById('checkRows').innerHTML = '<p class="none">' + esc(r.error.message) + '</p>';
+    return;
+  }
+  var d = r.data || [];
+  document.getElementById('checkRows').innerHTML = d.length
+    ? d.map(function(c){
+        return '<div class="chk ' + c.severity + '">' +
+          '<span class="ci">' + (c.severity === 'error' ? '!' : '\u2022') + '</span>' +
+          '<span class="cb"><b>' + esc(c.who) + '</b><em>' + esc(c.detail) + '</em></span>' +
+          '<a class="lnk" href="/internal">Open</a></div>';
+      }).join('')
+    : '<p class="none">Everything reconciles. Scope matches invoices, no margin is under the ' +
+      'floor, and nothing is delivering unbilled.</p>';
+}
+
+async function loadOwed(){
+  var box = document.getElementById('owedCard');
+  var r = await sb.from('owed_now').select('*').neq('status','paid');
+  if (r.error) { box.style.display = 'none'; return; }
+  var d = r.data || [];
+  box.style.display = 'block';
+  document.getElementById('owedRows').innerHTML = d.length
+    ? d.map(function(o){
+        return '<div class="owed ' + String(o.promise).replace(/ /g,'-') + '">' +
+          '<b>' + esc(o.who || 'Someone') + '</b>' +
+          '<span class="oa">' + money(o.owed) + '</span>' +
+          '<span class="op">' + esc(o.promise) +
+            (o.days_since_approved != null ? ' \u00b7 ' + o.days_since_approved + 'd' : '') +
+          '</span></div>';
+      }).join('')
+    : '<p class="none">Nobody is waiting on us.</p>';
 }
 
 window.vcInit = async function(){

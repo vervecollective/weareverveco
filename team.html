@@ -85,6 +85,23 @@
   .admToggle{display:block;margin-top:6px;background:none;border:none;padding:0;
     font:600 11.5px/1 'Inter',sans-serif;color:#5C6470;cursor:pointer;text-decoration:underline;}
   .admToggle:hover{color:#9A3412;}
+
+  .onbwrap{margin-bottom:20px;}
+  .onbh{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;
+    color:#9CA3AF;margin-bottom:9px;}
+  .onb{border:1px solid #EBECEF;border-left:3px solid #C4C7D0;border-radius:10px;
+    padding:13px 15px;margin-bottom:8px;background:#fff;}
+  .onb.ok{border-left-color:#00A870;}
+  .onb.blocked{border-left-color:#B45309;background:#FFFCF7;}
+  .onb-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .onb-h b{font-size:14px;font-weight:600;flex:1;}
+  .onb-tag{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
+    padding:3px 9px;border-radius:999px;background:#FEF3C7;color:#B45309;}
+  .onb.ok .onb-tag{background:#E7F7F0;color:#00875A;}
+  .onb-m{font-size:12.5px;color:#6b7280;margin-top:6px;line-height:1.55;}
+  .onb-m.done{color:#00875A;}
+  .onb-y{font-size:12px;color:#374151;margin-top:6px;}
+  .onb-y b{color:#B45309;}
 </style>
 </head>
 <body>
@@ -201,13 +218,42 @@ window.vcInit = async function(){
   if (cons.length) {
     var cd = await sb.from('contractor_details').select('*');
     var byId = {}; (cd.data||[]).forEach(function(d){ byId[d.profile_id]=d; });
+
+    /* Whether someone can actually be booked, and exactly what is missing.
+       The gate is the agreement, the IP assignment and the W-9; everything
+       else is tidiness, and it is shown separately so the two are not
+       confused. */
+    var ob = await sb.from('contractor_onboarding').select('*');
+    var byOb = {}; (ob.data||[]).forEach(function(o){ byOb[o.profile_id]=o; });
+
     cons.forEach(function(u){
       var d = byId[u.id];
       u._extra = d && d.crafts && d.crafts.length
         ? esc(d.crafts.join(', ')) + (d.part_107 ? ' <span class="muted">· Part 107</span>' : '')
         : '<span class="muted">No craft set</span>';
     });
-    $('conBody').innerHTML = '<div style="margin-bottom:14px">'+inviteBtn('contractor')+'</div>' + peopleTable(cons, 'Craft');
+
+    var cards = (ob.data || []).map(function(o){
+      var missing = o.outstanding || [];
+      return '<div class="onb '+(o.bookable?'ok':'blocked')+'">'+
+        '<div class="onb-h"><b>'+esc(o.who)+'</b>'+
+          '<span class="onb-tag">'+(o.bookable?'Can be booked':'Cannot be booked yet')+'</span></div>'+
+        (missing.length
+          ? '<div class="onb-m">Outstanding: '+missing.map(esc).join(' \u00b7 ')+'</div>'
+          : '<div class="onb-m done">Everything is in.</div>')+
+        (Number(o.paid_ytd) > 0
+          ? '<div class="onb-y">Paid this year: '+
+            Number(o.paid_ytd).toLocaleString('en-US',{style:'currency',currency:'USD'})+
+            (Number(o.paid_ytd) >= 600
+              ? ' \u2014 <b>1099 required</b>'+(o.w9_on_file ? '' : ', and no W-9 on file')
+              : '')+'</div>'
+          : '')+
+        '</div>';
+    }).join('');
+
+    $('conBody').innerHTML = '<div style="margin-bottom:14px">'+inviteBtn('contractor')+'</div>' +
+      (cards ? '<div class="onbwrap"><h3 class="onbh">Onboarding</h3>'+cards+'</div>' : '') +
+      peopleTable(cons, 'Craft');
   } else {
     $('conBody').innerHTML = emptyState('cam','No contractors yet',
       'Invite a videographer, photographer, drone pilot, or editor. They get their own login and see only the jobs you offer them — never client pricing or your margin.',

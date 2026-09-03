@@ -49,6 +49,9 @@
   @media(max-width:700px){
     .track{grid-template-columns:1fr 1fr;gap:10px 6px;}
   }
+  .savenote{font-size:12px;color:#9CA3AF;min-height:16px;margin-bottom:6px;}
+  .savenote.ok{color:#00875A;}
+  .savenote.err{color:#991B1B;}
   .chkline{display:flex;align-items:center;gap:9px;font-size:14px;cursor:pointer;}
   .chkline input{width:17px;height:17px;}
   .bprow{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid #f3f4f6;}
@@ -700,6 +703,7 @@ function load(e){
   setTimeout(function(){ mobileSections(); stickySave(); }, 60);
   loadDelays(e && e.id);
   wireRetainer();
+  wireAutosave();
   if ($('stage') && !$('stage').__ph) {
     $('stage').__ph = true;
     $('stage').addEventListener('change', function(){
@@ -1268,6 +1272,51 @@ function stickySave(){
   bar.innerHTML = '<button class="btn" id="mSaveBtn">Save engagement</button>';
   document.body.appendChild(bar);
   document.getElementById('mSaveBtn').addEventListener('click', function(){ real.click(); });
+}
+
+/* The engagement form had one Save button at the bottom of five screens of
+   fields. Anything typed and not saved before switching phase or opening
+   another engagement was lost. */
+var engSaveTimer = null;
+var ENG_FIELDS = ['business','cname','cemail','title','stage','track','leadSource',
+                  'startDate','endsOn','adSpend','weeklyHours','clientNote','org'];
+
+function autosaveEng(){
+  if (!current || !current.id) return;      // a new engagement still saves explicitly
+  clearTimeout(engSaveTimer);
+  var n = document.getElementById('engSaveNote');
+  if (n) { n.textContent = 'Saving\u2026'; n.className = 'savenote'; }
+
+  engSaveTimer = setTimeout(async function(){
+    var patch = {};
+    if ($('title'))       patch.title = $('title').value.trim() || null;
+    if ($('stage'))       patch.stage = $('stage').value;
+    if ($('track'))       patch.track = $('track').value;
+    if ($('leadSource'))  patch.lead_source = $('leadSource').value;
+    if ($('startDate'))   patch.start_date = $('startDate').value || null;
+    if ($('endsOn'))      patch.ends_on = $('endsOn').value || null;
+    if ($('adSpend'))     patch.ad_spend_reference = Number($('adSpend').value) || null;
+    if ($('weeklyHours')) patch.weekly_hours = Number($('weeklyHours').value) || null;
+    if ($('clientNote'))  patch.client_visible_note = $('clientNote').value.trim() || null;
+
+    var r = await sb.from('engagements').update(patch).eq('id', current.id);
+    Object.assign(current, patch);
+    if (n) {
+      n.textContent = r.error ? r.error.message : 'Saved';
+      n.className = 'savenote' + (r.error ? ' err' : ' ok');
+      if (!r.error) setTimeout(function(){ if (n.textContent === 'Saved') n.textContent = ''; }, 2200);
+    }
+  }, 900);
+}
+
+function wireAutosave(){
+  ENG_FIELDS.forEach(function(id){
+    var el = document.getElementById(id);
+    if (!el || el.__as) return;
+    el.__as = true;
+    el.addEventListener('change', autosaveEng);
+    el.addEventListener('blur', autosaveEng);
+  });
 }
 
 function wireRetainer(){

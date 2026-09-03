@@ -52,6 +52,30 @@
   .savenote{font-size:12px;color:#9CA3AF;min-height:16px;margin-bottom:6px;}
   .savenote.ok{color:#00875A;}
   .savenote.err{color:#991B1B;}
+  .ah{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;
+    color:#9CA3AF;margin-bottom:8px;}
+  .frow{display:grid;grid-template-columns:150px 1fr 110px 140px;gap:10px;align-items:center;
+    padding:9px 0;border-bottom:1px solid #f3f4f6;}
+  .frow b{font-size:13px;font-weight:600;}
+  .frow .fp{font-size:12px;color:#6b7280;line-height:1.45;}
+  .frow .fw{font-size:11px;color:#9CA3AF;text-transform:uppercase;letter-spacing:.04em;font-weight:600;}
+  .frow .furl{padding:7px 9px;font-size:12px;font-family:inherit;
+    border:1px solid #d1d5db;border-radius:6px;}
+  .vrow{display:flex;align-items:center;gap:10px;padding:10px 0;
+    border-bottom:1px solid #f3f4f6;flex-wrap:wrap;}
+  .vrow.old{opacity:.5;}
+  .vn{font-size:12px;font-weight:800;color:#374151;background:#f1f3f6;
+    padding:3px 9px;border-radius:6px;}
+  .vb{flex:1;min-width:140px;}
+  .vb b{font-size:13.5px;font-weight:600;display:block;}
+  .vb em{font-size:12px;font-style:normal;color:#6b7280;}
+  .vbill{font-size:11px;font-weight:700;color:#B45309;background:#FEF3C7;
+    padding:3px 9px;border-radius:999px;}
+  .vst{font-size:10.5px;font-weight:700;color:#fff;padding:3px 10px;border-radius:999px;
+    text-transform:uppercase;letter-spacing:.03em;}
+  .vsel{padding:6px 8px;font-size:12px;font-family:inherit;
+    border:1px solid #d1d5db;border-radius:6px;background:#fff;}
+  @media(max-width:760px){ .frow{grid-template-columns:1fr;gap:4px;} }
   .chkline{display:flex;align-items:center;gap:9px;font-size:14px;cursor:pointer;}
   .chkline input{width:17px;height:17px;}
   .bprow{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid #f3f4f6;}
@@ -495,6 +519,53 @@ if (window.__sb) {
         <div id="delayList"></div>
       </div>
 
+      <div id="assetBox" style="display:none;margin-top:26px;border-top:1px solid #e5e7eb;padding-top:20px">
+        <h2>Assets</h2>
+        <p style="font-size:12.5px;color:#6b7280;margin-bottom:14px">
+          Review happens in Frame.io, files live in Drive, and this is where the platform
+          keeps track of which version is which.</p>
+
+        <div class="ah">Where things go</div>
+        <div id="folderRows"></div>
+
+        <div class="ah" style="margin-top:20px">Versions</div>
+        <div id="verRows"></div>
+
+        <div class="row3" style="margin-top:12px">
+          <div class="field"><label for="vDel">Deliverable</label>
+            <select id="vDel"></select></div>
+          <div class="field"><label for="vCraft">Craft</label>
+            <select id="vCraft">
+              <option value="">—</option><option>Videographer</option>
+              <option>Photographer</option><option>Drone pilot</option>
+              <option>Editor</option><option>Social creator</option>
+            </select></div>
+          <div class="field"><label for="vReview">Review link (Frame.io)</label>
+            <input type="url" id="vReview" placeholder="https://f.io/…"></div>
+        </div>
+        <div class="row3">
+          <div class="field"><label for="vSource">Source (Drive)</label>
+            <input type="url" id="vSource"></div>
+          <div class="field"><label for="vHandoff">Handoff (full resolution)</label>
+            <input type="url" id="vHandoff"></div>
+          <div class="field"><label for="vNote">What changed</label>
+            <input type="text" id="vNote" placeholder="Colour pass, new music"></div>
+        </div>
+        <button class="btn btn-2 btn-sm" id="vAdd">Add a version</button>
+        <p class="msg" id="vMsg"></p>
+
+        <div class="ah" style="margin-top:20px">Revision policy</div>
+        <div class="row3">
+          <div class="field"><label for="incRounds">Rounds included</label>
+            <input type="number" id="incRounds" min="0" max="10"></div>
+          <div class="field"><label for="extraFee">Each extra round ($)</label>
+            <input type="number" id="extraFee" step="0.01"></div>
+          <div class="field" style="display:flex;align-items:flex-end">
+            <button class="btn btn-2 btn-sm" id="revSave">Save policy</button></div>
+        </div>
+        <p class="msg" id="revMsg"></p>
+      </div>
+
       <div id="delivBox" style="display:none;margin-top:26px;border-top:1px solid #e5e7eb;padding-top:20px">
         <h2>Deliverables</h2>
         <p style="font-size:12.5px;color:#6b7280;margin-bottom:12px">
@@ -700,9 +771,11 @@ function load(e){
   applyPhase(e);
   loadRetainer(e);
   loadAccess(e);
+  loadAssets(e);
   setTimeout(function(){ mobileSections(); stickySave(); }, 60);
   loadDelays(e && e.id);
   wireRetainer();
+  wireAssets();
   wireAutosave();
   if ($('stage') && !$('stage').__ph) {
     $('stage').__ph = true;
@@ -861,6 +934,98 @@ async function loadAccess(e){
       say('accMsg','Saved.', true);
     });
   });
+}
+
+var VSTATE = {
+  internal_review:   ['Internal review', '#6b7280'],
+  with_client:       ['With client',     '#B45309'],
+  changes_requested: ['Changes asked',   '#991B1B'],
+  approved:          ['Approved',        '#00875A'],
+  superseded:        ['Superseded',      '#C4C7D0']
+};
+
+async function loadAssets(e){
+  var box = document.getElementById('assetBox');
+  var ph = e ? phaseOf(e) : null;
+  if (!e || !e.id || ['pursuing','closed'].indexOf(ph) > -1) { box.style.display='none'; return; }
+  box.style.display = 'block';
+
+  $('incRounds').value = e.included_rounds != null ? e.included_rounds : 2;
+  $('extraFee').value  = e.extra_round_fee != null ? e.extra_round_fee : '';
+
+  // where things go
+  var fr = await sb.from('engagement_folders').select('*')
+    .eq('engagement_id', e.id).order('sort_order');
+  var folders = fr.data || [];
+  $('folderRows').innerHTML = folders.length
+    ? folders.map(function(f){
+        return '<div class="frow">'+
+          '<b>'+esc(f.label)+'</b>'+
+          '<span class="fp">'+esc(f.purpose)+'</span>'+
+          '<span class="fw">'+esc(f.who_uploads)+'</span>'+
+          (f.url
+            ? '<a class="lnk" href="'+esc(f.url)+'" target="_blank" rel="noopener">Open</a>'
+            : '<input class="furl" data-f="'+f.id+'" placeholder="Paste the Drive link">')+
+          '</div>';
+      }).join('')
+    : '<p class="none">Folders appear once this engagement is won.</p>';
+
+  $('folderRows').querySelectorAll('[data-f]').forEach(function(inp){
+    inp.addEventListener('change', async function(){
+      await sb.from('engagement_folders').update({ url: this.value.trim() || null })
+        .eq('id', inp.dataset.f);
+      loadAssets(e);
+    });
+  });
+
+  // versions
+  var vr = await sb.from('deliverable_versions')
+    .select('*, deliverables(title)')
+    .eq('engagement_id', e.id).order('submitted_at', { ascending:false });
+  if (vr.error) { $('verRows').innerHTML = '<p class="none">'+esc(vr.error.message)+'</p>'; }
+  else {
+    var vs = vr.data || [];
+    $('verRows').innerHTML = vs.length ? vs.map(function(v){
+      var st = VSTATE[v.status] || ['?', '#6b7280'];
+      return '<div class="vrow'+(v.status==='superseded'?' old':'')+'">'+
+        '<span class="vn">v'+v.version+'</span>'+
+        '<span class="vb"><b>'+esc((v.deliverables&&v.deliverables.title)||'Deliverable')+'</b>'+
+          (v.notes ? '<em>'+esc(v.notes)+'</em>' : '')+'</span>'+
+        (v.billable ? '<span class="vbill">Chargeable '+money(v.fee||0)+'</span>' : '')+
+        '<span class="vst" style="background:'+st[1]+'">'+st[0]+'</span>'+
+        (v.review_url  ? '<a class="lnk" href="'+esc(v.review_url)+'" target="_blank" rel="noopener">Review</a>' : '')+
+        (v.source_url  ? '<a class="lnk" href="'+esc(v.source_url)+'" target="_blank" rel="noopener">Source</a>' : '')+
+        (v.handoff_url ? '<a class="lnk" href="'+esc(v.handoff_url)+'" target="_blank" rel="noopener">Handoff</a>' : '')+
+        '<select class="vsel" data-v="'+v.id+'">'+
+          Object.keys(VSTATE).map(function(k){
+            return '<option value="'+k+'"'+(k===v.status?' selected':'')+'>'+VSTATE[k][0]+'</option>';
+          }).join('')+
+        '</select>'+
+      '</div>';
+    }).join('') : '<p class="none">Nothing submitted yet.</p>';
+
+    $('verRows').querySelectorAll('[data-v]').forEach(function(sel){
+      sel.addEventListener('change', async function(){
+        var was = this.value;
+        if (was === 'with_client') {
+          var ok = window.vcConfirm
+            ? await window.vcConfirm({ title:'Send this to the client?',
+                body:'They will be able to open it. Anything still marked internal stays hidden.',
+                confirm:'Send it', danger:false })
+            : true;
+          if (!ok) { loadAssets(e); return; }
+        }
+        await sb.from('deliverable_versions').update({ status: was }).eq('id', sel.dataset.v);
+        loadAssets(e);
+      });
+    });
+  }
+
+  // deliverables to attach a version to
+  var dl = await sb.from('deliverables').select('id, title').eq('engagement_id', e.id);
+  $('vDel').innerHTML = ((dl.data||[]).length
+    ? (dl.data||[]).map(function(d){ return '<option value="'+d.id+'">'+esc(d.title)+'</option>'; }).join('')
+    : '<option value="">Add a deliverable first</option>');
 }
 
 function applyPhase(e){
@@ -1316,6 +1481,55 @@ function wireAutosave(){
     el.__as = true;
     el.addEventListener('change', autosaveEng);
     el.addEventListener('blur', autosaveEng);
+  });
+}
+
+function wireAssets(){
+  var b = document.getElementById('vAdd');
+  if (!b || b.__w) return;
+  b.__w = true;
+
+  b.addEventListener('click', async function(){
+    if (!current || !current.id) return say('vMsg','Save the engagement first.', false);
+    if (!$('vDel').value)        return say('vMsg','Pick which deliverable this is.', false);
+    if (!$('vReview').value.trim() && !$('vSource').value.trim())
+      return say('vMsg','Add at least a review or source link.', false);
+
+    /* Next version number for this deliverable. The trigger decides whether it
+       is chargeable, so nobody has to remember the count. */
+    var ex = await sb.from('deliverable_versions').select('version')
+      .eq('deliverable_id', $('vDel').value).order('version', { ascending:false }).limit(1);
+    var next = ((ex.data && ex.data[0]) ? ex.data[0].version : 0) + 1;
+
+    var r = await sb.from('deliverable_versions').insert({
+      deliverable_id: $('vDel').value,
+      engagement_id: current.id,
+      version: next,
+      craft: $('vCraft').value || null,
+      review_url: $('vReview').value.trim() || null,
+      source_url: $('vSource').value.trim() || null,
+      handoff_url: $('vHandoff').value.trim() || null,
+      notes: $('vNote').value.trim() || null,
+      uploaded_by: me.id
+    });
+    if (r.error) return say('vMsg', r.error.message, false);
+
+    ['vReview','vSource','vHandoff','vNote'].forEach(function(f){ $(f).value = ''; });
+    say('vMsg', 'Version ' + next + ' added.', true);
+    loadAssets(current);
+  });
+
+  document.getElementById('revSave').addEventListener('click', async function(){
+    if (!current || !current.id) return;
+    var r = await sb.from('engagements').update({
+      included_rounds: Number($('incRounds').value) || 0,
+      extra_round_fee: Number($('extraFee').value) || null
+    }).eq('id', current.id);
+    if (r.error) return say('revMsg', r.error.message, false);
+    Object.assign(current, {
+      included_rounds: Number($('incRounds').value) || 0,
+      extra_round_fee: Number($('extraFee').value) || null });
+    say('revMsg','Saved. Anything past round ' + $('incRounds').value + ' is chargeable.', true);
   });
 }
 

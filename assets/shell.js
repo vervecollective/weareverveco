@@ -368,7 +368,35 @@ try {
   
       let html = '';
       try {
-        if (kind === 'task') {
+        /* Comments belong on anything you can open, not only tasks. A shoot and
+         a milestone both generate questions that currently go into a DM and
+         are lost. */
+      async function discussionFor(col, id, engId){
+        const { data: cm } = await sb.from('comments')
+          .select('id, body, created_at, profiles:author_id(full_name)')
+          .eq(col, id).is('parent_comment_id', null)
+          .order('created_at', { ascending:false }).limit(4);
+
+        const rows = (cm || []).slice().reverse().map((c) => {
+          const nm = (c.profiles && c.profiles.full_name) || 'Someone';
+          const iv = nm.split(' ').map(x => x[0]).filter(Boolean).join('').slice(0,2).toUpperCase();
+          const when = new Date(c.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+          return '<div class="vc-peek-c"><span class="vc-peek-av">' + iv + '</span>' +
+            '<span class="vc-peek-cb"><em>' + esc(nm) + ' \u00b7 <i>' + when + '</i></em>' +
+            esc(c.body) +
+            '<span class="vc-peek-cacts"><button class="vc-peek-more" data-thread="' + c.id + '">' +
+            'Reply</button></span></span></div>';
+        }).join('');
+
+        return '<div class="vc-peek-cm" data-col="' + col + '" data-oid="' + id +
+               '" data-eng="' + (engId || '') + '"><b>Discussion</b>' +
+          (rows || '<p class="vc-peek-load">Nothing said yet.</p>') +
+          '<div class="vc-peek-add">' +
+            '<textarea class="vcAnyNew" rows="2" placeholder="Add a comment"></textarea>' +
+            '<button class="vcAnySend">Comment</button></div></div>';
+      }
+
+      if (kind === 'task') {
           const { data: t } = await sb.from('tasks')
             .select('*, engagements(title, clients(business_name)), profiles:assignee_id(full_name)')
             .eq('id', id).single();
@@ -474,16 +502,31 @@ try {
             (a.performer === 'internal' ? fld('Doing it', 'In-house') : fld('Their pay', money(a.pay_amount))) +
             (dayList ? '<div class="vc-peek-cm"><b>Schedule</b>' + dayList + '</div>' : '');
   
-        } else if (kind === 'milestone') {
+          html += await discussionFor('assignment_id', id, a && a.engagement_id);
+
+      } else if (kind === 'milestone') {
           const { data: m } = await sb.from('milestones')
             .select('*, engagements(title, clients(business_name))').eq('id', id).single();
           if (!m) throw new Error('Not found');
           html = '<h3>' + esc(m.label) + '</h3>' +
             fld('Account', (m.engagements && m.engagements.clients && m.engagements.clients.business_name) || '\u2014') +
-            fld('Status', String(m.status).replace(/_/g,' ')) +
-            fld('Due', m.due_date ? date(m.due_date) : '\u2014');
+            /* Editable in place. Moving a date from the timeline is the most
+               common thing anyone wants to do here. */
+            '<div class="vc-peek-quick"><label for="vcPeekMsStatus">Status</label>' +
+              '<select id="vcPeekMsStatus">' +
+                ['not_started','in_progress','blocked','done','cancelled'].map((k) =>
+                  '<option value="' + k + '"' + (k === String(m.status) ? ' selected' : '') + '>' +
+                  k.replace(/_/g,' ').replace(/^./, c => c.toUpperCase()) + '</option>').join('') +
+              '</select></div>' +
+            '<div class="vc-peek-quick"><label for="vcPeekMsDate">Due</label>' +
+              '<input type="date" id="vcPeekMsDate" value="' + (m.due_date || '') + '"></div>' +
+            (m.due_date && m.due_date < new Date().toISOString().slice(0,10)
+              ? '<p class="vc-peek-warn">Past its date. Moving it shifts the work under it ' +
+                'and tells the account owner.</p>' : '');
   
-        } else if (kind === 'engagement') {
+          html += await discussionFor('milestone_id', id, m && m.engagement_id);
+
+      } else if (kind === 'engagement') {
           const { data: e } = await sb.from('engagements')
             .select('*, clients(business_name, contact_name), line_items(*)').eq('id', id).single();
           if (!e) throw new Error('Not found');
@@ -527,7 +570,50 @@ try {
          were looking at, so the task stays in view while you read the replies. */
       // Handled by a delegated listener installed once (see below).
   
-      const quick = document.getElementById('vcPeekStatus');
+      /* Commenting from any drawer, whatever it is showing. */
+    const anySend = document.querySelector('.vcAnySend');
+    if (anySend) {
+      const wrap = anySend.closest('.vc-peek-cm');
+      const ta   = wrap.querySelector('.vcAnyNew');
+      const post = async () => {
+        const body = ta.value.trim();
+        if (!body) return;
+        anySend.disabled = true;
+        const row = { author_id: session.user.id, body: body,
+                      engagement_id: wrap.dataset.eng || null };
+        row[wrap.dataset.col] = wrap.dataset.oid;
+        const { error } = await sb.from('comments').insert(row);
+        anySend.disabled = false;
+        if (error) { alert(error.message); return; }
+        ta.value = '';
+        window.vcPeek(kind, id);
+      };
+      anySend.addEventListener('click', post);
+      ta.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); post(); }
+      });
+    }
+
+    /* Editing a milestone date without leaving the timeline. */
+    const msDate = document.getElementById('vcPeekMsDate');
+    if (msDate) {
+      msDate.addEventListener('change', async () => {
+        await sb.from('milestones').update({ due_date: msDate.value || null }).eq('id', id);
+        if (typeof window.vcInit === 'function') window.vcInit();
+        window.vcPeek('milestone', id);
+      });
+    }
+
+    const msStatus = document.getElementById('vcPeekMsStatus');
+    if (msStatus) {
+      msStatus.addEventListener('change', async () => {
+        await sb.from('milestones').update({ status: msStatus.value }).eq('id', id);
+        if (typeof window.vcInit === 'function') window.vcInit();
+        window.vcPeek('milestone', id);
+      });
+    }
+
+    const quick = document.getElementById('vcPeekStatus');
       if (quick) {
         quick.addEventListener('change', async () => {
           await sb.from('tasks').update({ status: quick.value }).eq('id', id);
@@ -990,7 +1076,50 @@ try {
           b.addEventListener('click', () => openThread(b.dataset.thread, id));
         });
     
-        const quick = document.getElementById('vcPeekStatus');
+        /* Commenting from any drawer, whatever it is showing. */
+    const anySend = document.querySelector('.vcAnySend');
+    if (anySend) {
+      const wrap = anySend.closest('.vc-peek-cm');
+      const ta   = wrap.querySelector('.vcAnyNew');
+      const post = async () => {
+        const body = ta.value.trim();
+        if (!body) return;
+        anySend.disabled = true;
+        const row = { author_id: session.user.id, body: body,
+                      engagement_id: wrap.dataset.eng || null };
+        row[wrap.dataset.col] = wrap.dataset.oid;
+        const { error } = await sb.from('comments').insert(row);
+        anySend.disabled = false;
+        if (error) { alert(error.message); return; }
+        ta.value = '';
+        window.vcPeek(kind, id);
+      };
+      anySend.addEventListener('click', post);
+      ta.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); post(); }
+      });
+    }
+
+    /* Editing a milestone date without leaving the timeline. */
+    const msDate = document.getElementById('vcPeekMsDate');
+    if (msDate) {
+      msDate.addEventListener('change', async () => {
+        await sb.from('milestones').update({ due_date: msDate.value || null }).eq('id', id);
+        if (typeof window.vcInit === 'function') window.vcInit();
+        window.vcPeek('milestone', id);
+      });
+    }
+
+    const msStatus = document.getElementById('vcPeekMsStatus');
+    if (msStatus) {
+      msStatus.addEventListener('change', async () => {
+        await sb.from('milestones').update({ status: msStatus.value }).eq('id', id);
+        if (typeof window.vcInit === 'function') window.vcInit();
+        window.vcPeek('milestone', id);
+      });
+    }
+
+    const quick = document.getElementById('vcPeekStatus');
         if (quick) {
           quick.addEventListener('change', async () => {
             await sb.from('tasks').update({ status: quick.value }).eq('id', id);

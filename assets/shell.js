@@ -1797,6 +1797,116 @@ try {
   } catch (vcErr) { console.error("shell feature failed:", vcErr); }
 } catch (vcErr) { console.error("shell feature failed:", vcErr); }
 
+
+/* ── Manual steps ──────────────────────────────────────────────────────────
+   Things the platform cannot do for you. A blocking one interrupts, because a
+   note in a list is a note that does not happen. Each says where to go, what to
+   do there, and what to bring back. */
+try {
+  (function(){
+    if (role === 'contractor' || role === 'client') return;
+
+    const bar = document.createElement('div');
+    bar.className = 'vc-ms-bar';
+    document.body.appendChild(bar);
+
+    const veil = document.createElement('div');
+    veil.className = 'vc-ms-veil';
+    const modal = document.createElement('div');
+    modal.className = 'vc-ms';
+    document.body.append(veil, modal);
+
+    let steps = [], at = 0;
+
+    async function load(){
+      const { data } = await sb.from('manual_steps')
+        .select('*').eq('status','open').order('blocking', { ascending:false });
+      steps = data || [];
+      paintBar();
+      const blockers = steps.filter(s => s.blocking);
+      if (blockers.length && !sessionStorage.getItem('vcMsSeen')) {
+        sessionStorage.setItem('vcMsSeen', '1');
+        open(0);
+      }
+    }
+
+    function paintBar(){
+      if (!steps.length) { bar.classList.remove('on'); document.body.classList.remove('vc-ms-open'); return; }
+      const b = steps.filter(s => s.blocking).length;
+      bar.innerHTML =
+        '<span class="vc-ms-i">\u270B</span>' +
+        '<span class="vc-ms-t">' +
+          (b ? '<b>' + b + ' thing' + (b>1?'s':'') + ' only you can do</b>' +
+               ' \u2014 work is waiting on ' + (b>1?'them':'it')
+             : '<b>' + steps.length + ' manual step' + (steps.length>1?'s':'') + '</b> outstanding') +
+        '</span>' +
+        '<button class="vc-ms-go">Show me</button>';
+      bar.className = 'vc-ms-bar on' + (b ? ' blocking' : '');
+      document.body.classList.add('vc-ms-open');
+      bar.querySelector('.vc-ms-go').addEventListener('click', () => open(0));
+    }
+
+    function open(i){
+      at = Math.max(0, Math.min(i, steps.length - 1));
+      const s = steps[at];
+      if (!s) return;
+
+      modal.innerHTML =
+        '<div class="vc-ms-h">' +
+          '<span class="vc-ms-count">' + (at+1) + ' of ' + steps.length + '</span>' +
+          (s.blocking ? '<span class="vc-ms-blk">Blocking</span>' : '') +
+          '<button class="vc-ms-x" aria-label="Close">&times;</button>' +
+        '</div>' +
+        '<h3>' + esc(s.title) + '</h3>' +
+        '<p class="vc-ms-why">' + esc(s.why) + '</p>' +
+
+        '<div class="vc-ms-where"><span>Where</span><b>' + esc(s.where_to_go) + '</b>' +
+          (s.url ? '<a href="' + esc(s.url) + '" target="_blank" rel="noopener">Open it \u2197</a>' : '') +
+        '</div>' +
+
+        (s.steps && s.steps.length
+          ? '<ol class="vc-ms-steps">' + s.steps.map(x => '<li>' + esc(x) + '</li>').join('') + '</ol>'
+          : '') +
+
+        (s.bring_back
+          ? '<div class="vc-ms-back"><span>Bring back</span><b>' + esc(s.bring_back) + '</b>' +
+            (s.return_to ? '<em>to ' + esc(s.return_to) + '</em>' : '') + '</div>'
+          : '') +
+
+        '<div class="vc-ms-f">' +
+          (steps.length > 1 ? '<button class="vc-ms-nav" data-d="-1">Previous</button>' +
+                              '<button class="vc-ms-nav" data-d="1">Next</button>' : '') +
+          '<button class="vc-ms-later">Not now</button>' +
+          '<button class="vc-ms-done">I have done this</button>' +
+        '</div>';
+
+      veil.classList.add('on'); modal.classList.add('on');
+      document.body.classList.add('vc-locked');
+
+      modal.querySelector('.vc-ms-x').addEventListener('click', shut);
+      modal.querySelector('.vc-ms-later').addEventListener('click', shut);
+      modal.querySelectorAll('.vc-ms-nav').forEach((b) => {
+        b.addEventListener('click', () => open(at + Number(b.dataset.d)));
+      });
+      modal.querySelector('.vc-ms-done').addEventListener('click', async () => {
+        await sb.from('manual_steps')
+          .update({ status:'done', done_at:new Date().toISOString() }).eq('id', s.id);
+        shut(); load();
+      });
+    }
+
+    function shut(){
+      veil.classList.remove('on'); modal.classList.remove('on');
+      document.body.classList.remove('vc-locked');
+    }
+    veil.addEventListener('click', shut);
+
+    window.vcManualSteps = load;
+    load();
+    setInterval(load, 120000);
+  })();
+} catch (vcErr) { console.error("shell feature failed:", vcErr); }
+
 window.dispatchEvent(new Event('vc-auth-ready'));
 
 /* Pages define window.vcInit and expect it to run once auth resolves. Calling it

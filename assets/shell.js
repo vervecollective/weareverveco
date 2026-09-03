@@ -24,7 +24,7 @@ let profile = null;
 if (session) {
   const { data } = await sb
     .from('profiles')
-    .select('full_name, role, title, avatar_url, onboarded_at, phone, demo_role, status')
+    .select('full_name, role, title, avatar_url, onboarded_at, phone, demo_role, status, business_name, logo_url, brand_colour, website, instagram, tiktok, facebook')
     .eq('id', session.user.id)
     .single();
   profile = data;
@@ -44,7 +44,7 @@ if (profile && !profile.onboarded_at && !location.pathname.startsWith('/welcome'
 }
 const name = (profile && profile.full_name) || (session && session.user.email) || '';
 window.__role = role;
-window.__profile = profile;
+window.__profile = Object.assign({ id: session.user.id }, profile || {});
 
 /* ---- navigation, filtered by role ---- */
 const NAV = [

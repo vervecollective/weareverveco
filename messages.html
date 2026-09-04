@@ -107,7 +107,7 @@
   .ch .r1 b{min-width:0;font-size:14px;font-weight:550;letter-spacing:-.01em;color:#111111;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .ch .r1 em{margin-left:auto;flex-shrink:0;font-size:11.5px;font-style:normal;
-    color:#9CA3AF;font-variant-numeric:tabular-nums;}
+    color:#6B7280;font-variant-numeric:tabular-nums;}
   .ch .pin{width:11px;height:11px;flex-shrink:0;color:#9CA3AF;align-self:center;}
   .ch .pv{font-size:12.5px;color:#6B7280;white-space:nowrap;overflow:hidden;
     text-overflow:ellipsis;display:block;margin-top:1px;}
@@ -148,22 +148,29 @@
   .feed > .day:first-child{margin-top:0;}
 
   /* A dated rule, not a floating centred label with nothing holding it. */
-  .day{display:flex;align-items:center;gap:12px;margin:22px 0 12px;
-    font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#9CA3AF;}
-  .day:before,.day:after{content:'';flex:1;height:1px;background:#EEF0F2;}
+  .day{display:flex;align-items:center;gap:14px;margin:26px 0 14px;
+    font-size:11.5px;font-weight:600;letter-spacing:.03em;color:#4B5563;}
+  .day:before,.day:after{content:'';flex:1;height:1px;background:#EAECEF;}
+  .day span{background:#fff;padding:0 2px;}
 
-  .m{display:flex;gap:12px;padding:3px 12px 3px 0;position:relative;}
+  .m{display:flex;gap:12px;padding:7px 12px 7px 0;position:relative;}
   .m .av{width:30px;height:30px;border-radius:8px;background:#111111;color:#fff;flex-shrink:0;
     display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:700;
     background-size:cover;background-position:center;margin-top:2px;}
   .m .bd{flex:1;min-width:0;}
   .m .hd{display:flex;align-items:baseline;gap:8px;margin-bottom:2px;}
   .m .hd b{font-size:13px;font-weight:620;letter-spacing:-.01em;color:#111111;}
-  .m .hd em{font-size:11px;font-style:normal;color:#A2A8B0;font-variant-numeric:tabular-nums;}
-  .m .tx{font-size:14px;line-height:1.6;color:#26292F;white-space:pre-wrap;word-break:break-word;}
+  .m .hd em{font-size:11.5px;font-style:normal;color:#6B7280;font-variant-numeric:tabular-nums;}
+  /* On a wide pane a message ran the full width of the column — well past 200
+     characters a line. The eye loses its place returning to the left margin,
+     which is most of why this was hard to read. Cap the measure; the pane can
+     be as wide as it likes. */
+  .m .tx{max-width:68ch;font-size:14.5px;line-height:1.65;color:#1C1F24;
+    white-space:pre-wrap;word-break:break-word;}
+  .m.reply .tx{max-width:64ch;font-size:13.5px;}
 
   /* Consecutive messages keep the gutter but drop the repeated identity. */
-  .m.cont{padding-top:1px;}
+  .m.cont{padding-top:1px;padding-bottom:2px;}
   .m.cont .av{visibility:hidden;height:0;margin:0;}
   .m.cont .hd{display:flex;height:0;margin:0;}
   .m.cont .hd b,.m.cont .hd em{display:none;}
@@ -239,13 +246,13 @@
   /* The focus ring belongs on the container, not on the field inside it. */
   .compose textarea:focus{outline:none !important;border-color:transparent !important;
     box-shadow:none !important;}
-  .compose textarea::placeholder{color:#A2A8B0 !important;}
+  .compose textarea::placeholder{color:#6B7280 !important;}
   .ctools{display:flex;align-items:center;gap:2px;padding:6px 8px 8px 8px;}
   .tool{background:none;border:none;cursor:pointer;padding:7px;border-radius:8px;line-height:0;
     color:#8A9099;display:flex;transition:all .12s;}
   .tool svg{width:18px;height:18px;}
   .tool:hover{background:#F4F5F7;color:#111111;}
-  .chint{flex:1;font-size:11px;color:#B4B9C0;padding-left:6px;user-select:none;}
+  .chint{flex:1;font-size:11.5px;color:#6B7280;padding-left:6px;user-select:none;}
   .send{background:#111111;color:#fff;border:none;border-radius:8px;padding:8px 16px;
     font:600 13px/1 'Inter',sans-serif;cursor:pointer;transition:background .14s;}
   .send:hover{background:#D9531E;}
@@ -334,7 +341,7 @@
   .sr b{font-size:13px;font-weight:620;display:block;color:#111111;letter-spacing:-.01em;}
   .sr span{font-size:12.5px;color:#6B7280;display:block;margin-top:2px;line-height:1.5;
     display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
-  .sr em{font-size:11px;font-style:normal;color:#A2A8B0;font-variant-numeric:tabular-nums;}
+  .sr em{font-size:11.5px;font-style:normal;color:#6B7280;font-variant-numeric:tabular-nums;}
 
   .fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:14px;}
   .fcard{background:#fff;border:1px solid #E7E9ED;border-radius:10px;overflow:hidden;
@@ -346,7 +353,7 @@
   .fcard .meta{padding:10px 11px;}
   .fcard .meta b{font-size:12.5px;font-weight:600;display:block;white-space:nowrap;
     overflow:hidden;text-overflow:ellipsis;color:#111111;}
-  .fcard .meta em{font-size:11px;font-style:normal;color:#A2A8B0;}
+  .fcard .meta em{font-size:11.5px;font-style:normal;color:#6B7280;}
 .replybar{display:flex;align-items:center;gap:8px;padding:7px 12px;margin-bottom:6px;
   border-left:2px solid #D9531E;background:#FAF6F3;border-radius:4px;font-size:12.5px;color:#5C6470;}
 .replybar span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}

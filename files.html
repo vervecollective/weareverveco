@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Files — Verve Collective</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/shell.css">
+<script type="module" src="/assets/shell.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',system-ui,sans-serif;color:#1C1F24;line-height:1.55;-webkit-font-smoothing:antialiased;}
+  .wrap{padding:0 !important;max-width:none !important;height:100vh;display:flex;}
+
+  /* ---- left: scope and folder tree ---- */
+  .side{width:264px;border-right:1px solid #EBECEF;display:flex;flex-direction:column;background:#FCFCFD;}
+  .side-h{padding:16px 16px 12px;border-bottom:1px solid #EBECEF;}
+  .side-h b{font-size:16px;font-weight:680;letter-spacing:-.02em;color:#111111;display:block;margin-bottom:10px;}
+  .side-h select{width:100%;padding:8px 10px;font:500 13px/1.4 'Inter',sans-serif;}
+
+  .tree{flex:1;overflow-y:auto;padding:8px;}
+  .fold{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:9px;
+    cursor:pointer;transition:background .12s;position:relative;}
+  .fold:hover{background:#F4F5F7;}
+  .fold.on{background:#FDF0EB;}
+  .fold.on:before{content:'';position:absolute;left:0;top:8px;bottom:8px;width:2px;
+    border-radius:0 2px 2px 0;background:#D9531E;}
+  .fold svg{width:16px;height:16px;color:#8A9099;flex-shrink:0;}
+  .fold.on svg{color:#9A3412;}
+  .fold span{flex:1;min-width:0;font-size:13.5px;font-weight:520;color:#111111;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .fold em{font-size:11.5px;font-style:normal;color:#6B7280;font-variant-numeric:tabular-nums;}
+  .fold.child{margin-left:18px;}
+  .who{display:block;font-size:11px;color:#6B7280;padding:0 10px 8px 35px;margin-top:-4px;}
+
+  /* ---- right: contents ---- */
+  .main{flex:1;display:flex;flex-direction:column;min-width:0;background:#fff;}
+  .main-h{padding:15px 24px;border-bottom:1px solid #EBECEF;display:flex;align-items:center;gap:10px;}
+  .crumb{flex:1;min-width:0;}
+  .crumb b{display:block;font-size:15px;font-weight:650;letter-spacing:-.01em;color:#111111;}
+  .crumb em{display:block;font-size:12px;font-style:normal;color:#6B7280;margin-top:1px;}
+  .btn{border:1px solid #DDE0E4;background:#fff;border-radius:8px;padding:8px 13px;
+    font:600 12.5px/1 'Inter',sans-serif;color:#111111;cursor:pointer;transition:all .12s;white-space:nowrap;}
+  .btn:hover{border-color:#B8BCC4;}
+  .btn.primary{background:#111111;color:#fff;border-color:#111111;}
+  .btn.primary:hover{background:#D9531E;border-color:#D9531E;}
+  .btn:focus-visible{outline:2px solid #D9531E;outline-offset:2px;}
+  .find{width:190px;padding:8px 11px;font:400 13px/1.3 'Inter',sans-serif;}
+
+  .body{flex:1;overflow-y:auto;padding:20px 24px 40px;position:relative;}
+  .body.drop{outline:2px dashed #D9531E;outline-offset:-14px;background:#FFFBF9;}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(178px,1fr));gap:14px;}
+  .f{border:1px solid #E7E9ED;border-radius:10px;overflow:hidden;background:#fff;
+    transition:border-color .14s,box-shadow .14s;position:relative;}
+  .f:hover{border-color:#D8DAE0;box-shadow:0 4px 14px rgba(16,24,40,.08);}
+  .f .thumb{height:112px;display:flex;align-items:center;justify-content:center;
+    background:#FAFAFB;color:#C2C7CE;cursor:pointer;overflow:hidden;}
+  .f .thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+  .f .thumb svg{width:26px;height:26px;}
+  .f .meta{padding:10px 11px;}
+  .f .meta b{display:block;font-size:12.5px;font-weight:600;color:#111111;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .f .meta em{display:block;font-size:11.5px;font-style:normal;color:#6B7280;margin-top:2px;
+    font-variant-numeric:tabular-nums;}
+  .f .row{display:flex;gap:1px;padding:0 7px 8px;}
+  .f .row button{flex:1;background:none;border:none;padding:5px;border-radius:6px;cursor:pointer;
+    font:600 11.5px/1 'Inter',sans-serif;color:#6B7280;transition:all .12s;}
+  .f .row button:hover{background:#F4F5F7;color:#111111;}
+  .f .row button.danger:hover{background:#FEF2F2;color:#B91C1C;}
+
+  /* ---- states ---- */
+  .empty{padding:64px 24px;text-align:center;}
+  .empty svg{width:30px;height:30px;color:#C9CDD4;margin-bottom:12px;}
+  .empty b{display:block;font-size:15px;font-weight:620;color:#111111;margin-bottom:5px;}
+  .empty span{display:block;font-size:13px;line-height:1.6;color:#6B7280;max-width:340px;margin:0 auto 16px;}
+  .skel{border:1px solid #EEF0F2;border-radius:10px;overflow:hidden;}
+  .skel i{display:block;height:112px;}
+  .skel em{display:block;height:9px;border-radius:4px;margin:11px 11px 0;}
+  .skel i,.skel em{background:linear-gradient(90deg,#F1F2F4 25%,#E7E9ED 37%,#F1F2F4 63%);
+    background-size:400% 100%;animation:sk 1.3s ease infinite;}
+  @keyframes sk{0%{background-position:100% 50%;}100%{background-position:0 50%;}}
+
+  .note{position:fixed;left:50%;bottom:26px;transform:translate(-50%,12px);z-index:120;
+    display:none;align-items:center;gap:10px;max-width:min(460px,92vw);
+    padding:11px 15px;border-radius:10px;background:#111111;color:#fff;
+    font:500 13px/1.45 'Inter',sans-serif;box-shadow:0 10px 30px rgba(16,24,40,.24);
+    opacity:0;transition:opacity .18s,transform .18s;}
+  .note.on{display:flex;opacity:1;transform:translate(-50%,0);}
+  .note.bad{background:#7F1D1D;}
+
+  .bar{height:2px;background:#EEF0F2;border-radius:2px;overflow:hidden;margin-top:8px;display:none;}
+  .bar.on{display:block;}
+  .bar i{display:block;height:100%;background:#D9531E;width:35%;
+    animation:slide 1.1s ease-in-out infinite;}
+  @keyframes slide{0%{margin-left:-35%;}100%{margin-left:100%;}}
+  @media(prefers-reduced-motion:reduce){ .skel i,.skel em,.bar i{animation:none;} }
+
+  @media(max-width:860px){
+    .side{width:100%;}
+    .main{display:none;}
+    .main.open{display:flex;position:fixed;inset:0;z-index:60;background:#fff;
+      padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);}
+    .back{display:flex !important;}
+    .find{width:130px;}
+    .main-h{padding:12px 16px;}
+    .body{padding:16px;}
+  }
+  .back{display:none;background:none;border:none;cursor:pointer;color:#5C6470;
+    padding:6px;margin-left:-6px;border-radius:8px;line-height:0;flex-shrink:0;}
+  .back svg{width:20px;height:20px;}
+  .back:hover{background:#F4F5F7;color:#111111;}
+</style>
+</head>
+<body>
+<div class="note" id="note" role="status" aria-live="polite"></div>
+<div class="wrap">
+
+  <div class="side">
+    <div class="side-h">
+      <b>Files</b>
+      <select id="eng" aria-label="Engagement"></select>
+      <div class="bar" id="bar"><i></i></div>
+    </div>
+    <div class="tree" id="tree"></div>
+  </div>
+
+  <div class="main" id="main">
+    <div class="main-h">
+      <button class="back" id="backBtn" aria-label="Back to folders">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button>
+      <span class="crumb"><b id="crumbName">Files</b><em id="crumbWho"></em></span>
+      <input class="find" id="find" type="search" placeholder="Search files" aria-label="Search files">
+      <button class="btn" id="newFolder">New folder</button>
+      <button class="btn primary" id="upBtn">Upload</button>
+      <input type="file" id="up" multiple style="display:none">
+    </div>
+    <div class="body" id="body"></div>
+  </div>
+
+</div>
+
+<script>
+var sb, me, engagements = [], engId = null, clientId = null;
+var folders = [], files = [], folderId = null, loading = false, noteTimer = null;
+
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s == null ? '' : s)
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function notify(msg, bad){
+  var el = $('note');
+  el.className = 'note on' + (bad ? ' bad' : '');
+  el.textContent = msg;
+  clearTimeout(noteTimer);
+  noteTimer = setTimeout(function(){ el.className = 'note'; }, bad ? 6000 : 3200);
+}
+
+function size(n){
+  if (!n && n !== 0) return '';
+  if (n < 1024) return n + ' B';
+  if (n < 1048576) return (n/1024).toFixed(0) + ' KB';
+  return (n/1048576).toFixed(n < 10485760 ? 1 : 0) + ' MB';
+}
+function ago(ts){
+  var d = new Date(ts), n = new Date();
+  if (d.toDateString() === n.toDateString())
+    return d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+}
+var FOLD_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" '+
+  'stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
+var DOC_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" '+
+  'stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>';
+
+var WHO = { verve:'Verve uploads here', client:'The client uploads here',
+            contractor:'Contractors upload here', anyone:'Anyone can upload here' };
+
+/* ---------------------------------------------------------------- loading */
+
+async function loadEngagements(){
+  var r = await sb.from('engagements')
+    .select('id, title, client_id, clients(business_name)')
+    .order('updated_at', { ascending:false });
+  if (r.error) return notify('Could not load engagements. ' + r.error.message, true);
+  engagements = r.data || [];
+  if (!engagements.length){
+    $('tree').innerHTML = '<p class="who" style="padding:16px">No engagements yet. '+
+      'Folders are created automatically when an engagement is.</p>';
+    return;
+  }
+  $('eng').innerHTML = engagements.map(function(e){
+    var label = (e.clients && e.clients.business_name) || e.title || 'Untitled';
+    return '<option value="'+e.id+'">'+esc(label)+'</option>';
+  }).join('');
+  await pickEngagement(engagements[0].id);
+}
+
+async function pickEngagement(id){
+  engId = id;
+  var e = engagements.filter(function(x){ return x.id === id; })[0];
+  clientId = e ? e.client_id : null;
+  folderId = null;
+  await refresh();
+}
+
+async function refresh(){
+  loading = true;
+  paintBody();
+  var fr = await sb.from('folders').select('*').eq('engagement_id', engId).order('sort_order');
+  var xr = await sb.from('files').select('*').eq('engagement_id', engId)
+    .is('trashed_at', null).order('created_at', { ascending:false });
+  loading = false;
+  if (fr.error) return notify('Could not load folders. ' + fr.error.message, true);
+  if (xr.error) return notify('Could not load files. ' + xr.error.message, true);
+  folders = fr.data || [];
+  files = xr.data || [];
+  if (folderId && !folders.filter(function(f){ return f.id === folderId; }).length) folderId = null;
+  paintTree();
+  paintBody();
+}
+
+/* ---------------------------------------------------------------- folders */
+
+function paintTree(){
+  var roots = folders.filter(function(f){ return !f.parent_id; });
+  var html = '';
+  roots.forEach(function(f){
+    html += foldRow(f, false);
+    folders.filter(function(k){ return k.parent_id === f.id; })
+      .forEach(function(k){ html += foldRow(k, true); });
+  });
+  $('tree').innerHTML = html || '<p class="who" style="padding:16px">No folders on this engagement.</p>';
+}
+
+function foldRow(f, child){
+  var n = files.filter(function(x){ return x.folder_id === f.id; }).length;
+  return '<div class="fold'+(child?' child':'')+(folderId===f.id?' on':'')+'" data-f="'+f.id+'">'+
+    FOLD_SVG + '<span>'+esc(f.name)+'</span>' + (n ? '<em>'+n+'</em>' : '') + '</div>' +
+    (!child && f.who_uploads && folderId===f.id
+      ? '<span class="who">'+esc(WHO[f.who_uploads] || '')+'</span>' : '');
+}
+
+/* ---------------------------------------------------------------- contents */
+
+function visible(){
+  var q = $('find').value.trim().toLowerCase();
+  var list = files;
+  /* A search looks across the whole engagement; without one you are looking
+     inside the folder you picked. */
+  if (!q) list = list.filter(function(x){ return x.folder_id === folderId; });
+  else list = list.filter(function(x){ return x.name.toLowerCase().indexOf(q) > -1; });
+  return list;
+}
+
+function paintBody(){
+  var cur = folders.filter(function(f){ return f.id === folderId; })[0];
+  $('crumbName').textContent = cur ? cur.name : (engId ? 'All files' : 'Files');
+  $('crumbWho').textContent = cur ? (cur.purpose || '') : '';
+
+  if (loading){
+    $('body').innerHTML = '<div class="grid">' +
+      [1,2,3,4].map(function(){
+        return '<div class="skel"><i></i><em style="width:70%"></em><em style="width:44%"></em>'+
+          '<div style="height:12px"></div></div>';
+      }).join('') + '</div>';
+    return;
+  }
+
+  var list = visible();
+  if (!list.length){
+    var q = $('find').value.trim();
+    $('body').innerHTML = '<div class="empty">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" '+
+      'stroke-linecap="round" stroke-linejoin="round">'+
+      '<path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>' +
+      '<b>' + (q ? 'Nothing matches "' + esc(q) + '"'
+                 : cur ? 'Nothing in ' + esc(cur.name) + ' yet'
+                       : 'Pick a folder') + '</b>' +
+      '<span>' + (q ? 'Try a shorter search, or clear it to browse the folder.'
+                    : cur ? esc(WHO[cur.who_uploads] || 'Drag files here, or use Upload.')
+                          : 'Choose a folder on the left to see what is in it.') + '</span>' +
+      (cur && !q ? '<button class="btn primary" data-up="1">Upload a file</button>' : '') +
+      '</div>';
+    return;
+  }
+
+  $('body').innerHTML = '<div class="grid">' + list.map(function(x){
+    var img = (x.mime || '').indexOf('image') === 0;
+    var where = folders.filter(function(f){ return f.id === x.folder_id; })[0];
+    return '<div class="f" data-id="'+x.id+'">' +
+      '<div class="thumb" data-open="'+x.id+'" role="button" tabindex="0" '+
+        'aria-label="Open '+esc(x.name)+'">' +
+        (img ? '<img data-src="'+esc(x.id)+'" alt="">' : DOC_SVG) + '</div>' +
+      '<div class="meta"><b title="'+esc(x.name)+'">'+esc(x.name)+'</b>' +
+        '<em>'+size(x.size_bytes)+' · '+ago(x.created_at)+
+        (where && !folderId ? ' · '+esc(where.name) : '')+'</em></div>' +
+      '<div class="row">' +
+        '<button data-open="'+x.id+'">Open</button>' +
+        '<button data-rename="'+x.id+'">Rename</button>' +
+        '<button data-move="'+x.id+'">Move</button>' +
+        '<button class="danger" data-trash="'+x.id+'">Trash</button>' +
+      '</div></div>';
+  }).join('') + '</div>';
+
+  thumbs(list);
+}
+
+/* Thumbnails are signed one batch at a time rather than one request per card. */
+async function thumbs(list){
+  var imgs = list.filter(function(x){ return (x.mime||'').indexOf('image') === 0 && x.storage_path; });
+  if (!imgs.length) return;
+  var r = await sb.storage.from('files').createSignedUrls(imgs.map(function(x){ return x.storage_path; }), 3600);
+  (r.data || []).forEach(function(row, i){
+    if (!row || !row.signedUrl) return;
+    var el = document.querySelector('img[data-src="'+imgs[i].id+'"]');
+    if (el) el.src = row.signedUrl;
+  });
+}
+
+/* ---------------------------------------------------------------- actions */
+
+async function openFile(id){
+  var x = files.filter(function(f){ return f.id === id; })[0];
+  if (!x || !x.storage_path) return;
+  var r = await sb.storage.from('files').createSignedUrl(x.storage_path, 3600);
+  if (r.error || !r.data) return notify('Could not open that file. ' + (r.error && r.error.message || ''), true);
+  window.open(r.data.signedUrl, '_blank', 'noopener');
+}
+
+async function upload(fileList){
+  if (!engId) return notify('Pick an engagement first.', true);
+  if (!folderId) return notify('Pick a folder to upload into.', true);
+  var arr = Array.prototype.slice.call(fileList || []);
+  if (!arr.length) return;
+
+  $('bar').classList.add('on');
+  var ok = 0, failed = [];
+
+  for (var i = 0; i < arr.length; i++){
+    var f = arr[i];
+    if (f.size > 100 * 1024 * 1024){ failed.push(f.name + ' (over 100MB)'); continue; }
+    var id = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + i);
+    var safe = f.name.replace(/[^\w.\- ]+/g, '_');
+    /* The storage policy reads the engagement from the first path segment, so
+       the path shape is load-bearing, not cosmetic. */
+    var path = engId + '/' + id + '-' + safe;
+
+    var up = await sb.storage.from('files').upload(path, f, { contentType: f.type || 'application/octet-stream' });
+    if (up.error){ failed.push(f.name); continue; }
+
+    var ins = await sb.from('files').insert({
+      folder_id: folderId, engagement_id: engId, client_id: clientId,
+      name: f.name, mime: f.type || null, size_bytes: f.size,
+      storage_path: path, created_by: me.id
+    });
+    if (ins.error){
+      await sb.storage.from('files').remove([path]);
+      failed.push(f.name);
+      continue;
+    }
+    ok++;
+  }
+
+  $('bar').classList.remove('on');
+  if (ok) notify(ok + (ok === 1 ? ' file uploaded.' : ' files uploaded.'));
+  if (failed.length) notify('Did not upload: ' + failed.join(', '), true);
+  await refresh();
+}
+
+async function rename(id){
+  var x = files.filter(function(f){ return f.id === id; })[0];
+  if (!x) return;
+  var name = prompt('Rename file', x.name);
+  if (name === null) return;
+  name = name.trim();
+  if (!name || name === x.name) return;
+  var r = await sb.from('files').update({ name: name, updated_at: new Date().toISOString() }).eq('id', id);
+  if (r.error) return notify('Could not rename that. ' + r.error.message, true);
+  await refresh();
+}
+
+async function move(id){
+  var opts = folders.map(function(f, i){ return (i+1) + '. ' + f.name; }).join('\n');
+  var pick = prompt('Move to which folder?\n\n' + opts, '');
+  if (pick === null) return;
+  var n = parseInt(pick, 10);
+  var target = folders[n - 1];
+  if (!target) return notify('That is not one of the folders.', true);
+  var r = await sb.from('files').update({ folder_id: target.id, updated_at: new Date().toISOString() }).eq('id', id);
+  if (r.error) return notify('Could not move that. ' + r.error.message, true);
+  notify('Moved to ' + target.name + '.');
+  await refresh();
+}
+
+/* Trash, not delete. The row and the object both stay; only visibility changes. */
+async function trash(id){
+  var x = files.filter(function(f){ return f.id === id; })[0];
+  if (!x) return;
+  if (!confirm('Move "' + x.name + '" to trash?\n\nIt stops showing here but is not destroyed.')) return;
+  var r = await sb.from('files').update({ trashed_at: new Date().toISOString() }).eq('id', id);
+  if (r.error) return notify('Could not trash that. ' + r.error.message, true);
+  notify('Moved to trash.');
+  await refresh();
+}
+
+async function newFolder(){
+  if (!engId) return notify('Pick an engagement first.', true);
+  var name = prompt('Folder name');
+  if (name === null) return;
+  name = name.trim();
+  if (!name) return;
+  var parent = folders.filter(function(f){ return f.id === folderId; })[0];
+  var r = await sb.from('folders').insert({
+    engagement_id: engId, client_id: clientId,
+    parent_id: parent && !parent.parent_id ? parent.id : null,
+    name: name, who_uploads: 'anyone', sort_order: 900, created_by: me.id
+  });
+  if (r.error) return notify('Could not create that folder. ' + r.error.message, true);
+  await refresh();
+}
+
+/* ---------------------------------------------------------------- wiring */
+
+window.vcInit = async function(){
+  sb = window.__sb;
+  me = window.__profile || { id: window.__uid };
+
+  $('eng').addEventListener('change', function(){ pickEngagement(this.value); });
+  $('find').addEventListener('input', paintBody);
+  $('upBtn').addEventListener('click', function(){ $('up').click(); });
+  $('newFolder').addEventListener('click', newFolder);
+  $('up').addEventListener('change', function(){ upload(this.files); this.value = ''; });
+
+  $('backBtn').addEventListener('click', function(){
+    $('main').classList.remove('open');
+    folderId = null;
+    paintTree(); paintBody();
+  });
+
+  /* Delegated: the tree and grid are rebuilt on every refresh, so a listener
+     bound to a card would not survive. */
+  document.addEventListener('click', function(e){
+    var f = e.target.closest && e.target.closest('[data-f]');
+    if (f){ folderId = f.dataset.f; $('main').classList.add('open'); paintTree(); paintBody(); return; }
+    var t = e.target.closest && e.target.closest('[data-open]');
+    if (t){ openFile(t.dataset.open); return; }
+    var r = e.target.closest && e.target.closest('[data-rename]');
+    if (r){ rename(r.dataset.rename); return; }
+    var m = e.target.closest && e.target.closest('[data-move]');
+    if (m){ move(m.dataset.move); return; }
+    var d = e.target.closest && e.target.closest('[data-trash]');
+    if (d){ trash(d.dataset.trash); return; }
+    var u = e.target.closest && e.target.closest('[data-up]');
+    if (u){ $('up').click(); return; }
+  });
+
+  document.addEventListener('keydown', function(e){
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    var t = e.target.closest && e.target.closest('.thumb[data-open]');
+    if (t){ e.preventDefault(); openFile(t.dataset.open); }
+  });
+
+  var body = $('body');
+  ['dragenter','dragover'].forEach(function(ev){
+    body.addEventListener(ev, function(e){ e.preventDefault(); body.classList.add('drop'); });
+  });
+  ['dragleave','drop'].forEach(function(ev){
+    body.addEventListener(ev, function(e){ e.preventDefault(); body.classList.remove('drop'); });
+  });
+  body.addEventListener('drop', function(e){
+    if (e.dataTransfer && e.dataTransfer.files) upload(e.dataTransfer.files);
+  });
+
+  await loadEngagements();
+};
+</script>
+</body>
+</html>

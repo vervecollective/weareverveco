@@ -351,6 +351,26 @@ async function react(mid, e){
   paint();
 }
 
+/* The chat bucket is private. Anything stored as a bare path is signed for a
+   short window at render time; anything already absolute (Giphy, and the one
+   legacy public URL) is passed straight through. A stored permanent URL is a
+   permanent unauthenticated link, which is exactly what we stopped doing. */
+var signedCache = {};
+function isPath(v){ return !!v && !/^https?:\/\//i.test(v); }
+
+async function signPaths(values){
+  var want = [];
+  values.forEach(function(v){
+    if (isPath(v) && !signedCache[v] && want.indexOf(v) === -1) want.push(v);
+  });
+  if (!want.length) return;
+  var r = await sb.storage.from('chat').createSignedUrls(want, 3600);
+  (r.data || []).forEach(function(row){
+    if (row && row.signedUrl && !row.error) signedCache[row.path] = row.signedUrl;
+  });
+}
+function srcFor(v){ return isPath(v) ? (signedCache[v] || '') : (v || ''); }
+
 async function loadChans(){
   var r = await sb.from('channels')
     .select('*, image_url, channel_members(profile_id, last_read_at, muted, pinned, manually_unread), messages(body, created_at, author_id)')
@@ -358,6 +378,8 @@ async function loadChans(){
   chans = (r.data||[]).filter(function(c){
     return (c.channel_members||[]).some(function(m){ return m.profile_id === me.id; });
   });
+
+  await signPaths(chans.map(function(c){ return c.image_url; }));
 
   chans.sort(function(a,b){
     var ap = ((a.channel_members||[]).filter(function(m){return m.profile_id===me.id;})[0]||{}).pinned;
@@ -385,7 +407,7 @@ async function loadChans(){
     }).length;
     var o = otherOf(c);
     var dot = (o && online[o.id]) ? '<i></i>' : '';
-    var pic = c.image_url || (o && o.avatar_url);
+    var pic = srcFor(c.image_url) || (o && o.avatar_url);
     var av = pic
       ? '<span class="av" style="background-image:url('+esc(pic)+')">'+dot+'</span>'
       : '<span class="av">'+ini(titleOf(c))+dot+'</span>';
@@ -450,6 +472,8 @@ async function paint(){
     });
   }
 
+  await signPaths(ms.map(function(m){ return m.attachment_url; }));
+
   var html='', lastDay='', lastAuthor='', lastAt=0;
   ms.forEach(function(m){
     var d = dayLabel(m.created_at);
@@ -461,10 +485,11 @@ async function paint(){
     var att = '';
     if (m.attachment_url){
       var isImg = (m.attachment_type||'').indexOf('image')===0;
+      var aurl = srcFor(m.attachment_url);
       att = isImg
-        ? '<div class="att"><a href="'+esc(m.attachment_url)+'" target="_blank" rel="noopener">'+
-          '<img src="'+esc(m.attachment_url)+'" alt=""></a></div>'
-        : '<div class="att"><a class="att-f" href="'+esc(m.attachment_url)+'" target="_blank" rel="noopener">'+
+        ? '<div class="att"><a href="'+esc(aurl)+'" target="_blank" rel="noopener">'+
+          '<img src="'+esc(aurl)+'" alt=""></a></div>'
+        : '<div class="att"><a class="att-f" href="'+esc(aurl)+'" target="_blank" rel="noopener">'+
           esc(m.attachment_name||'File')+'</a></div>';
     }
 
@@ -534,7 +559,7 @@ async function openCh(id){
   if (!cur) return;
   $('blank').style.display='none'; $('live').style.display='flex'; $('pane').classList.add('open');
   var o = otherOf(cur);
-  var hpic = cur.image_url || (o && o.avatar_url);
+  var hpic = srcFor(cur.image_url) || (o && o.avatar_url);
   $('hAv').outerHTML = hpic
     ? '<span class="av" id="hAv" style="background-image:url('+esc(hpic)+')"></span>'
     : '<span class="av" id="hAv">'+ini(titleOf(cur))+'</span>';
@@ -945,10 +970,9 @@ window.vcInit = async function(){
     var up = await sb.storage.from('chat').upload(path, f, { contentType: f.type });
     $('send').disabled = false; this.value='';
     if (up.error) return alert(up.error.message);
-    var url = sb.storage.from('chat').getPublicUrl(path).data.publicUrl;
     await sb.from('messages').insert({
       channel_id:cur.id, author_id:me.id, body:$('box').value.trim(),
-      attachment_url:url, attachment_name:f.name, attachment_type:f.type
+      attachment_url:path, attachment_name:f.name, attachment_type:f.type
     });
     $('box').value='';
     paint(); loadChans();
@@ -1108,12 +1132,13 @@ window.vcInit = async function(){
     var f = this.files && this.files[0];
     if (!f || !cur) return;
     if (f.size > 3 * 1024 * 1024) { alert('Keep it under 3MB.'); this.value=''; return; }
-    var path = 'group/' + cur.id + '-' + Date.now();
+    /* Channel-scoped path: the storage policy reads the channel id from the
+       first path segment, so 'group/...' would have been unreadable. */
+    var path = cur.id + '/group-' + Date.now();
     var up = await sb.storage.from('chat').upload(path, f, { contentType: f.type });
     this.value = '';
     if (up.error) { alert(up.error.message); return; }
-    var url = sb.storage.from('chat').getPublicUrl(path).data.publicUrl;
-    await sb.from('channels').update({ image_url: url }).eq('id', cur.id);
+    await sb.from('channels').update({ image_url: path }).eq('id', cur.id);
     await loadChans();
     openCh(cur.id);
   });

@@ -1907,3 +1907,36 @@ body.vc-ms-open .page{ padding-top: calc(var(--vc-ms-h) + 18px) !important; }
   .vc-ms-bar{ padding-left:14px; padding-right:12px; font-size:12px; }
   .vc-ms-go{ padding:5px 9px; }
 }
+
+/* ================= identity chip: stop it covering page headers =================
+   It is position:fixed at the top right of every page at z-index 1150, roughly
+   200px wide, and it was landing on top of whatever a page put in that corner —
+   the Upload button on Files, the conversation actions on Messages. Mobile
+   already collapsed it to the avatar; desktop never did.
+
+   Collapsed it is a 40px circle in a corner almost nothing occupies. The name,
+   role and chevron slide out on hover or keyboard focus, so nothing is lost —
+   and any overlap while expanded is something the person just asked for. */
+:root{ --vc-idbar-space:58px; }
+
+@media(min-width:861px){
+  .vc-id{ gap:0; padding:5px; }
+  .vc-id-t{
+    white-space:nowrap; max-width:0; opacity:0; padding-left:0;
+    transition:max-width .2s cubic-bezier(.32,.72,0,1), opacity .14s, padding-left .2s;
+  }
+  .vc-id svg{
+    max-width:0; opacity:0; margin-left:0;
+    transition:max-width .2s cubic-bezier(.32,.72,0,1), opacity .14s, margin-left .2s;
+  }
+  .vc-idbar:hover .vc-id-t,
+  .vc-idbar:focus-within .vc-id-t{ max-width:200px; opacity:1; padding-left:9px; }
+  .vc-idbar:hover .vc-id svg,
+  .vc-idbar:focus-within .vc-id svg{ max-width:15px; opacity:1; margin-left:7px; }
+  .vc-idbar:hover .vc-id,
+  .vc-idbar:focus-within .vc-id{ padding-right:12px; }
+}
+
+/* Pages whose header runs to the right edge reserve the collapsed width, so the
+   chip has a lane of its own rather than sitting on a button. */
+body.vc-shelled .vc-idbar-gutter{ padding-right:var(--vc-idbar-space) !important; }

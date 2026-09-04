@@ -1823,3 +1823,40 @@ body.vc-ms-open .vc-idbar{top:50px;}
 .vc-mfa-msg{font-size:13px;color:#991B1B;margin:12px 0 0;min-height:18px;}
 .vc-mfa a{font-size:12.5px;color:#9CA3AF;text-decoration:none;display:inline-block;margin-top:14px;}
 .vc-mfa a:hover{color:#9A3412;}
+
+/* ================= manual-steps bar: mobile offsets =================
+   The bar is fixed at top:0 with z-index 1550. The mobile topbar — which holds
+   the only menu button on a phone — is fixed at top:0 with z-index 1100. With
+   nothing offsetting it, the bar sat directly on top of the hamburger and there
+   was no way to open the navigation at all. The preview bar already had this
+   rule (body.vc-previewing .vc-topbar); the manual-steps bar never got one.
+
+   Height is a variable because the bar grows by the safe-area inset on a
+   notched phone, where it was also bleeding up into the status bar. */
+:root{ --vc-ms-h:40px; }
+
+@supports (top: env(safe-area-inset-top)){
+  :root{ --vc-ms-h: calc(40px + env(safe-area-inset-top, 0px)); }
+  .vc-ms-bar{ padding-top: calc(10px + env(safe-area-inset-top, 0px)); }
+}
+
+body.vc-ms-open .vc-sidebar{ top: var(--vc-ms-h); }
+body.vc-ms-open .vc-idbar{ top: calc(var(--vc-ms-h) + 10px); }
+body.vc-ms-open .wrap,
+body.vc-ms-open .page{ padding-top: calc(var(--vc-ms-h) + 18px) !important; }
+
+@media(max-width:860px){
+  body.vc-ms-open .vc-topbar{ top: var(--vc-ms-h); }
+
+  /* The body already reserves 56px for the topbar; add the bar on top of it and
+     let .wrap go back to its normal spacing rather than double-padding. */
+  body.vc-ms-open.vc-shelled{ padding-top: calc(var(--vc-ms-h) + 56px) !important; }
+  body.vc-ms-open .wrap,
+  body.vc-ms-open .page{ padding-top:18px !important; }
+
+  /* Safari's floating toolbar overlaps the bottom of the page, which was
+     cutting the last card in half. */
+  body.vc-shelled .wrap,
+  body.vc-shelled .page{ padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important; }
+  .vc-report{ bottom: calc(14px + env(safe-area-inset-bottom, 0px)) !important; }
+}

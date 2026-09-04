@@ -314,6 +314,42 @@
   .gbtn:disabled{opacity:.4;cursor:default;}
 
   .blank{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;padding:40px;}
+  .blank svg{width:30px;height:30px;color:#C9CDD4;margin-bottom:12px;}
+  .blank b{display:block;font-size:15px;font-weight:620;color:#111111;margin-bottom:5px;}
+  .blank span{display:block;font-size:13px;line-height:1.6;color:#6B7280;max-width:330px;}
+
+  /* A blocking alert() for a failed send is the crudest possible error state:
+     it stops the app, loses the draft, and says nothing useful. */
+  .note{position:fixed;left:50%;bottom:26px;transform:translate(-50%,12px);z-index:120;
+    display:none;align-items:center;gap:10px;max-width:min(460px,92vw);
+    padding:11px 15px;border-radius:10px;background:#111111;color:#fff;
+    font:500 13px/1.45 'Inter',sans-serif;box-shadow:0 10px 30px rgba(16,24,40,.24);
+    opacity:0;transition:opacity .18s,transform .18s;}
+  .note.on{display:flex;opacity:1;transform:translate(-50%,0);}
+  .note.bad{background:#7F1D1D;}
+  .note button{margin-left:4px;background:rgba(255,255,255,.14);border:none;color:#fff;
+    border-radius:6px;padding:5px 10px;font:600 12px/1 'Inter',sans-serif;cursor:pointer;}
+  .note button:hover{background:rgba(255,255,255,.26);}
+
+  /* Optimistic send: the message appears immediately and reconciles when the
+     insert returns, so the field never feels like it swallowed the text. */
+  .m.pending .tx{color:#6B7280;}
+  .m.failed .tx{color:#7F1D1D;}
+  .mstat{display:inline-flex;align-items:center;gap:7px;margin-top:4px;
+    font-size:11.5px;color:#6B7280;}
+  .m.failed .mstat{color:#B91C1C;}
+  .mstat button{background:none;border:none;padding:0;font:600 11.5px/1 'Inter',sans-serif;
+    color:#9A3412;cursor:pointer;text-decoration:underline;text-underline-offset:2px;}
+
+  /* Loading is a shape, not a spinner: the feed keeps its rhythm while it fills. */
+  .skel{display:flex;gap:12px;padding:7px 12px 7px 0;}
+  .skel i{width:30px;height:30px;border-radius:8px;flex-shrink:0;}
+  .skel span{flex:1;display:block;}
+  .skel em{display:block;height:9px;border-radius:4px;margin-bottom:7px;}
+  .skel i,.skel em{background:linear-gradient(90deg,#F1F2F4 25%,#E7E9ED 37%,#F1F2F4 63%);
+    background-size:400% 100%;animation:sk 1.3s ease infinite;}
+  @keyframes sk{0%{background-position:100% 50%;}100%{background-position:0 50%;}}
+  @media(prefers-reduced-motion:reduce){ .skel i,.skel em{animation:none;} .note{transition:none;} }
   .blank b{display:block;font-size:16px;font-weight:700;margin-bottom:6px;}
   .blank span{font-size:14px;color:#5C6470;max-width:320px;display:block;}
   /* On a phone the conversation takes the whole screen, which is right — but
@@ -386,9 +422,14 @@
     </div>
     <div class="chans" id="chans"></div>
   </div>
+  <div class="note" id="note" role="status" aria-live="polite"></div>
   <div class="pane" id="pane">
-    <div class="blank" id="blank"><div><b>Pick a conversation</b>
-      <span>Direct messages for anything that is not about a specific task. Task discussion belongs on the task.</span></div></div>
+    <div class="blank" id="blank"><div>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.9 8.9 0 0 1-4-.9L3 21l1.9-4.6A8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5z"/></svg>
+      <b>Pick a conversation</b>
+      <span>Direct messages are for anything that is not about a specific task. Task discussion belongs on the task.</span></div></div>
     <div id="live" style="display:none;flex:1;flex-direction:column;min-height:0">
       <div class="pane-h">
         <button class="back" id="backBtn" aria-label="Back to conversations">
@@ -564,6 +605,29 @@ async function signPaths(values){
 }
 function srcFor(v){ return isPath(v) ? (signedCache[v] || '') : (v || ''); }
 
+/* One place for anything that used to be an alert(). Non-blocking, announced to
+   screen readers, and able to carry an action such as Retry. */
+var noteTimer = null;
+function notify(msg, opts){
+  opts = opts || {};
+  var el = document.getElementById('note');
+  if (!el) return;
+  el.className = 'note on' + (opts.bad ? ' bad' : '');
+  el.textContent = msg;
+  if (opts.action){
+    var b = document.createElement('button');
+    b.textContent = opts.action;
+    b.addEventListener('click', function(){ hideNote(); opts.onAction && opts.onAction(); });
+    el.appendChild(b);
+  }
+  clearTimeout(noteTimer);
+  if (!opts.action) noteTimer = setTimeout(hideNote, opts.bad ? 6000 : 3200);
+}
+function hideNote(){
+  var el = document.getElementById('note');
+  if (el) el.className = 'note';
+}
+
 async function loadChans(){
   var r = await sb.from('channels')
     .select('*, image_url, channel_members(profile_id, last_read_at, muted, pinned, manually_unread), messages(body, created_at, author_id), engagements(title, clients(business_name))')
@@ -669,6 +733,17 @@ async function loadChans(){
 
 async function paint(){
   if (!cur) return;
+
+  /* Only on first open of a channel. Realtime repaints must not flash a
+     skeleton over messages that are already on screen. */
+  var feedEl = $('feed');
+  if (feedEl.dataset.ch !== cur.id){
+    feedEl.dataset.ch = cur.id;
+    feedEl.innerHTML = ['62%','86%','44%','71%'].map(function(w){
+      return '<div class="skel"><i></i><span><em style="width:24%"></em>' +
+        '<em style="width:' + w + '"></em></span></div>';
+    }).join('');
+  }
   var r = await sb.from('messages').select('*').eq('channel_id',cur.id).order('created_at').limit(200);
   var ms = r.data||[];
 
@@ -1223,7 +1298,7 @@ window.vcInit = async function(){
     var r = picked.length===1
       ? await sb.rpc('open_dm',{other:picked[0]})
       : await sb.rpc('open_group',{member_ids:picked, group_name:$('gname').value.trim()||null});
-    if (r.error) return alert(r.error.message);
+    if (r.error) return notify('Could not start that conversation. ' + r.error.message, { bad:true });
     shutModal(); await loadChans(); openCh(r.data);
   });
 
@@ -1232,12 +1307,12 @@ window.vcInit = async function(){
   $('file').addEventListener('change', async function(){
     var f = this.files && this.files[0];
     if (!f || !cur) return;
-    if (f.size > 10*1024*1024){ alert('Files must be under 10MB.'); this.value=''; return; }
+    if (f.size > 10*1024*1024){ notify('Files need to be under 10MB.', { bad:true }); this.value=''; return; }
     $('send').disabled = true;
     var path = cur.id + '/' + Date.now() + '-' + f.name.replace(/[^\w.\-]/g,'_');
     var up = await sb.storage.from('chat').upload(path, f, { contentType: f.type });
     $('send').disabled = false; this.value='';
-    if (up.error) return alert(up.error.message);
+    if (up.error) return notify('That file did not upload. ' + up.error.message, { bad:true });
     await sb.from('messages').insert({
       channel_id:cur.id, author_id:me.id, body:$('box').value.trim(),
       attachment_url:path, attachment_name:f.name, attachment_type:f.type
@@ -1345,17 +1420,58 @@ window.vcInit = async function(){
 
   attachAC($('box'));
 
+  /* The message is drawn before the round trip. On failure it stays on screen,
+     marked, with the text recoverable — rather than vanishing behind an alert. */
+  function drawPending(text){
+    var p = people[me.id] || {};
+    var el = document.createElement('div');
+    el.className = 'm pending';
+    el.innerHTML = avOf(p, 'av') + '<span class="bd">' +
+      '<span class="hd"><b>' + esc(p.full_name || p.email || 'You') + '</b>' +
+      '<em>' + when(new Date().toISOString()) + '</em></span>' +
+      '<div class="tx">' + esc(text) + '</div>' +
+      '<span class="mstat">Sending\u2026</span></span>';
+    var feed = $('feed');
+    feed.appendChild(el);
+    feed.scrollTop = feed.scrollHeight;
+    return el;
+  }
+
+  function markFailed(el, text, parent){
+    el.className = 'm failed';
+    var stat = el.querySelector('.mstat');
+    stat.textContent = 'Not sent. ';
+    var again = document.createElement('button');
+    again.textContent = 'Try again';
+    again.addEventListener('click', function(){ el.remove(); deliver(text, parent); });
+    stat.appendChild(again);
+  }
+
+  async function deliver(text, parent){
+    var el = drawPending(text);
+    var r;
+    try {
+      r = await sb.from('messages').insert({
+        channel_id:cur.id, author_id:me.id, body:text, parent_id:parent
+      });
+    } catch (err) {
+      r = { error: { message: String(err && err.message || err) } };
+    }
+    if (r.error){
+      markFailed(el, text, parent);
+      notify('That message did not send. ' + r.error.message, { bad:true });
+      return;
+    }
+    await sb.from('typing').delete().eq('channel_id',cur.id).eq('profile_id',me.id);
+    paint(); loadChans();
+  }
+
   async function send(){
     var t = $('box').value.trim();
     if (!t || !cur) return;
     $('box').value=''; $('box').style.height='auto';
     var parent = replyTo; clearReply();
-    var r = await sb.from('messages').insert({
-      channel_id:cur.id, author_id:me.id, body:t, parent_id:parent
-    });
-    if (r.error) return alert(r.error.message);
-    await sb.from('typing').delete().eq('channel_id',cur.id).eq('profile_id',me.id);
-    paint(); loadChans();
+    deliver(t, parent);
   }
   $('backBtn').addEventListener('click', function(){
     $('pane').classList.remove('open');
@@ -1411,13 +1527,13 @@ window.vcInit = async function(){
   $('grpImg').addEventListener('change', async function(){
     var f = this.files && this.files[0];
     if (!f || !cur) return;
-    if (f.size > 3 * 1024 * 1024) { alert('Keep it under 3MB.'); this.value=''; return; }
+    if (f.size > 3 * 1024 * 1024) { notify('Group images need to be under 3MB.', { bad:true }); this.value=''; return; }
     /* Channel-scoped path: the storage policy reads the channel id from the
        first path segment, so 'group/...' would have been unreadable. */
     var path = cur.id + '/group-' + Date.now();
     var up = await sb.storage.from('chat').upload(path, f, { contentType: f.type });
     this.value = '';
-    if (up.error) { alert(up.error.message); return; }
+    if (up.error) { notify('That image did not upload. ' + up.error.message, { bad:true }); return; }
     await sb.from('channels').update({ image_url: path }).eq('id', cur.id);
     await loadChans();
     openCh(cur.id);

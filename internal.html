@@ -1720,15 +1720,51 @@ async function save(){
   if (fresh) load(fresh);
 }
 
+/* An engagement is billed in the parts the signed agreement promises, not in one
+   lump. Name the part about to go out so a balance is never sent thinking it
+   was a deposit. */
+var STRUCTURE_PLAN = {
+  '5050':    [{ label: 'Deposit — 50% at signing', share: 0.5 },
+              { label: 'Balance — 50% at delivery', share: 0.5 }],
+  '403030':  [{ label: 'Deposit — 40% at signing', share: 0.4 },
+              { label: 'Midpoint milestone — 30%', share: 0.3 },
+              { label: 'Balance — 30% at delivery', share: 0.3 }],
+  'retainer':[{ label: 'Monthly retainer — billed in advance', share: 1 }]
+};
+
+async function nextInvoicePart(engId, total, structure){
+  var r = await sb.from('engagement_invoices')
+    .select('seq,label,amount,status').eq('engagement_id', engId).order('seq');
+  var rows = r.data || [];
+  if (rows.length) {
+    var nx = rows.filter(function(x){ return x.status === 'unbilled'; })[0];
+    return nx ? { label: nx.label, amount: Number(nx.amount),
+                  position: nx.seq + ' of ' + rows.length } : null;
+  }
+  var plan = STRUCTURE_PLAN[structure] || STRUCTURE_PLAN['5050'];
+  return { label: plan[0].label, amount: Math.round(total * plan[0].share * 100) / 100,
+           position: '1 of ' + plan.length };
+}
+
 async function invoice(){
   if (!current || !current.id) return say('Save the engagement first.', false);
   if (!$('cemail').value.trim()) return say('A contact email is required to invoice.', false);
+
+  var total = Number(current.amount_total) || 0;
+  if (!total) {
+    var lisR = await sb.from('line_items').select('qty,unit_price').eq('engagement_id', current.id);
+    total = (lisR.data || []).reduce(function(s,l){
+      return s + (Number(l.qty)||1) * (Number(l.unit_price)||0); }, 0);
+  }
+  var part = await nextInvoicePart(current.id, total, current.deposit_structure);
+  if (!part) return say('Every part of this payment schedule has already been invoiced.', false);
   var okInv = await window.vcConfirm({
-    title: 'Send a real invoice?',
-    body: 'This creates a live Stripe invoice and emails it to ' + $('cemail').value.trim() +
-          '. They can pay it immediately.',
-    list: ['Ad spend is not included \u2014 it never appears on a Verve invoice',
-           'The deal moves to Contract Sent',
+    title: 'Send ' + part.label + '?',
+    body: 'This creates a live Stripe invoice for ' + money(part.amount) + ' and emails it to ' +
+          $('cemail').value.trim() + '. They can pay it immediately.',
+    list: ['Part ' + part.position + ' of the schedule in the signed agreement',
+           'Contract value ' + money(total) + ' — this invoice is ' + money(part.amount),
+           'Ad spend is not included — it never appears on a Verve invoice',
            'You cannot unsend an email'],
     confirm: 'Create and send', danger: false
   });
@@ -1745,7 +1781,8 @@ async function invoice(){
     });
     var out = await res.json();
     if (!res.ok || out.error) throw new Error(out.error || 'Invoice failed.');
-    say('Invoice created and emailed.', true);
+    say(out.part + ' created and emailed — ' + money(out.amount) +
+        (out.remaining_parts ? '. ' + out.remaining_parts + ' still to invoice.' : '.'), true);
     await refresh();
     var fresh = list.filter(function(x){return x.id===current.id;})[0];
     if (fresh) load(fresh);

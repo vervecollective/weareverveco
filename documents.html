@@ -58,18 +58,17 @@
 
   <div class="order">
     <b>The order that must not slip.</b><br>
-    Client: <code>CSA signed → SOW signed → deposit invoice → deposit clears → work begins</code><br>
+    Client: <code>CSA + Exhibit A signed → deposit invoice → deposit clears → work begins</code><br>
     Contractor: <code>ICA + IP/NDA + W-9 on file → they see scope → assignment offered</code>
   </div>
 
   <div class="card">
     <h2>Send for signature</h2>
-    <p class="hint">Sends from a SignWell template and records it against the engagement. Fields are filled in during signing — SOW autofill is not wired yet.</p>
+    <p class="hint">Sends from a SignWell template and records it against the engagement. Pick an engagement and Exhibit A is filled in from it — scope, dates, fee, and structure.</p>
     <div class="row">
       <div class="field"><label for="kind">Document</label>
         <select id="kind">
           <option value="client_services_agreement">Client Services Agreement</option>
-          <option value="statement_of_work">Statement of Work</option>
           <option value="contractor_ica">Independent Contractor Agreement</option>
           <option value="ip_assignment_nda">Confidentiality &amp; IP Assignment</option>
           <option value="model_release">Appearance &amp; Property Release</option>
@@ -81,6 +80,8 @@
       <div class="field"><label for="sname">Signer name</label><input type="text" id="sname"></div>
       <div class="field"><label for="semail">Signer email</label><input type="email" id="semail"></div>
     </div>
+    <div class="field"><label for="cbiz">Client business name</label>
+      <input type="text" id="cbiz" placeholder="Only needed when no engagement is selected"></div>
     <div class="field"><label for="subject">Email subject</label>
       <input type="text" id="subject" placeholder="Document for your signature — Verve Collective"></div>
     <div class="field"><label for="message">Message</label>
@@ -89,12 +90,13 @@
     <p class="msg" id="msg"></p>
 
     <div class="setup" id="setup">
-      <b>One-time setup required before this works.</b>
+      <b>Template status.</b>
       <ol>
-        <li>Upload each of the five documents to SignWell as a <b>template</b>, adding signature, name, and date fields where the blanks are.</li>
-        <li>Name the signer role <b>Signer</b> on every template.</li>
-        <li>Copy each template ID and send them to me — I set them as function secrets.</li>
-        <li>Add the callback URL in SignWell → API settings so signatures report back automatically.</li>
+        <li><b>Client Services Agreement + Exhibit A</b> — live. Placeholders are named <code>Client</code> and <code>Verve</code>; those two strings must never change or SignWell drops the recipient and nobody is asked to sign.</li>
+        <li><b>Appearance &amp; Property Release</b> — live.</li>
+        <li><b>Independent Contractor Agreement</b> and <b>Confidentiality &amp; IP Assignment</b> — not built. Needed the day a contractor is engaged, not before.</li>
+        <li>Statement of Work is retired as a separate document. Scope is Exhibit A of the CSA and is signed in the same event.</li>
+        <li>SignWell is still in <b>test mode</b>. Nothing signed through it is legally binding until that is switched off.</li>
       </ol>
     </div>
   </div>
@@ -113,7 +115,6 @@ var sb, engagements=[];
 
 var LABEL={
   client_services_agreement:'Client Services Agreement',
-  statement_of_work:'Statement of Work',
   contractor_ica:'Independent Contractor Agreement',
   ip_assignment_nda:'Confidentiality & IP Assignment',
   model_release:'Appearance & Property Release'
@@ -161,6 +162,7 @@ window.vcInit = async function(){
           engagement_id: $('eng').value || null,
           signer_name: name,
           signer_email: email,
+          client_business_name: $('cbiz').value.trim() || undefined,
           subject: $('subject').value.trim() || undefined,
           message: $('message').value.trim() || undefined
         })
@@ -168,7 +170,7 @@ window.vcInit = async function(){
       var out = await res.json();
       if(!res.ok || out.error) throw new Error(out.error||'Send failed.');
       say('Sent to '+email+(out.test_mode?' (test mode — not legally binding yet).':'.'), true);
-      $('sname').value=''; $('semail').value='';
+      $('sname').value=''; $('semail').value=''; $('cbiz').value='';
       loadDocs();
     }catch(e){ say(e.message, false); }
     finally{ btn.disabled=false; }

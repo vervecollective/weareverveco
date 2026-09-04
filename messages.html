@@ -214,6 +214,18 @@
   .blank b{display:block;font-size:16px;font-weight:700;margin-bottom:6px;}
   .blank span{font-size:14px;color:#5C6470;max-width:320px;display:block;}
   @media(max-width:820px){.list{width:100%;} .pane{display:none;} .pane.open{display:flex;position:fixed;inset:0;background:#fff;z-index:60;}}
+.replybar{display:flex;align-items:center;gap:8px;padding:7px 12px;margin-bottom:6px;
+  border-left:2px solid #D9531E;background:#FAF6F3;border-radius:4px;font-size:12.5px;color:#5C6470;}
+.replybar span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.replybar b{color:#111111;}
+.replybar button{border:0;background:none;font-size:17px;line-height:1;color:#5C6470;cursor:pointer;padding:0 3px;}
+.replybar button:hover{color:#111111;}
+.m.reply{margin-left:34px;border-left:2px solid #E7E3DF;padding-left:10px;}
+.m.agent .bd .hd b{color:#D9531E;}
+.m.agent .tx{background:#FAF6F3;border-radius:6px;padding:7px 10px;}
+.reply-hint{border:0;background:none;cursor:pointer;color:#9AA1AA;padding:0 2px;}
+.reply-hint:hover{color:#111111;}
+.reply-hint svg{width:14px;height:14px;}
 </style>
 </head>
 <body>
@@ -252,6 +264,10 @@
       <div class="files" id="files" style="display:none"></div>
       <div class="typing" id="typing"></div>
       <div class="compose">
+        <div class="replybar" id="replybar" style="display:none">
+          <span id="replyto"></span>
+          <button id="replyx" title="Cancel reply" aria-label="Cancel reply">&times;</button>
+        </div>
         <div class="pick" id="pick">
           <div class="pick-t"><button id="tEmo" class="on">Emoji</button><button id="tGif">GIFs</button></div>
           <div class="pick-b" id="pEmo"></div>
@@ -311,6 +327,37 @@ function esc(s){var d=document.createElement('div');d.textContent=s==null?'':s;r
 function ini(n){return (n||'?').split(' ').map(function(p){return p[0];}).filter(Boolean).join('').slice(0,2).toUpperCase();}
 
 var sb, me, chans=[], people={}, cur=null, online={}, rxMap={}, sub=null, typeTimer=null, picked=[];
+/* The message being replied to, or null. Held here rather than on the DOM so a
+   re-render of the feed cannot silently drop it. */
+var replyTo = null;
+
+function clearReply(){
+  replyTo = null;
+  var bar = document.getElementById('replybar');
+  if (bar) bar.style.display = 'none';
+}
+
+function startReply(id){
+  var m = (window.__msgs || []).filter(function(x){ return x.id === id; })[0];
+  if (!m) return;
+  replyTo = id;
+  var p = people[m.author_id] || {};
+  var who = p.full_name || p.email || 'Someone';
+  var snippet = (m.body || m.attachment_name || 'a file').slice(0, 80);
+  document.getElementById('replyto').innerHTML =
+    'Replying to <b>' + esc(who) + '</b> \u2014 ' + esc(snippet);
+  document.getElementById('replybar').style.display = 'flex';
+  var box = document.getElementById('box');
+  if (box) box.focus();
+}
+
+/* Delegated from document: the feed is rebuilt on every paint, so a listener
+   bound to a button inside it would not survive. */
+document.addEventListener('click', function(e){
+  var r = e.target.closest && e.target.closest('[data-reply]');
+  if (r){ e.stopPropagation(); startReply(r.dataset.reply); return; }
+  if (e.target && e.target.id === 'replyx') clearReply();
+});
 var tab='all', searching=false;
 
 function when(ts){
@@ -472,10 +519,20 @@ async function paint(){
     });
   }
 
+  window.__msgs = ms;
   await signPaths(ms.map(function(m){ return m.attachment_url; }));
 
-  var html='', lastDay='', lastAuthor='', lastAt=0;
+  /* Replies hang off their root rather than landing at the bottom of the feed in
+     arrival order, which is what made a busy channel hard to follow. */
+  var kids = {};
   ms.forEach(function(m){
+    if (!m.parent_id) return;
+    (kids[m.parent_id] = kids[m.parent_id] || []).push(m);
+  });
+  var roots = ms.filter(function(m){ return !m.parent_id; });
+
+  var html='', lastDay='', lastAuthor='', lastAt=0;
+  roots.forEach(function(m){
     var d = dayLabel(m.created_at);
     if (d!==lastDay){ html+='<div class="day">'+d+'</div>'; lastDay=d; lastAuthor=''; }
     var p = people[m.author_id]||{};
@@ -501,6 +558,11 @@ async function paint(){
 
     /* A faint outlined smiley sits on hover. Clicking it opens the quick bar,
        so the affordance is discoverable rather than assumed. */
+    var reply = '<button class="reply-hint" data-reply="'+m.id+'" title="Reply">'+
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '+
+      'stroke-linecap="round" stroke-linejoin="round"><polyline points="9 17 4 12 9 7"/>'+
+      '<path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg></button>';
+
     var hint = '<button class="react-hint" data-m="'+m.id+'" data-e="open" title="React">'+
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">'+
       '<circle cx="12" cy="12" r="9"/><path d="M8.5 14.5a4.5 4.5 0 0 0 7 0"/>'+
@@ -510,9 +572,35 @@ async function paint(){
       return '<button data-m="'+m.id+'" data-e="'+q+'">'+q+'</button>';
     }).join('')+'<button data-m="'+m.id+'" data-e="add">+</button></span>';
 
-    html += '<div class="m'+(cont?' cont':'')+'">'+qb+avOf(p,'av')+'<span class="bd">'+
-      '<span class="hd"><b>'+esc(nm)+'</b><em>'+when(m.created_at)+'</em>'+hint+'</span>'+
+    html += '<div class="m'+(cont?' cont':'')+(m.author_kind==='agent'?' agent':'')+'">'+
+      qb+avOf(p,'av')+'<span class="bd">'+
+      '<span class="hd"><b>'+esc(nm)+'</b><em>'+when(m.created_at)+'</em>'+reply+hint+'</span>'+
       (m.body ? '<div class="tx">'+esc(m.body)+'</div>' : '')+att+rxHtml+'</span></div>';
+
+    (kids[m.id] || []).forEach(function(k){
+      var kp = people[k.author_id]||{};
+      var kn = kp.full_name||kp.email||'Someone';
+      var katt = '';
+      if (k.attachment_url){
+        var kimg = (k.attachment_type||'').indexOf('image')===0;
+        var kurl = srcFor(k.attachment_url);
+        katt = kimg
+          ? '<div class="att"><a href="'+esc(kurl)+'" target="_blank" rel="noopener">'+
+            '<img src="'+esc(kurl)+'" alt=""></a></div>'
+          : '<div class="att"><a class="att-f" href="'+esc(kurl)+'" target="_blank" rel="noopener">'+
+            esc(k.attachment_name||'File')+'</a></div>';
+      }
+      var krx = rxMap[k.id] || {};
+      var kchips = Object.keys(krx).map(function(e){
+        return '<button class="'+(krx[e].mine?'mine':'')+'" data-m="'+k.id+'" data-e="'+e+'">'+e+' '+krx[e].n+'</button>';
+      }).join('');
+      html += '<div class="m reply'+(k.author_kind==='agent'?' agent':'')+'">'+
+        avOf(kp,'av')+'<span class="bd">'+
+        '<span class="hd"><b>'+esc(kn)+'</b><em>'+when(k.created_at)+'</em></span>'+
+        (k.body ? '<div class="tx">'+esc(k.body)+'</div>' : '')+katt+
+        (kchips ? '<div class="rx">'+kchips+'</div>' : '')+'</span></div>';
+    });
+
     lastAuthor=m.author_id; lastAt=new Date(m.created_at);
   });
 
@@ -557,6 +645,7 @@ async function showTyping(){
 async function openCh(id){
   cur = chans.filter(function(c){return c.id===id;})[0];
   if (!cur) return;
+  clearReply();
   $('blank').style.display='none'; $('live').style.display='flex'; $('pane').classList.add('open');
   var o = otherOf(cur);
   var hpic = srcFor(cur.image_url) || (o && o.avatar_url);
@@ -1081,7 +1170,10 @@ window.vcInit = async function(){
     var t = $('box').value.trim();
     if (!t || !cur) return;
     $('box').value=''; $('box').style.height='auto';
-    var r = await sb.from('messages').insert({channel_id:cur.id, author_id:me.id, body:t});
+    var parent = replyTo; clearReply();
+    var r = await sb.from('messages').insert({
+      channel_id:cur.id, author_id:me.id, body:t, parent_id:parent
+    });
     if (r.error) return alert(r.error.message);
     await sb.from('typing').delete().eq('channel_id',cur.id).eq('profile_id',me.id);
     paint(); loadChans();

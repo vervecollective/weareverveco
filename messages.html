@@ -134,7 +134,25 @@
   .pane-h .av:hover:after{content:'Edit';position:absolute;inset:0;background:rgba(0,0,0,.55);
     border-radius:50%;color:#fff;font-size:8.5px;font-weight:700;display:flex;
     align-items:center;justify-content:center;}
-  .ptabs{margin-left:auto;display:flex;gap:3px;}
+  /* Who is in the room, and the actions for it, belong in the header. They were
+     only reachable from an overflow menu on the row in the list. */
+  .hfaces{margin-left:auto;display:flex;align-items:center;padding-right:4px;}
+  .hfaces .f{width:24px;height:24px;border-radius:50%;background:#111111;color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;
+    border:2px solid #fff;margin-left:-7px;background-size:cover;background-position:center;}
+  .hfaces .f:first-child{margin-left:0;}
+  .hfaces .f.more{background:#EAECEF;color:#4B5563;}
+
+  .hacts{display:flex;gap:1px;}
+  .hacts .act{background:none;border:none;color:#8A9099;cursor:pointer;padding:6px;
+    border-radius:7px;display:flex;line-height:0;transition:all .12s;}
+  .hacts .act svg{width:16px;height:16px;}
+  .hacts .act:hover{background:#F4F5F7;color:#111111;}
+  .hacts .act.on{color:#9A3412;}
+  .hacts .act:focus-visible{outline:2px solid #D9531E;outline-offset:2px;}
+
+  .ptabs{display:flex;gap:3px;margin-left:8px;}
+  @media(max-width:820px){ .hfaces{display:none;} }
   .pt{border:none;background:none;padding:7px 13px;border-radius:8px;
     font:600 12.5px/1 'Inter',sans-serif;color:#5C6470;cursor:pointer;}
   .pt.on{background:#F1F3F6;color:#111827;}
@@ -143,9 +161,15 @@
   .pane-h em:empty{display:none;}
   /* A short conversation belongs at the bottom of the column, not floating at
      the top of a mostly empty page. */
-  .feed{flex:1;overflow-y:auto;padding:22px 28px 12px;display:flex;flex-direction:column;
-    justify-content:flex-end;background:#fff;}
-  .feed > .day:first-child{margin-top:0;}
+  /* justify-content:flex-end on a scrolling flex column pushes overflow past the
+     TOP edge, where it cannot be reached — the container scrolls to 0 and the
+     earliest messages are simply gone. An auto-margin spacer bottom-aligns a
+     short conversation and collapses to nothing once the content overflows, so
+     scrolling behaves normally. */
+  .feed{flex:1;min-height:0;overflow-y:auto;padding:22px 28px 12px;
+    display:flex;flex-direction:column;background:#fff;}
+  .feed:before{content:'';margin-top:auto;}
+  .feed > .day:first-of-type{margin-top:0;}
 
   /* A dated rule, not a floating centred label with nothing holding it. */
   .day{display:flex;align-items:center;gap:14px;margin:26px 0 14px;
@@ -437,6 +461,8 @@
             stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button>
         <span class="av" id="hAv"></span>
         <span class="hmeta"><b id="hName"></b><em id="hOn"></em></span>
+        <span class="hfaces" id="hFaces"></span>
+        <span class="hacts" id="hActs"></span>
         <span class="ptabs">
           <button class="pt on" data-p="chat">Chat</button>
           <button class="pt" data-p="files">Files</button>
@@ -895,6 +921,8 @@ async function openCh(id){
      it to a piece of work; the header never said so. */
   var eng = cur.engagements;
   var members = (cur.channel_members || []).length;
+  var mineHere = (cur.channel_members || [])
+    .filter(function(m){ return m.profile_id === me.id; })[0] || {};
   var ctx = '';
   if (eng && eng.title) {
     ctx = eng.title + (eng.clients && eng.clients.business_name
@@ -905,7 +933,41 @@ async function openCh(id){
     ctx = 'Active now';
   }
   $('hOn').textContent = ctx;
-  $('hOn').style.color = (ctx === 'Active now') ? '#00875A' : '#8A9099';
+  $('hOn').style.color = (ctx === 'Active now') ? '#00875A' : '#6B7280';
+
+  /* Faces: everyone in the conversation except me, four at most. */
+  var others = (cur.channel_members || [])
+    .map(function(m){ return people[m.profile_id]; })
+    .filter(function(p){ return p && p.id !== me.id; });
+  var shown = others.slice(0, 4);
+  var extra = others.length - shown.length;
+  $('hFaces').innerHTML = shown.map(function(p){
+    return p.avatar_url
+      ? '<span class="f" title="' + esc(p.full_name || p.email || '') +
+        '" style="background-image:url(' + esc(p.avatar_url) + ')"></span>'
+      : '<span class="f" title="' + esc(p.full_name || p.email || '') + '">' +
+        ini(p.full_name || p.email || '?') + '</span>';
+  }).join('') + (extra > 0 ? '<span class="f more">+' + extra + '</span>' : '');
+
+  /* The same actions the list row hides in an overflow menu, dispatched by the
+     existing delegated [data-act] handler so there is one code path. */
+  $('hActs').innerHTML =
+    '<button class="act' + (mineHere.pinned ? ' on' : '') + '" data-act="pin" data-c="' + cur.id +
+      '" title="' + (mineHere.pinned ? 'Unpin' : 'Pin to top') + '" aria-label="Pin conversation">' +
+      '<svg viewBox="0 0 24 24" fill="' + (mineHere.pinned ? 'currentColor' : 'none') +
+      '" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
+      '<path d="M12 2 9.5 8.5 3 9.5l5 4.5-1.5 6.5L12 17l5.5 3.5L16 14l5-4.5-6.5-1z"/></svg></button>' +
+    '<button class="act' + (mineHere.muted ? ' on' : '') + '" data-act="mute" data-c="' + cur.id +
+      '" title="' + (mineHere.muted ? 'Unmute' : 'Mute') + '" aria-label="Mute conversation">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">' +
+      (mineHere.muted
+        ? '<path d="M11 5 6 9H3v6h3l5 4zM23 9l-6 6M17 9l6 6"/>'
+        : '<path d="M11 5 6 9H3v6h3l5 4zM16 9a5 5 0 0 1 0 6"/>') +
+      '</svg></button>' +
+    '<button class="act" data-act="copy" data-c="' + cur.id +
+      '" title="Copy link" aria-label="Copy link to conversation">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">' +
+      '<path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg></button>';
   showPane('chat');
   await paint();
   await sb.from('channel_members')

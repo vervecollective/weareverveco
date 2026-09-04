@@ -84,6 +84,25 @@
     background-size:400% 100%;animation:sk 1.3s ease infinite;}
   @keyframes sk{0%{background-position:100% 50%;}100%{background-position:0 50%;}}
 
+  /* prompt() and confirm() are browser chrome dropped into a designed page, and
+     move() in particular asked you to type a number from a numbered list. */
+  .veil{position:fixed;inset:0;background:rgba(16,24,40,.42);z-index:200;display:none;}
+  .veil.on{display:block;}
+  .dlg{position:fixed;top:50%;left:50%;transform:translate(-50%,-48%);z-index:210;
+    width:min(420px,92vw);background:#fff;border-radius:14px;padding:22px;display:none;
+    box-shadow:0 24px 60px rgba(16,24,40,.28);opacity:0;
+    transition:opacity .16s,transform .16s;}
+  .dlg.on{display:block;opacity:1;transform:translate(-50%,-50%);}
+  .dlg h2{font-size:16px;font-weight:660;letter-spacing:-.01em;color:#111111;margin-bottom:5px;}
+  .dlg p{font-size:13px;line-height:1.55;color:#6B7280;margin-bottom:16px;}
+  .dlg p:empty{display:none;margin:0;}
+  .dlg label{display:block;font-size:11.5px;font-weight:600;color:#4B5563;margin-bottom:5px;}
+  .dlg input,.dlg select{width:100%;padding:10px 12px;font:400 13.5px/1.4 'Inter',sans-serif;}
+  .dlg-a{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;}
+  .dlg .btn.danger{background:#B91C1C;border-color:#B91C1C;color:#fff;}
+  .dlg .btn.danger:hover{background:#991B1B;border-color:#991B1B;}
+  @media(prefers-reduced-motion:reduce){ .dlg{transition:none;} }
+
   .note{position:fixed;left:50%;bottom:26px;transform:translate(-50%,12px);z-index:120;
     display:none;align-items:center;gap:10px;max-width:min(460px,92vw);
     padding:11px 15px;border-radius:10px;background:#111111;color:#fff;
@@ -117,6 +136,16 @@
 </head>
 <body>
 <div class="note" id="note" role="status" aria-live="polite"></div>
+<div class="veil" id="veil"></div>
+<div class="dlg" id="dlg" role="dialog" aria-modal="true" aria-labelledby="dlgTitle">
+  <h2 id="dlgTitle"></h2>
+  <p id="dlgBody"></p>
+  <div id="dlgField"></div>
+  <div class="dlg-a">
+    <button class="btn" id="dlgCancel">Cancel</button>
+    <button class="btn primary" id="dlgOk">Save</button>
+  </div>
+</div>
 <div class="wrap">
 
   <div class="side">
@@ -158,6 +187,70 @@ function notify(msg, bad){
   el.textContent = msg;
   clearTimeout(noteTimer);
   noteTimer = setTimeout(function(){ el.className = 'note'; }, bad ? 6000 : 3200);
+}
+
+/* One dialog for every question this page asks. Resolves with the value, or
+   null when dismissed, so callers read like the prompt() they replace. */
+var dlgResolve = null, dlgLastFocus = null;
+
+function closeDlg(value){
+  $('veil').classList.remove('on');
+  $('dlg').classList.remove('on');
+  document.removeEventListener('keydown', dlgKeys, true);
+  if (dlgLastFocus && dlgLastFocus.focus) dlgLastFocus.focus();
+  var r = dlgResolve; dlgResolve = null;
+  if (r) r(value);
+}
+
+function dlgKeys(e){
+  if (e.key === 'Escape'){ e.preventDefault(); closeDlg(null); return; }
+  if (e.key === 'Enter' && e.target.tagName !== 'BUTTON'){ e.preventDefault(); submitDlg(); return; }
+  if (e.key !== 'Tab') return;
+  /* Keep focus inside the dialog while it is open. */
+  var f = $('dlg').querySelectorAll('input,select,button');
+  if (!f.length) return;
+  var first = f[0], last = f[f.length-1];
+  if (e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+}
+
+function submitDlg(){
+  var input = $('dlg').querySelector('input,select');
+  if (!input) return closeDlg(true);
+  var v = input.value.trim ? input.value.trim() : input.value;
+  if (!v) { input.focus(); return; }
+  closeDlg(v);
+}
+
+function ask(opts){
+  opts = opts || {};
+  dlgLastFocus = document.activeElement;
+  $('dlgTitle').textContent = opts.title || '';
+  $('dlgBody').textContent = opts.body || '';
+  $('dlgOk').textContent = opts.confirm || 'Save';
+  $('dlgOk').className = 'btn ' + (opts.danger ? 'danger' : 'primary');
+
+  var field = '';
+  if (opts.field && opts.field.type === 'select'){
+    field = '<label for="dlgIn">' + esc(opts.field.label || '') + '</label>' +
+      '<select id="dlgIn">' + opts.field.options.map(function(o){
+        return '<option value="'+esc(o.value)+'"'+(o.value===opts.field.value?' selected':'')+'>'+
+          esc(o.label)+'</option>';
+      }).join('') + '</select>';
+  } else if (opts.field){
+    field = '<label for="dlgIn">' + esc(opts.field.label || '') + '</label>' +
+      '<input id="dlgIn" type="text" value="'+esc(opts.field.value || '')+'">';
+  }
+  $('dlgField').innerHTML = field;
+
+  $('veil').classList.add('on');
+  $('dlg').classList.add('on');
+  document.addEventListener('keydown', dlgKeys, true);
+  var focus = $('dlgField').querySelector('input,select') || $('dlgOk');
+  focus.focus();
+  if (focus.select) focus.select();
+
+  return new Promise(function(res){ dlgResolve = res; });
 }
 
 function size(n){
@@ -375,9 +468,11 @@ async function upload(fileList){
 async function rename(id){
   var x = files.filter(function(f){ return f.id === id; })[0];
   if (!x) return;
-  var name = prompt('Rename file', x.name);
-  if (name === null) return;
-  name = name.trim();
+  var name = await ask({
+    title: 'Rename file',
+    confirm: 'Rename',
+    field: { label: 'File name', value: x.name }
+  });
   if (!name || name === x.name) return;
   var r = await sb.from('files').update({ name: name, updated_at: new Date().toISOString() }).eq('id', id);
   if (r.error) return notify('Could not rename that. ' + r.error.message, true);
@@ -385,12 +480,28 @@ async function rename(id){
 }
 
 async function move(id){
-  var opts = folders.map(function(f, i){ return (i+1) + '. ' + f.name; }).join('\n');
-  var pick = prompt('Move to which folder?\n\n' + opts, '');
-  if (pick === null) return;
-  var n = parseInt(pick, 10);
-  var target = folders[n - 1];
-  if (!target) return notify('That is not one of the folders.', true);
+  var x = files.filter(function(f){ return f.id === id; })[0];
+  if (!x) return;
+  /* Nested folders are indented in the list so the tree is still legible in a
+     flat select. */
+  var opts = [];
+  folders.filter(function(f){ return !f.parent_id; }).forEach(function(f){
+    opts.push({ value: f.id, label: f.name });
+    folders.filter(function(k){ return k.parent_id === f.id; }).forEach(function(k){
+      opts.push({ value: k.id, label: '\u2007\u2007' + k.name });
+    });
+  });
+  if (!opts.length) return notify('There are no folders to move this into.', true);
+
+  var pick = await ask({
+    title: 'Move file',
+    body: esc(x.name),
+    confirm: 'Move',
+    field: { type: 'select', label: 'Destination folder', value: x.folder_id, options: opts }
+  });
+  if (!pick || pick === x.folder_id) return;
+  var target = folders.filter(function(f){ return f.id === pick; })[0];
+  if (!target) return;
   var r = await sb.from('files').update({ folder_id: target.id, updated_at: new Date().toISOString() }).eq('id', id);
   if (r.error) return notify('Could not move that. ' + r.error.message, true);
   notify('Moved to ' + target.name + '.');
@@ -401,7 +512,13 @@ async function move(id){
 async function trash(id){
   var x = files.filter(function(f){ return f.id === id; })[0];
   if (!x) return;
-  if (!confirm('Move "' + x.name + '" to trash?\n\nIt stops showing here but is not destroyed.')) return;
+  var yes = await ask({
+    title: 'Move to trash?',
+    body: '\u201C' + x.name + '\u201D stops showing here. It is not destroyed and can be restored.',
+    confirm: 'Move to trash',
+    danger: true
+  });
+  if (!yes) return;
   var r = await sb.from('files').update({ trashed_at: new Date().toISOString() }).eq('id', id);
   if (r.error) return notify('Could not trash that. ' + r.error.message, true);
   notify('Moved to trash.');
@@ -410,11 +527,14 @@ async function trash(id){
 
 async function newFolder(){
   if (!engId) return notify('Pick an engagement first.', true);
-  var name = prompt('Folder name');
-  if (name === null) return;
-  name = name.trim();
-  if (!name) return;
   var parent = folders.filter(function(f){ return f.id === folderId; })[0];
+  var name = await ask({
+    title: 'New folder',
+    body: parent && !parent.parent_id ? 'It will sit inside ' + parent.name + '.' : '',
+    confirm: 'Create',
+    field: { label: 'Folder name', value: '' }
+  });
+  if (!name) return;
   var r = await sb.from('folders').insert({
     engagement_id: engId, client_id: clientId,
     parent_id: parent && !parent.parent_id ? parent.id : null,
@@ -434,6 +554,9 @@ window.vcInit = async function(){
   $('find').addEventListener('input', paintBody);
   $('upBtn').addEventListener('click', function(){ $('up').click(); });
   $('newFolder').addEventListener('click', newFolder);
+  $('dlgOk').addEventListener('click', submitDlg);
+  $('dlgCancel').addEventListener('click', function(){ closeDlg(null); });
+  $('veil').addEventListener('click', function(){ closeDlg(null); });
   $('up').addEventListener('change', function(){ upload(this.files); this.value = ''; });
 
   $('backBtn').addEventListener('click', function(){

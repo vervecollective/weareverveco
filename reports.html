@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Reporting — Verve Collective</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/shell.css">
+<script type="module" src="/assets/shell.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',system-ui,sans-serif;color:#1C1F24;line-height:1.55;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1180px;padding:28px var(--vc-idbar-space,58px) 90px 32px !important;}
+
+  h1{font-size:21px;font-weight:680;letter-spacing:-.02em;color:#111111;}
+  .lede{color:#6B7280;font-size:13.5px;margin-top:2px;}
+
+  .demo{display:flex;align-items:center;gap:10px;margin:18px 0 0;padding:11px 14px;
+    border:1px solid #EFC5AF;background:#FDF0EB;border-radius:9px;
+    font-size:12.5px;color:#7C2D12;}
+  .demo b{font-weight:700;}
+  .demo:not(.on){display:none;}
+
+  .bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:20px 0 18px;}
+  .bar select{padding:8px 11px;font:500 13px/1.3 'Inter',sans-serif;min-width:230px;}
+  .seg{display:flex;gap:2px;background:#F1F3F6;border-radius:9px;padding:2px;}
+  .seg button{border:none;background:none;padding:6px 12px;border-radius:7px;
+    font:600 12.5px/1 'Inter',sans-serif;color:#6B7280;cursor:pointer;transition:all .12s;}
+  .seg button.on{background:#fff;color:#111111;box-shadow:0 1px 2px rgba(16,24,40,.08);}
+  .btn{margin-left:auto;border:1px solid #DDE0E4;background:#fff;border-radius:8px;
+    padding:8px 14px;font:600 12.5px/1 'Inter',sans-serif;color:#111111;cursor:pointer;}
+  .btn:hover{border-color:#B8BCC4;}
+  .btn:disabled{opacity:.5;cursor:default;}
+
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;}
+  .k{border:1px solid #E7E9ED;border-radius:11px;padding:15px 16px;background:#fff;}
+  .k b{display:block;font-size:22px;font-weight:680;letter-spacing:-.02em;color:#111111;
+    font-variant-numeric:tabular-nums;}
+  .k span{display:block;font-size:12px;color:#6B7280;margin-top:3px;}
+  .k em{display:block;font-size:11.5px;font-style:normal;color:#9AA1AA;margin-top:1px;}
+
+  .panel{border:1px solid #E7E9ED;border-radius:12px;padding:18px 20px;margin-top:18px;background:#fff;}
+  .panel h2{font-size:14px;font-weight:640;color:#111111;letter-spacing:-.01em;}
+  .panel .sub{font-size:12px;color:#6B7280;margin-bottom:14px;}
+  .legend{display:flex;gap:16px;font-size:12px;color:#4B5563;margin-bottom:10px;}
+  .legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;}
+  svg.chart{width:100%;height:auto;display:block;}
+
+  table{width:100%;border-collapse:collapse;}
+  th{text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;
+    color:#6B7280;padding:9px 10px;border-bottom:1px solid #EAECEF;}
+  th.n,td.n{text-align:right;font-variant-numeric:tabular-nums;}
+  td{padding:11px 10px;border-bottom:1px solid #F3F4F6;font-size:13px;}
+  tr:last-child td{border-bottom:none;}
+  .tag{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.04em;
+    padding:2px 7px;border-radius:4px;}
+  .tag.google{background:#EFF4FE;color:#1D4ED8;}
+  .tag.meta{background:#F5F0FE;color:#6D28D9;}
+
+  .empty{padding:56px 20px;text-align:center;}
+  .empty svg{width:28px;height:28px;color:#C9CDD4;margin-bottom:12px;}
+  .empty b{display:block;font-size:15px;font-weight:620;color:#111111;margin-bottom:5px;}
+  .empty span{display:block;font-size:13px;line-height:1.6;color:#6B7280;max-width:400px;margin:0 auto;}
+  .skel{height:12px;border-radius:5px;margin-bottom:9px;
+    background:linear-gradient(90deg,#F1F2F4 25%,#E7E9ED 37%,#F1F2F4 63%);
+    background-size:400% 100%;animation:sk 1.3s ease infinite;}
+  @keyframes sk{0%{background-position:100% 50%;}100%{background-position:0 50%;}}
+  @media(prefers-reduced-motion:reduce){ .skel{animation:none;} }
+
+  .note{position:fixed;left:50%;bottom:26px;transform:translate(-50%,12px);z-index:120;
+    display:none;align-items:center;max-width:min(460px,92vw);padding:11px 15px;border-radius:10px;
+    background:#111111;color:#fff;font:500 13px/1.45 'Inter',sans-serif;
+    box-shadow:0 10px 30px rgba(16,24,40,.24);opacity:0;transition:opacity .18s,transform .18s;}
+  .note.on{display:flex;opacity:1;transform:translate(-50%,0);}
+  .note.bad{background:#7F1D1D;}
+
+  @media(max-width:860px){
+    .wrap{padding:20px 16px 90px !important;}
+    .bar select{min-width:0;width:100%;}
+    .btn{margin-left:0;}
+  }
+</style>
+</head>
+<body>
+<div class="note" id="note" role="status" aria-live="polite"></div>
+<div class="wrap">
+  <h1>Reporting</h1>
+  <p class="lede">Campaign performance pulled from Google Ads and Meta, stored here so a report never depends on a live API call.</p>
+
+  <div class="demo" id="demo">
+    <b>Demo data.</b>
+    <span>This engagement is a worked example, not a client. Verve Collective is pre-launch and has no signed clients.</span>
+  </div>
+
+  <div class="bar">
+    <select id="eng" aria-label="Engagement"></select>
+    <div class="seg" role="group" aria-label="Date range">
+      <button data-d="7">7 days</button>
+      <button data-d="30" class="on">30 days</button>
+      <button data-d="60">60 days</button>
+    </div>
+    <button class="btn" id="sync">Refresh from platforms</button>
+  </div>
+
+  <div id="out"></div>
+</div>
+
+<script>
+var sb, engagements = [], accounts = [], rows = [], engId = null, days = 30, noteTimer = null;
+
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s == null ? '' : s)
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function notify(msg, bad){
+  var el = $('note');
+  el.className = 'note on' + (bad ? ' bad' : '');
+  el.textContent = msg;
+  clearTimeout(noteTimer);
+  noteTimer = setTimeout(function(){ el.className = 'note'; }, bad ? 7000 : 3400);
+}
+
+var usd = function(n){ return '$' + Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); };
+var usd0 = function(n){ return '$' + Number(n||0).toLocaleString('en-US',{maximumFractionDigits:0}); };
+var num = function(n){ return Number(n||0).toLocaleString('en-US'); };
+var pct = function(n){ return (Number(n||0)*100).toFixed(2) + '%'; };
+
+/* ------------------------------------------------------------------ load */
+
+async function loadEngagements(){
+  var r = await sb.from('ad_accounts')
+    .select('id, provider, external_id, name, status, last_synced_at, last_error, engagement_id, engagements(title, clients(business_name))');
+  if (r.error) return notify('Could not load ad accounts. ' + r.error.message, true);
+  accounts = r.data || [];
+
+  var seen = {};
+  engagements = [];
+  accounts.forEach(function(a){
+    if (!a.engagement_id || seen[a.engagement_id]) return;
+    seen[a.engagement_id] = true;
+    var e = a.engagements || {};
+    engagements.push({
+      id: a.engagement_id,
+      label: ((e.clients && e.clients.business_name) || e.title || 'Untitled')
+    });
+  });
+
+  if (!engagements.length){
+    $('out').innerHTML = emptyState('No ad accounts connected',
+      'Connect a Google Ads or Meta account to an engagement and its performance appears here.');
+    return;
+  }
+  $('eng').innerHTML = engagements.map(function(e){
+    return '<option value="'+e.id+'">'+esc(e.label)+'</option>';
+  }).join('');
+  await pick(engagements[0].id);
+}
+
+async function pick(id){
+  engId = id;
+  var e = engagements.filter(function(x){ return x.id === id; })[0];
+  $('demo').className = 'demo' + (e && /^DEMO/i.test(e.label) ? ' on' : '');
+  await load();
+}
+
+async function load(){
+  $('out').innerHTML = '<div class="panel">' +
+    '<div class="skel" style="width:38%"></div><div class="skel" style="width:74%"></div>' +
+    '<div class="skel" style="width:56%"></div></div>';
+
+  var ids = accounts.filter(function(a){ return a.engagement_id === engId; })
+    .map(function(a){ return a.id; });
+  if (!ids.length){ rows = []; return paint(); }
+
+  var since = new Date(Date.now() - (days - 1) * 86400000).toISOString().slice(0,10);
+  var r = await sb.from('ad_metrics_daily').select('*')
+    .in('ad_account_id', ids).gte('date', since).order('date');
+  if (r.error){
+    $('out').innerHTML = emptyState('Could not load performance', r.error.message);
+    return;
+  }
+  rows = r.data || [];
+  paint();
+}
+
+/* ------------------------------------------------------------------ paint */
+
+function emptyState(title, body){
+  return '<div class="panel"><div class="empty">' +
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" ' +
+    'stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>' +
+    '<b>' + esc(title) + '</b><span>' + esc(body) + '</span></div></div>';
+}
+
+function totals(list){
+  return list.reduce(function(t, r){
+    t.impressions += Number(r.impressions||0);
+    t.clicks += Number(r.clicks||0);
+    t.spend += Number(r.spend||0);
+    t.conversions += Number(r.conversions||0);
+    t.value += Number(r.conversion_value||0);
+    return t;
+  }, { impressions:0, clicks:0, spend:0, conversions:0, value:0 });
+}
+
+function providerOf(id){
+  var a = accounts.filter(function(x){ return x.id === id; })[0];
+  return a ? a.provider : 'google';
+}
+
+function paint(){
+  if (!rows.length){
+    $('out').innerHTML = emptyState('Nothing in this window',
+      'No campaign data for the last ' + days + ' days. Try a longer range, or refresh from the platforms.');
+    return;
+  }
+
+  var t = totals(rows);
+  var cpc = t.clicks ? t.spend / t.clicks : 0;
+  var cpa = t.conversions ? t.spend / t.conversions : 0;
+  var ctr = t.impressions ? t.clicks / t.impressions : 0;
+  var roas = t.spend ? t.value / t.spend : 0;
+
+  /* Ad spend is the client's money paid straight to the platform. It is shown
+     as a reference figure and never appears on a Verve invoice. */
+  var html = '<div class="kpis">' +
+    kpi(usd0(t.spend), 'Ad spend', 'Paid by the client to the platform') +
+    kpi(num(t.clicks), 'Clicks', pct(ctr) + ' click-through') +
+    kpi(num(Math.round(t.conversions)), 'Conversions', usd(cpa) + ' per conversion') +
+    kpi(usd(cpc), 'Cost per click', num(t.impressions) + ' impressions') +
+    kpi(roas.toFixed(2) + 'x', 'Return on ad spend', usd0(t.value) + ' attributed') +
+    '</div>';
+
+  html += chartPanel();
+  html += splitPanel();
+  html += campaignPanel();
+
+  $('out').innerHTML = html;
+}
+
+function kpi(v, label, sub){
+  return '<div class="k"><b>'+esc(v)+'</b><span>'+esc(label)+'</span><em>'+esc(sub)+'</em></div>';
+}
+
+/* Drawn as inline SVG rather than pulling in a charting library: this codebase
+   has no build step, and a 40-line chart is cheaper than a dependency. */
+function chartPanel(){
+  var byDay = {};
+  rows.forEach(function(r){
+    var d = byDay[r.date] = byDay[r.date] || { google:0, meta:0 };
+    d[providerOf(r.ad_account_id)] += Number(r.spend||0);
+  });
+  var dates = Object.keys(byDay).sort();
+  var max = 0;
+  dates.forEach(function(d){ max = Math.max(max, byDay[d].google + byDay[d].meta); });
+  if (!max) max = 1;
+
+  var W = 1000, H = 200, pad = 6;
+  var bw = Math.max(2, (W - pad * 2) / dates.length - 2);
+  var bars = dates.map(function(d, i){
+    var x = pad + i * ((W - pad * 2) / dates.length);
+    var gh = (byDay[d].google / max) * (H - 20);
+    var mh = (byDay[d].meta / max) * (H - 20);
+    return '<rect x="'+x.toFixed(1)+'" y="'+(H - gh - mh).toFixed(1)+'" width="'+bw.toFixed(1)+
+             '" height="'+mh.toFixed(1)+'" fill="#8B5CF6" rx="1"><title>'+d+' Meta '+usd(byDay[d].meta)+'</title></rect>' +
+           '<rect x="'+x.toFixed(1)+'" y="'+(H - gh).toFixed(1)+'" width="'+bw.toFixed(1)+
+             '" height="'+gh.toFixed(1)+'" fill="#2563EB" rx="1"><title>'+d+' Google '+usd(byDay[d].google)+'</title></rect>';
+  }).join('');
+
+  return '<div class="panel"><h2>Daily spend</h2>' +
+    '<p class="sub">'+esc(dates[0])+' to '+esc(dates[dates.length-1])+' &middot; peak '+usd0(max)+' in a day</p>' +
+    '<div class="legend"><span><i style="background:#2563EB"></i>Google Ads</span>' +
+    '<span><i style="background:#8B5CF6"></i>Meta</span></div>' +
+    '<svg class="chart" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" role="img" ' +
+    'aria-label="Daily ad spend by platform">'+bars+'</svg></div>';
+}
+
+function splitPanel(){
+  var by = { google: [], meta: [] };
+  rows.forEach(function(r){ by[providerOf(r.ad_account_id)].push(r); });
+
+  var body = ['google','meta'].map(function(p){
+    if (!by[p].length) return '';
+    var t = totals(by[p]);
+    var cpc = t.clicks ? t.spend / t.clicks : 0;
+    var cpa = t.conversions ? t.spend / t.conversions : 0;
+    return '<tr><td><span class="tag '+p+'">'+(p === 'google' ? 'GOOGLE' : 'META')+'</span></td>' +
+      '<td class="n">'+usd(t.spend)+'</td><td class="n">'+num(t.impressions)+'</td>' +
+      '<td class="n">'+num(t.clicks)+'</td><td class="n">'+usd(cpc)+'</td>' +
+      '<td class="n">'+num(Math.round(t.conversions))+'</td><td class="n">'+usd(cpa)+'</td></tr>';
+  }).join('');
+
+  return '<div class="panel"><h2>Platform split</h2>' +
+    '<p class="sub">The same money, spent two ways. Meta buys reach, Google buys intent.</p>' +
+    '<table><thead><tr><th>Platform</th><th class="n">Spend</th><th class="n">Impressions</th>' +
+    '<th class="n">Clicks</th><th class="n">CPC</th><th class="n">Conv.</th><th class="n">Cost / conv.</th>' +
+    '</tr></thead><tbody>'+body+'</tbody></table></div>';
+}
+
+function campaignPanel(){
+  var by = {};
+  rows.forEach(function(r){
+    var k = r.ad_account_id + '|' + r.campaign_id;
+    var c = by[k] = by[k] || { name: r.campaign_name || r.campaign_id,
+                               provider: providerOf(r.ad_account_id), list: [] };
+    c.list.push(r);
+  });
+  var list = Object.keys(by).map(function(k){
+    var c = by[k], t = totals(c.list);
+    return { name: c.name, provider: c.provider, t: t };
+  }).sort(function(a,b){ return b.t.spend - a.t.spend; });
+
+  var body = list.map(function(c){
+    var cpa = c.t.conversions ? c.t.spend / c.t.conversions : 0;
+    var ctr = c.t.impressions ? c.t.clicks / c.t.impressions : 0;
+    return '<tr><td><span class="tag '+c.provider+'">'+(c.provider === 'google' ? 'GOOGLE' : 'META')+'</span> ' +
+      esc(c.name)+'</td>' +
+      '<td class="n">'+usd(c.t.spend)+'</td><td class="n">'+num(c.t.clicks)+'</td>' +
+      '<td class="n">'+pct(ctr)+'</td><td class="n">'+num(Math.round(c.t.conversions))+'</td>' +
+      '<td class="n">'+usd(cpa)+'</td></tr>';
+  }).join('');
+
+  return '<div class="panel"><h2>Campaigns</h2>' +
+    '<p class="sub">Ranked by spend. Cost per conversion is the number worth arguing about.</p>' +
+    '<table><thead><tr><th>Campaign</th><th class="n">Spend</th><th class="n">Clicks</th>' +
+    '<th class="n">CTR</th><th class="n">Conv.</th><th class="n">Cost / conv.</th>' +
+    '</tr></thead><tbody>'+body+'</tbody></table></div>';
+}
+
+/* ----------------------------------------------------------------- wiring */
+
+window.vcInit = async function(){
+  sb = window.__sb;
+
+  $('eng').addEventListener('change', function(){ pick(this.value); });
+
+  document.querySelectorAll('.seg button').forEach(function(b){
+    b.addEventListener('click', function(){
+      document.querySelectorAll('.seg button').forEach(function(x){ x.classList.remove('on'); });
+      b.classList.add('on');
+      days = Number(b.dataset.d);
+      load();
+    });
+  });
+
+  $('sync').addEventListener('click', async function(){
+    this.disabled = true;
+    this.textContent = 'Refreshing\u2026';
+    try {
+      var s = await sb.auth.getSession();
+      var res = await fetch(window.__sbUrl ? window.__sbUrl + '/functions/v1/ads-sync'
+                                           : 'https://otqrkxjtojqlpzzvqavp.supabase.co/functions/v1/ads-sync', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json',
+                   'Authorization':'Bearer ' + s.data.session.access_token },
+        body: JSON.stringify({ days: days })
+      });
+      var out = await res.json();
+      if (out.error) notify(out.error, true);
+      else if (out.note) notify(out.note);
+      else {
+        var bad = (out.synced || []).filter(function(x){ return x.error; });
+        if (bad.length) notify(bad[0].provider + ': ' + bad[0].error, true);
+        else notify('Refreshed.');
+        await load();
+      }
+    } catch (err) {
+      notify('Refresh failed. ' + String(err.message || err), true);
+    }
+    this.disabled = false;
+    this.textContent = 'Refresh from platforms';
+  });
+
+  await loadEngagements();
+};
+</script>
+</body>
+</html>

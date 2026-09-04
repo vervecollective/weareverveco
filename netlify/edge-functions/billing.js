@@ -52,6 +52,43 @@ async function sbPatch(path, token, body) {
   return res.json();
 }
 
+async function sbPost(path, token, body) {
+  const base = Deno.env.get('SUPABASE_URL');
+  const anon = Deno.env.get('SUPABASE_ANON_KEY');
+  const res = await fetch(base + '/rest/v1/' + path, {
+    method: 'POST',
+    headers: {
+      apikey: anon,
+      Authorization: 'Bearer ' + token,
+      'Content-Type': 'application/json',
+      Prefer: 'return=representation',
+    },
+    body: JSON.stringify(body),
+  });
+  return res.json();
+}
+
+/* The payment schedule the Client Services Agreement actually promises. Billing
+   the full contract value in one invoice contradicted the agreement the client
+   signed, so the schedule is derived from the same deposit_structure the
+   agreement's Exhibit A was generated from. */
+const SCHEDULES = {
+  '5050': [
+    { seq: 1, label: 'Deposit \u2014 50% at signing', share: 0.5 },
+    { seq: 2, label: 'Balance \u2014 50% at delivery', share: 0.5 },
+  ],
+  '403030': [
+    { seq: 1, label: 'Deposit \u2014 40% at signing', share: 0.4 },
+    { seq: 2, label: 'Midpoint milestone \u2014 30%', share: 0.3 },
+    { seq: 3, label: 'Balance \u2014 30% at delivery', share: 0.3 },
+  ],
+  retainer: [
+    { seq: 1, label: 'Monthly retainer \u2014 billed in advance', share: 1 },
+  ],
+};
+
+const money = (n) => '$' + Number(n || 0).toFixed(2);
+
 export default async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
@@ -63,7 +100,9 @@ export default async (req) => {
   const key = Deno.env.get('STRIPE_SECRET_KEY');
   if (!key) return json({ error: 'STRIPE_SECRET_KEY is not set.' }, 500);
 
-  const { engagementId } = await req.json().catch(() => ({}));
+  const body = await req.json().catch(() => ({}));
+  const engagementId = body.engagementId;
+  const requestedSeq = body.seq ? Number(body.seq) : null;
   if (!engagementId) return json({ error: 'engagementId is required.' }, 400);
 
   // Engagement + client, scoped by RLS
@@ -88,7 +127,73 @@ export default async (req) => {
   );
   if (!billable.length) return json({ error: 'No billable line items on this engagement.' }, 400);
 
+  const totalCents = billable.reduce(
+    (s, l) => s + Math.round((Number(l.unit_price) || 0) * (Number(l.qty) || 1) * 100), 0
+  );
+  if (totalCents <= 0) return json({ error: 'The engagement totals $0.00 \u2014 nothing to invoice.' }, 400);
+
   try {
+    /* Build the schedule once, on the first invoice, and never rewrite it. A
+       later change to deposit_structure must not silently restate what the
+       client already agreed to pay. */
+    let schedule = await sbGet(
+      'engagement_invoices?engagement_id=eq.' + engagementId + '&select=*&order=seq',
+      token
+    );
+    if (!Array.isArray(schedule)) schedule = [];
+
+    if (!schedule.length) {
+      const plan = SCHEDULES[eng.deposit_structure] || SCHEDULES['5050'];
+      let allocated = 0;
+      const rows = plan.map((p, i) => {
+        // The last part absorbs rounding so the parts sum to the total exactly.
+        const cents = i === plan.length - 1
+          ? totalCents - allocated
+          : Math.round(totalCents * p.share);
+        allocated += cents;
+        return {
+          engagement_id: engagementId,
+          seq: p.seq,
+          label: p.label,
+          share: p.share,
+          amount: cents / 100,
+          status: 'unbilled',
+        };
+      });
+      const created = await sbPost('engagement_invoices', token, rows);
+      if (!Array.isArray(created)) {
+        return json({ error: 'Could not create the payment schedule: ' + JSON.stringify(created) }, 500);
+      }
+      schedule = created.slice().sort((a, b) => Number(a.seq) - Number(b.seq));
+    }
+
+    const target = requestedSeq
+      ? schedule.find((r) => Number(r.seq) === requestedSeq)
+      : schedule.find((r) => r.status === 'unbilled');
+
+    if (!target) {
+      return json({ error: 'Every part of this payment schedule has already been invoiced.' }, 400);
+    }
+    if (target.status !== 'unbilled') {
+      return json({ error: target.label + ' has already been invoiced.' }, 400);
+    }
+
+    /* Do not let the balance go out before the deposit has cleared. The whole
+       sequence exists so work never starts on an unpaid deposit, and invoicing
+       out of order is how that gets quietly bypassed. */
+    const earlierUnpaid = schedule.filter(
+      (r) => Number(r.seq) < Number(target.seq) && r.status !== 'paid'
+    );
+    if (earlierUnpaid.length) {
+      return json({
+        error: 'Cannot invoice "' + target.label + '" yet \u2014 ' +
+          earlierUnpaid.map((r) => r.label).join(' and ') + ' has not been paid.',
+      }, 400);
+    }
+
+    const targetCents = Math.round(Number(target.amount) * 100);
+    if (targetCents <= 0) return json({ error: 'That part of the schedule is $0.00.' }, 400);
+
     // Reuse an existing Stripe customer for this email rather than duplicating.
     let customer;
     const existing = await stripe(
@@ -110,18 +215,36 @@ export default async (req) => {
       customer: customer.id,
       collection_method: 'send_invoice',
       days_until_due: String(eng.days_until_due || 15),
-      description: eng.client_visible_note || 'Verve Collective LLC — services as scoped.',
+      description: (eng.client_visible_note || 'Verve Collective LLC \u2014 services as scoped.') +
+        ' (' + target.label + ')',
       'metadata[engagement_id]': eng.id,
+      'metadata[engagement_invoice_id]': target.id,
+      'metadata[seq]': String(target.seq),
     });
     if (invoice.error) throw new Error(invoice.error.message);
 
-    for (const li of billable) {
+    /* Each line is billed at its share of this part rather than collapsing the
+       invoice into a single "deposit" line. Section 8.3: never a lump line. */
+    let placed = 0;
+    for (let i = 0; i < billable.length; i++) {
+      const li = billable[i];
       const qty = Number(li.qty) || 1;
       const unit = Number(li.unit_price) || 0;
-      const cents = Math.round(unit * qty * 100);
-      const label = qty > 1
-        ? li.description + ' (' + qty + ' x $' + unit.toFixed(2) + ')'
+      const fullCents = Math.round(unit * qty * 100);
+      const isLast = i === billable.length - 1;
+      const cents = isLast
+        ? targetCents - placed
+        : Math.round((fullCents / totalCents) * targetCents);
+      placed += cents;
+      if (cents <= 0) continue;
+
+      const base = qty > 1
+        ? li.description + ' (' + qty + ' x ' + money(unit) + ')'
         : li.description;
+      const label = Number(target.share) === 1
+        ? base
+        : base + ' \u2014 ' + target.label + ' of ' + money(fullCents / 100);
+
       const r = await stripe('invoiceitems', key, {
         customer: customer.id,
         invoice: invoice.id,
@@ -134,7 +257,13 @@ export default async (req) => {
 
     const check = await stripe('invoices/' + invoice.id, key, null, 'GET');
     if (!check.total || check.total <= 0) {
-      throw new Error('Invoice built with no billable lines — nothing was sent.');
+      throw new Error('Invoice built with no billable lines \u2014 nothing was sent.');
+    }
+    if (check.total !== targetCents) {
+      throw new Error(
+        'Invoice total ' + money(check.total / 100) + ' does not match the scheduled ' +
+        money(targetCents / 100) + ' \u2014 nothing was sent.'
+      );
     }
 
     const finalized = await stripe('invoices/' + invoice.id + '/finalize', key, {});
@@ -145,15 +274,36 @@ export default async (req) => {
     if (sent.error) throw new Error('Invoice created but could not be emailed: ' + sent.error.message);
 
     const url = sent.hosted_invoice_url || finalized.hosted_invoice_url;
-    await sbPatch('engagements?id=eq.' + eng.id, token, {
-      stripe_invoice_id: sent.id || finalized.id,
+    const invoiceId = sent.id || finalized.id;
+
+    await sbPatch('engagement_invoices?id=eq.' + target.id, token, {
+      stripe_invoice_id: invoiceId,
       stripe_invoice_url: url,
-      amount_total: (check.total || 0) / 100,
+      status: 'sent',
+      sent_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    });
+
+    /* amount_total stays the full contract value and the legacy invoice columns
+       track whichever invoice is currently outstanding, so the client portal's
+       "Pay [balance due]" button and the internal payment link keep working
+       without needing to know the schedule exists. */
+    await sbPatch('engagements?id=eq.' + eng.id, token, {
+      stripe_invoice_id: invoiceId,
+      stripe_invoice_url: url,
+      amount_total: totalCents / 100,
       payment_status: 'unpaid',
       updated_at: new Date().toISOString(),
     });
 
-    return json({ ok: true, url });
+    const remaining = schedule.filter((r) => Number(r.seq) > Number(target.seq)).length;
+    return json({
+      ok: true,
+      url,
+      part: target.label,
+      amount: targetCents / 100,
+      remaining_parts: remaining,
+    });
   } catch (err) {
     return json({ error: String(err.message || err) }, 500);
   }

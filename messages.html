@@ -83,12 +83,6 @@
     color:#111827;cursor:pointer;}
   .chmenu button:hover{background:#F3F4F6;}
   .chmenu button.danger{color:#991B1B;}
-  .sr{padding:11px 12px;border-radius:9px;cursor:pointer;margin-bottom:3px;}
-  .sr:hover{background:#F1F3F6;}
-  .sr b{font-size:12.5px;font-weight:600;display:block;}
-  .sr span{font-size:12.5px;color:#5C6470;display:block;margin-top:2px;
-    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
-  .sr em{font-size:11px;font-style:normal;color:#9CA3AF;}
   .hint{font-size:11.5px;color:#9CA3AF;padding:0 24px 10px;}
   .list-h b{font-size:16px;font-weight:680;letter-spacing:-.02em;color:#111111;}
 
@@ -145,17 +139,6 @@
     font:600 12.5px/1 'Inter',sans-serif;color:#5C6470;cursor:pointer;}
   .pt.on{background:#F1F3F6;color:#111827;}
   .files{flex:1;overflow-y:auto;padding:20px 24px;background:#FCFCFD;}
-  .fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;}
-  .fcard{background:#fff;border:1px solid #EBECEF;border-radius:11px;overflow:hidden;
-    text-decoration:none;color:inherit;display:block;}
-  .fcard:hover{box-shadow:0 3px 12px rgba(16,24,40,.1);}
-  .fcard img{width:100%;height:104px;object-fit:cover;display:block;background:#F1F3F6;}
-  .fcard .doc{height:104px;display:flex;align-items:center;justify-content:center;
-    background:#F6F7F9;color:#9CA3AF;font-size:26px;}
-  .fcard .meta{padding:9px 11px;}
-  .fcard .meta b{font-size:12.5px;font-weight:600;display:block;white-space:nowrap;
-    overflow:hidden;text-overflow:ellipsis;}
-  .fcard .meta em{font-size:11px;font-style:normal;color:#9CA3AF;}
   .pane-h em{font-size:11.5px;font-style:normal;color:#00875A;font-weight:500;line-height:1.3;}
   .pane-h em:empty{display:none;}
   /* A short conversation belongs at the bottom of the column, not floating at
@@ -317,19 +300,53 @@
   .blank{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;padding:40px;}
   .blank b{display:block;font-size:16px;font-weight:700;margin-bottom:6px;}
   .blank span{font-size:14px;color:#5C6470;max-width:320px;display:block;}
-  @media(max-width:820px){.list{width:100%;} .pane{display:none;} .pane.open{display:flex;position:fixed;inset:0;background:#fff;z-index:60;}}
+  /* On a phone the conversation takes the whole screen, which is right — but
+     nothing ever removed .open, so tapping a conversation trapped you there
+     with the app shell covered and no way back. */
+  @media(max-width:820px){
+    .list{width:100%;}
+    .pane{display:none;}
+    .pane.open{display:flex;position:fixed;inset:0;background:#fff;z-index:60;
+      padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);}
+    .back{display:flex !important;}
+    .pane-h{padding:12px 16px;}
+    .feed{padding:16px 16px 8px;}
+    .m.reply{margin-left:30px;padding-left:12px;}
+  }
+  .back{display:none;background:none;border:none;cursor:pointer;color:#5C6470;
+    padding:6px;margin-left:-6px;border-radius:8px;line-height:0;flex-shrink:0;}
+  .back:hover{background:#F4F5F7;color:#111111;}
+  .back svg{width:20px;height:20px;}
+
+  /* Search results and the files grid were the two surfaces still styled like
+     the old admin list. */
+  .sr{padding:10px 11px;border-radius:9px;cursor:pointer;margin-bottom:2px;transition:background .12s;}
+  .sr:hover{background:#F4F5F7;}
+  .sr b{font-size:13px;font-weight:620;display:block;color:#111111;letter-spacing:-.01em;}
+  .sr span{font-size:12.5px;color:#6B7280;display:block;margin-top:2px;line-height:1.5;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .sr em{font-size:11px;font-style:normal;color:#A2A8B0;font-variant-numeric:tabular-nums;}
+
+  .fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:14px;}
+  .fcard{background:#fff;border:1px solid #E7E9ED;border-radius:10px;overflow:hidden;
+    text-decoration:none;color:inherit;display:block;transition:border-color .14s,box-shadow .14s;}
+  .fcard:hover{border-color:#D8DAE0;box-shadow:0 4px 14px rgba(16,24,40,.08);}
+  .fcard img{width:100%;height:112px;object-fit:cover;display:block;background:#F4F5F7;}
+  .fcard .doc{height:112px;display:flex;align-items:center;justify-content:center;
+    background:#FAFAFB;color:#C9CDD4;font-size:24px;}
+  .fcard .meta{padding:10px 11px;}
+  .fcard .meta b{font-size:12.5px;font-weight:600;display:block;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis;color:#111111;}
+  .fcard .meta em{font-size:11px;font-style:normal;color:#A2A8B0;}
 .replybar{display:flex;align-items:center;gap:8px;padding:7px 12px;margin-bottom:6px;
   border-left:2px solid #D9531E;background:#FAF6F3;border-radius:4px;font-size:12.5px;color:#5C6470;}
 .replybar span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .replybar b{color:#111111;}
 .replybar button{border:0;background:none;font-size:17px;line-height:1;color:#5C6470;cursor:pointer;padding:0 3px;}
 .replybar button:hover{color:#111111;}
-.m.reply{margin-left:34px;border-left:2px solid #E7E3DF;padding-left:10px;}
-.m.agent .bd .hd b{color:#D9531E;}
-.m.agent .tx{background:#FAF6F3;border-radius:6px;padding:7px 10px;}
-.reply-hint{border:0;background:none;cursor:pointer;color:#9AA1AA;padding:0 2px;}
-.reply-hint:hover{color:#111111;}
-.reply-hint svg{width:14px;height:14px;}
+.reply-hint,.react-hint{border:0;background:none;cursor:pointer;color:#9AA1AA;padding:0 2px;
+  line-height:0;display:flex;}
+.reply-hint svg,.react-hint svg{width:14px;height:14px;}
 </style>
 </head>
 <body>
@@ -358,6 +375,9 @@
       <span>Direct messages for anything that is not about a specific task. Task discussion belongs on the task.</span></div></div>
     <div id="live" style="display:none;flex:1;flex-direction:column;min-height:0">
       <div class="pane-h">
+        <button class="back" id="backBtn" aria-label="Back to conversations">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button>
         <span class="av" id="hAv"></span>
         <span class="hmeta"><b id="hName"></b><em id="hOn"></em></span>
         <span class="ptabs">
@@ -530,7 +550,7 @@ function srcFor(v){ return isPath(v) ? (signedCache[v] || '') : (v || ''); }
 
 async function loadChans(){
   var r = await sb.from('channels')
-    .select('*, image_url, channel_members(profile_id, last_read_at, muted, pinned, manually_unread), messages(body, created_at, author_id)')
+    .select('*, image_url, channel_members(profile_id, last_read_at, muted, pinned, manually_unread), messages(body, created_at, author_id), engagements(title, clients(business_name))')
     .order('last_message_at',{ascending:false});
   chans = (r.data||[]).filter(function(c){
     return (c.channel_members||[]).some(function(m){ return m.profile_id === me.id; });
@@ -780,7 +800,21 @@ async function openCh(id){
     ? '<span class="av" id="hAv" style="background-image:url('+esc(hpic)+')"></span>'
     : '<span class="av" id="hAv">'+ini(titleOf(cur))+'</span>';
   $('hName').textContent = titleOf(cur);
-  $('hOn').textContent = (o && online[o.id]) ? 'Active now' : '';
+  /* A conversation is rarely just a name. channels.engagement_id already links
+     it to a piece of work; the header never said so. */
+  var eng = cur.engagements;
+  var members = (cur.channel_members || []).length;
+  var ctx = '';
+  if (eng && eng.title) {
+    ctx = eng.title + (eng.clients && eng.clients.business_name
+      ? ' \u00B7 ' + eng.clients.business_name : '');
+  } else if (members > 2) {
+    ctx = members + ' members';
+  } else if (o && online[o.id]) {
+    ctx = 'Active now';
+  }
+  $('hOn').textContent = ctx;
+  $('hOn').style.color = (ctx === 'Active now') ? '#00875A' : '#8A9099';
   showPane('chat');
   await paint();
   await sb.from('channel_members')
@@ -1305,6 +1339,15 @@ window.vcInit = async function(){
     await sb.from('typing').delete().eq('channel_id',cur.id).eq('profile_id',me.id);
     paint(); loadChans();
   }
+  $('backBtn').addEventListener('click', function(){
+    $('pane').classList.remove('open');
+    $('live').style.display='none';
+    $('blank').style.display='flex';
+    cur = null;
+    clearReply();
+    loadChans();
+  });
+
   $('send').addEventListener('click', send);
   $('box').addEventListener('keydown', function(e){
     if (e.key==='Enter' && !e.shiftKey){ e.preventDefault(); send(); }

@@ -665,17 +665,26 @@ async function react(mid, e){
    permanent unauthenticated link, which is exactly what we stopped doing. */
 var signedCache = {};
 function isPath(v){ return !!v && !/^https?:\/\//i.test(v); }
+/* Stored values are one of three things: an absolute URL (Giphy), a bare path in
+   the chat bucket, or a "files:" prefixed path in the engagement files bucket. */
+function bucketOf(v){ return v.indexOf('files:') === 0 ? 'files' : 'chat'; }
+function keyOf(v){ return v.indexOf('files:') === 0 ? v.slice(6) : v; }
 
 async function signPaths(values){
-  var want = [];
+  var want = { chat: [], files: [] };
   values.forEach(function(v){
-    if (isPath(v) && !signedCache[v] && want.indexOf(v) === -1) want.push(v);
+    if (!isPath(v) || signedCache[v]) return;
+    var b = bucketOf(v);
+    if (want[b].indexOf(v) === -1) want[b].push(v);
   });
-  if (!want.length) return;
-  var r = await sb.storage.from('chat').createSignedUrls(want, 3600);
-  (r.data || []).forEach(function(row){
-    if (row && row.signedUrl && !row.error) signedCache[row.path] = row.signedUrl;
-  });
+  for (var b in want){
+    if (!want[b].length) continue;
+    var keys = want[b].map(keyOf);
+    var r = await sb.storage.from(b).createSignedUrls(keys, 3600);
+    (r.data || []).forEach(function(row, i){
+      if (row && row.signedUrl && !row.error) signedCache[want[b][i]] = row.signedUrl;
+    });
+  }
 }
 function srcFor(v){ return isPath(v) ? (signedCache[v] || '') : (v || ''); }
 
@@ -1426,14 +1435,52 @@ window.vcInit = async function(){
     if (!f || !cur) return;
     if (f.size > 10*1024*1024){ notify('Files need to be under 10MB.', { bad:true }); this.value=''; return; }
     $('send').disabled = true;
-    var path = cur.id + '/' + Date.now() + '-' + f.name.replace(/[^\w.\-]/g,'_');
-    var up = await sb.storage.from('chat').upload(path, f, { contentType: f.type });
+    var safe = f.name.replace(/[^\w.\-]/g,'_');
+    var stored, up;
+
+    /* A conversation attached to an engagement puts its files in that
+       engagement's Files, not in a chat bucket nobody browses. Channels with no
+       engagement — a plain DM — keep the chat bucket, because there is no
+       engagement to file it under. */
+    if (cur.engagement_id){
+      var fid = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()));
+      stored = 'files:' + cur.engagement_id + '/' + fid + '-' + safe;
+      up = await sb.storage.from('files')
+        .upload(cur.engagement_id + '/' + fid + '-' + safe, f, { contentType: f.type });
+    } else {
+      stored = cur.id + '/' + Date.now() + '-' + safe;
+      up = await sb.storage.from('chat').upload(stored, f, { contentType: f.type });
+    }
+
     $('send').disabled = false; this.value='';
     if (up.error) return notify('That file did not upload. ' + up.error.message, { bad:true });
-    await sb.from('messages').insert({
+
+    var ins = await sb.from('messages').insert({
       channel_id:cur.id, author_id:me.id, body:$('box').value.trim(),
-      attachment_url:path, attachment_name:f.name, attachment_type:f.type
-    });
+      attachment_url:stored, attachment_name:f.name, attachment_type:f.type
+    }).select('id').single();
+
+    if (ins.error){
+      notify('The file uploaded but the message did not send. ' + ins.error.message, { bad:true });
+    } else if (cur.engagement_id){
+      /* Register it in Files and link it back to the message it arrived on, so
+         the same file is reachable from either side. */
+      var folder = await sb.from('folders').select('id, client_id')
+        .eq('engagement_id', cur.engagement_id).eq('system_key','conversation').maybeSingle();
+      var rec = await sb.from('files').insert({
+        folder_id: folder.data ? folder.data.id : null,
+        engagement_id: cur.engagement_id,
+        client_id: folder.data ? folder.data.client_id : null,
+        name: f.name, mime: f.type || null, size_bytes: f.size,
+        storage_path: stored.slice(6), created_by: me.id
+      }).select('id').single();
+      if (!rec.error){
+        await sb.from('file_links').insert({
+          file_id: rec.data.id, ref_kind: 'message', ref_id: ins.data.id
+        });
+      }
+    }
+
     $('box').value='';
     paint(); loadChans();
   });

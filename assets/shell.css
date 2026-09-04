@@ -1860,3 +1860,50 @@ body.vc-ms-open .page{ padding-top: calc(var(--vc-ms-h) + 18px) !important; }
   body.vc-shelled .page{ padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important; }
   .vc-report{ bottom: calc(14px + env(safe-area-inset-bottom, 0px)) !important; }
 }
+
+/* ================= manual-steps bar: visual pass =================
+   It was a full-bleed #B45309 wall — a colour that appears nowhere in the brand
+   — sitting above every screen permanently. A persistent alert reads as an
+   error state, and an error state that never clears stops being read at all.
+   It is now a status strip in brand near-black, with the orange spent on a
+   single dot that carries the blocking signal. */
+.vc-ms-bar{
+  background:#111111;
+  color:#E8E9EB;
+  font:500 12.5px/1.4 'Inter',system-ui,sans-serif;
+  padding:9px 16px;
+  gap:10px;
+  box-shadow:none;
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+.vc-ms-bar.blocking{ background:#111111; }
+
+/* The hand emoji read as decoration. A dot reads as state. */
+.vc-ms-i{
+  width:6px;height:6px;border-radius:50%;background:#6B7280;
+  font-size:0;flex-shrink:0;overflow:hidden;text-indent:-999px;
+}
+.vc-ms-bar.blocking .vc-ms-i{
+  background:#D9531E;
+  box-shadow:0 0 0 3px rgba(217,83,30,.22);
+}
+
+.vc-ms-t{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.vc-ms-t b{ font-weight:600; color:#FFFFFF; }
+
+.vc-ms-go{
+  background:transparent;
+  border:1px solid rgba(255,255,255,.24);
+  color:#FFFFFF;
+  border-radius:6px;
+  padding:5px 11px;
+  font:600 12px/1 'Inter',system-ui,sans-serif;
+  transition:background .14s,border-color .14s;
+}
+.vc-ms-go:hover{ background:rgba(255,255,255,.1); border-color:rgba(255,255,255,.4); }
+.vc-ms-go:focus-visible{ outline:2px solid #D9531E; outline-offset:2px; }
+
+@media(max-width:860px){
+  .vc-ms-bar{ padding-left:14px; padding-right:12px; font-size:12px; }
+  .vc-ms-go{ padding:5px 9px; }
+}

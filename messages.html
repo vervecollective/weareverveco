@@ -224,13 +224,22 @@
 
   /* One surface that contains the field and its tools, rather than four loose
      objects sitting on a row: emoji, clip, input, and a red button. */
-  .compose{padding:14px 28px 18px;border-top:1px solid #EEF0F2;background:#fff;position:relative;}
-  .cbox{border:1px solid #DDE0E4;border-radius:12px;background:#fff;transition:border-color .14s,box-shadow .14s;}
+  .compose{display:flex;flex-direction:column;align-items:stretch;
+    padding:14px 28px 18px;border-top:1px solid #EEF0F2;background:#fff;position:relative;}
+  .cbox{width:100%;border:1px solid #DDE0E4;border-radius:12px;background:#fff;
+    transition:border-color .14s,box-shadow .14s;}
   .cbox:focus-within{border-color:#111111;box-shadow:0 0 0 3px rgba(17,17,17,.06);}
-  .compose textarea{display:block;width:100%;border:none;background:none;padding:12px 14px 4px;
-    font:400 14px/1.6 'Inter',sans-serif;resize:none;max-height:160px;color:#111111;}
-  .compose textarea:focus{outline:none;}
-  .compose textarea::placeholder{color:#A2A8B0;}
+  /* shell.css sets border, radius and background on every textarea with
+     !important. The field lives inside .cbox, which draws the box, so those have
+     to be undone here or the composer renders as a box inside a box. */
+  .compose textarea{display:block;width:100%;resize:none;max-height:160px;
+    border:none !important;border-radius:0 !important;background:none !important;
+    padding:12px 14px 4px;font:400 14px/1.6 'Inter',sans-serif;color:#111111 !important;}
+  .compose textarea:hover{border-color:transparent !important;}
+  /* The focus ring belongs on the container, not on the field inside it. */
+  .compose textarea:focus{outline:none !important;border-color:transparent !important;
+    box-shadow:none !important;}
+  .compose textarea::placeholder{color:#A2A8B0 !important;}
   .ctools{display:flex;align-items:center;gap:2px;padding:6px 8px 8px 8px;}
   .tool{background:none;border:none;cursor:pointer;padding:7px;border-radius:8px;line-height:0;
     color:#8A9099;display:flex;transition:all .12s;}
@@ -939,7 +948,9 @@ function showPane(which){
   });
   $('feed').style.display    = which === 'chat' ? 'flex' : 'none';
   $('typing').style.display  = which === 'chat' ? '' : 'none';
-  document.querySelector('.compose').style.display = which === 'chat' ? 'flex' : 'none';
+  /* Set only visibility here. Forcing display:flex made .cbox a flex item with
+     no basis, which collapsed the composer to the width of its own text. */
+  document.querySelector('.compose').style.display = which === 'chat' ? '' : 'none';
   $('files').style.display   = which === 'files' ? 'block' : 'none';
   if (which === 'files') loadFiles();
 }

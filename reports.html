@@ -100,6 +100,11 @@
       <button data-d="30" class="on">30 days</button>
       <button data-d="60">60 days</button>
     </div>
+    <div class="seg" role="group" aria-label="Platform">
+      <button data-p="all" class="on">Both</button>
+      <button data-p="google">Google</button>
+      <button data-p="meta">Meta</button>
+    </div>
     <button class="btn" id="sync">Refresh from platforms</button>
   </div>
 
@@ -107,7 +112,11 @@
 </div>
 
 <script>
-var sb, engagements = [], accounts = [], rows = [], engId = null, days = 30, noteTimer = null;
+var sb, engagements = [], accounts = [], rows = [], engId = null, days = 30,
+    platform = 'all', noteTimer = null;
+/* One filter applied at the top of paint() rather than inside each panel, so a
+   platform view and the combined view cannot drift apart. */
+function inScope(r){ return platform === 'all' || providerOf(r.ad_account_id) === platform; }
 
 function $(id){ return document.getElementById(id); }
 function esc(s){ return String(s == null ? '' : s)
@@ -209,9 +218,20 @@ function providerOf(id){
 }
 
 function paint(){
+  var all = rows;
+  rows = all.filter(inScope);
+  paintScoped();
+  rows = all;
+}
+
+function paintScoped(){
   if (!rows.length){
-    $('out').innerHTML = emptyState('Nothing in this window',
-      'No campaign data for the last ' + days + ' days. Try a longer range, or refresh from the platforms.');
+    $('out').innerHTML = emptyState(
+      platform === 'all' ? 'Nothing in this window'
+                         : 'No ' + (platform === 'google' ? 'Google Ads' : 'Meta') + ' data',
+      platform === 'all'
+        ? 'No campaign data for the last ' + days + ' days. Try a longer range, or refresh from the platforms.'
+        : 'Nothing from this platform in the last ' + days + ' days. Switch to Both to see the other one.');
     return;
   }
 
@@ -232,7 +252,7 @@ function paint(){
     '</div>';
 
   html += chartPanel();
-  html += splitPanel();
+  if (platform === 'all') html += splitPanel();
   html += campaignPanel();
 
   $('out').innerHTML = html;
@@ -336,10 +356,11 @@ window.vcInit = async function(){
 
   document.querySelectorAll('.seg button').forEach(function(b){
     b.addEventListener('click', function(){
-      document.querySelectorAll('.seg button').forEach(function(x){ x.classList.remove('on'); });
+      /* Clear only the siblings in this group; the two controls are independent. */
+      b.parentNode.querySelectorAll('button').forEach(function(x){ x.classList.remove('on'); });
       b.classList.add('on');
-      days = Number(b.dataset.d);
-      load();
+      if (b.dataset.d){ days = Number(b.dataset.d); load(); }
+      else { platform = b.dataset.p; paint(); }
     });
   });
 

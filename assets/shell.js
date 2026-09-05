@@ -66,6 +66,7 @@ const NAV = [
     { href: '/audit',    label: 'Audits',       icon: 'chart',  roles: ['owner','account_owner'] },
     { href: '/reports',  label: 'Reporting',    icon: 'chart',  roles: ['owner','account_owner','client'] },
     { href: '/files',    label: 'Files',        icon: 'folder', roles: ['owner','account_owner','contractor','client'] },
+    { href: '/revisions',label: 'Revisions',    icon: 'edit',   roles: ['owner','account_owner','client'] },
     { href: '/documents',label: 'Documents',    icon: 'doc',    roles: ['owner','account_owner'] },
   ]},
   { group: 'Crew', items: [

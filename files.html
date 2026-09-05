@@ -76,6 +76,8 @@
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .f .meta em{display:block;font-size:11.5px;font-style:normal;color:#6B7280;margin-top:2px;
     font-variant-numeric:tabular-nums;}
+  .f .meta .seen{margin-top:4px;color:#046C4E;font-weight:600;}
+  .f .meta .seen.quiet{color:#9AA1AA;font-weight:500;}
   .f .row{display:flex;gap:1px;padding:0 7px 8px;}
   .f .row button{flex:1;background:none;border:none;padding:5px;border-radius:6px;cursor:pointer;
     font:600 11.5px/1 'Inter',sans-serif;color:#6B7280;transition:all .12s;}
@@ -185,7 +187,7 @@
 
 <script>
 var sb, me, engagements = [], engId = null, clientId = null;
-var folders = [], files = [], trashed = [], folderId = null, loading = false, noteTimer = null;
+var folders = [], files = [], trashed = [], activity = {}, folderId = null, loading = false, noteTimer = null;
 
 function $(id){ return document.getElementById(id); }
 function esc(s){ return String(s == null ? '' : s)
@@ -321,6 +323,9 @@ async function refresh(){
      staff only, so a client never sees something that was removed. */
   var xr = await sb.from('files').select('*').eq('engagement_id', engId)
     .order('created_at', { ascending:false });
+  /* Staff-only by RLS, so this comes back empty for a client and the cards
+     simply carry no activity line rather than erroring. */
+  var ar = await sb.from('file_activity').select('*').eq('engagement_id', engId);
   loading = false;
   if (fr.error) return notify('Could not load folders. ' + fr.error.message, true);
   if (xr.error) return notify('Could not load files. ' + xr.error.message, true);
@@ -328,6 +333,8 @@ async function refresh(){
   var all = xr.data || [];
   files   = all.filter(function(x){ return !x.trashed_at; });
   trashed = all.filter(function(x){ return !!x.trashed_at; });
+  activity = {};
+  (ar.data || []).forEach(function(a){ activity[a.file_id] = a; });
   if (folderId && folderId !== 'trash' &&
       !folders.filter(function(f){ return f.id === folderId; }).length) folderId = null;
   paintTree();
@@ -406,6 +413,19 @@ function paintTrash(){
   }).join('') + '</div>';
 }
 
+/* "Opened twice, last on Tuesday" is the sentence that settles an argument about
+   whether a client ever received a deliverable. Silent when nothing has
+   happened, because "never opened" on a file uploaded a minute ago is noise. */
+function seen(id){
+  var a = activity[id];
+  if (!a) return '';
+  var v = Number(a.views || 0) + Number(a.downloads || 0);
+  if (!v) return '<em class="seen quiet">Not opened yet</em>';
+  return '<em class="seen">Opened ' + v + (v === 1 ? ' time' : ' times') +
+    (a.people > 1 ? ' by ' + a.people + ' people' : '') +
+    (a.last_opened ? ' · ' + ago(a.last_opened) : '') + '</em>';
+}
+
 function paintBody(){
   if (folderId === 'trash') return paintTrash();
   var cur = folders.filter(function(f){ return f.id === folderId; })[0];
@@ -448,7 +468,8 @@ function paintBody(){
         (img ? '<img data-src="'+esc(x.id)+'" alt="">' : DOC_SVG) + '</div>' +
       '<div class="meta"><b title="'+esc(x.name)+'">'+esc(x.name)+'</b>' +
         '<em>'+size(x.size_bytes)+' · '+ago(x.created_at)+
-        (where && !folderId ? ' · '+esc(where.name) : '')+'</em></div>' +
+        (where && !folderId ? ' · '+esc(where.name) : '')+'</em>' +
+        seen(x.id) + '</div>' +
       '<div class="row">' +
         '<button data-open="'+x.id+'">Open</button>' +
         '<button data-rename="'+x.id+'">Rename</button>' +
@@ -474,11 +495,23 @@ async function thumbs(list){
 
 /* ---------------------------------------------------------------- actions */
 
+/* Recorded where the action happens rather than inferred later. A failure to
+   log must never break the thing the person was actually doing, so this never
+   throws and never blocks. */
+async function log(fileId, action, meta){
+  try {
+    await sb.from('file_events').insert({
+      file_id: fileId, actor_id: me.id, action: action, meta: meta || {}
+    });
+  } catch (e) { /* the trail is worth less than the action */ }
+}
+
 async function openFile(id){
   var x = files.filter(function(f){ return f.id === id; })[0];
   if (!x || !x.storage_path) return;
   var r = await sb.storage.from('files').createSignedUrl(x.storage_path, 3600);
   if (r.error || !r.data) return notify('Could not open that file. ' + (r.error && r.error.message || ''), true);
+  log(id, 'viewed', { name: x.name });
   window.open(r.data.signedUrl, '_blank', 'noopener');
 }
 
@@ -507,12 +540,13 @@ async function upload(fileList){
       folder_id: folderId, engagement_id: engId, client_id: clientId,
       name: f.name, mime: f.type || null, size_bytes: f.size,
       storage_path: path, created_by: me.id
-    });
+    }).select('id').single();
     if (ins.error){
       await sb.storage.from('files').remove([path]);
       failed.push(f.name);
       continue;
     }
+    if (ins.data && ins.data.id) log(ins.data.id, 'uploaded', { name: f.name, size: f.size });
     ok++;
   }
 
@@ -533,6 +567,7 @@ async function rename(id){
   if (!name || name === x.name) return;
   var r = await sb.from('files').update({ name: name, updated_at: new Date().toISOString() }).eq('id', id);
   if (r.error) return notify('Could not rename that. ' + r.error.message, true);
+  log(id, 'renamed', { from: x.name, to: name });
   await refresh();
 }
 
@@ -561,6 +596,7 @@ async function move(id){
   if (!target) return;
   var r = await sb.from('files').update({ folder_id: target.id, updated_at: new Date().toISOString() }).eq('id', id);
   if (r.error) return notify('Could not move that. ' + r.error.message, true);
+  log(id, 'moved', { to: target.name });
   notify('Moved to ' + target.name + '.');
   await refresh();
 }
@@ -578,6 +614,7 @@ async function trash(id){
   if (!yes) return;
   var r = await sb.from('files').update({ trashed_at: new Date().toISOString() }).eq('id', id);
   if (r.error) return notify('Could not trash that. ' + r.error.message, true);
+  log(id, 'trashed', { name: x.name });
   notify('Moved to trash.');
   await refresh();
 }
@@ -587,6 +624,7 @@ async function restore(id){
   if (!x) return;
   var r = await sb.from('files').update({ trashed_at: null, updated_at: new Date().toISOString() }).eq('id', id);
   if (r.error) return notify('Could not put that back. ' + r.error.message, true);
+  log(id, 'restored', { name: x.name });
   notify('Restored.');
   await refresh();
 }
@@ -607,6 +645,9 @@ async function purge(id){
     var rm = await sb.storage.from('files').remove([x.storage_path]);
     if (rm.error) return notify('Could not remove the file itself. ' + rm.error.message, true);
   }
+  /* Logged before the delete: file_events cascades on file_id, so recording it
+     afterwards would write a row and immediately lose it. */
+  await log(id, 'deleted', { name: x.name });
   var r = await sb.from('files').delete().eq('id', id);
   if (r.error) return notify('File removed but the record remains. ' + r.error.message, true);
   notify('Deleted.');

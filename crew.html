@@ -26,6 +26,7 @@
   .form label{display:block;font-size:11px;font-weight:600;color:#4B5563;margin-bottom:4px;
     text-transform:uppercase;letter-spacing:.04em;}
   .form input,.form select{width:100%;padding:9px 11px;font:400 13px/1.3 'Inter',sans-serif;}
+  .form .wide{grid-column:1/-1;}
   .btn{border:1px solid #DDE0E4;background:#fff;border-radius:8px;padding:9px 15px;
     font:600 12.5px/1 'Inter',sans-serif;color:#111111;cursor:pointer;white-space:nowrap;}
   .btn:hover{border-color:#B8BCC4;}
@@ -156,6 +157,10 @@ function paint(){
           return '<option value="'+l.id+'" data-c="'+(l.contractor_cost||0)+'">'+esc(l.description)+'</option>';
         }).join('') + '</select></div>' +
       '<div><label for="budget">Budget</label><input type="number" id="budget" step="1" min="0" placeholder="0"></div>' +
+      '<div><label for="starts">Starts</label><input type="date" id="starts"></div>' +
+      '<div><label for="calltime">Call time</label><input type="time" id="calltime"></div>' +
+      '<div class="wide"><label for="place">Location</label>' +
+        '<input type="text" id="place" placeholder="Where the work happens"></div>' +
       '<div><button class="btn go" id="add">Add slot</button></div>' +
     '</div></div></div>';
 
@@ -245,10 +250,12 @@ function needRow(n){
         (c.home_city ? ' · ' + esc(c.home_city) : '') +
         (c.part_107 ? ' · Part 107' : '') + '</em></div>' +
         '<span class="n">' + usd(c.cost) + '</span>' + fit +
-        (c.bookable
-          ? '<button class="mini go" data-ask="' + n.id + '" data-p="' + c.profile_id +
-            '" data-cost="' + c.cost + '">Ask</button>'
-          : '<span class="blocked">Paperwork incomplete</span>') +
+        (!c.bookable
+          ? '<span class="blocked">Paperwork incomplete</span>'
+          : c.already_booked
+            ? '<span class="blocked">Already booked those dates</span>'
+            : '<button class="mini go" data-ask="' + n.id + '" data-p="' + c.profile_id +
+              '" data-cost="' + c.cost + '">Ask</button>') +
         '</div>';
     }).join('');
   }
@@ -263,6 +270,10 @@ function needRow(n){
   return '<div class="need"><div class="need-h">' +
     '<b>' + esc(n.craft) + '</b>' +
     '<em>' + n.days + (Number(n.days) === 1 ? ' day' : ' days') +
+      (n.starts_on ? ' · ' + when(n.starts_on) +
+        (n.ends_on && n.ends_on !== n.starts_on ? '–' + when(n.ends_on) : '') : '') +
+      (n.call_time ? ' · call ' + String(n.call_time).slice(0,5) : '') +
+      (n.location ? ' · ' + esc(n.location) : '') +
       (n.budget ? ' · budget ' + usd(n.budget) : ' · no budget set') +
       (who && n.status === 'asked' ? ' · asked ' + esc(who) : '') + '</em>' +
     '<span class="st ' + n.status + '">' + n.status + '</span>' +
@@ -280,7 +291,10 @@ async function addNeed(){
   var li = $('li').value || null;
   if (!days || days <= 0) return notify('Days has to be more than zero.', true);
   var r = await sb.from('crew_needs').insert({
-    engagement_id: engId, craft: craft, days: days, budget: budget, line_item_id: li
+    engagement_id: engId, craft: craft, days: days, budget: budget, line_item_id: li,
+    starts_on: $('starts').value || null,
+    call_time: $('calltime').value || null,
+    location: $('place').value.trim() || null
   });
   if (r.error) return notify('Could not add that slot. ' + r.error.message, true);
   await pick(engId);
@@ -300,7 +314,12 @@ async function ask(needId, profileId, cost){
     profile_id: profileId, kind: 'crew_ask',
     title: 'Are you free?',
     body: 'Verve has a ' + n.craft.toLowerCase() + ' slot, ' + n.days +
-      (Number(n.days) === 1 ? ' day' : ' days') + ', at ' + usd(cost) +
+      (Number(n.days) === 1 ? ' day' : ' days') +
+      (n.starts_on ? ', ' + when(n.starts_on) +
+        (n.ends_on && n.ends_on !== n.starts_on ? ' to ' + when(n.ends_on) : '') : '') +
+      (n.call_time ? ', call time ' + String(n.call_time).slice(0,5) : '') +
+      (n.location ? ', ' + n.location : '') +
+      ', at ' + usd(cost) +
       '. Nothing is booked yet — let Trae know either way.',
     url: 'https://weareverveco.com/mywork', actor_id: me.id, engagement_id: engId
   });
@@ -318,7 +337,12 @@ async function accepted(needId){
     engagement_id: engId, contractor_id: n.filled_by,
     role_on_job: n.craft,
     scope: n.craft + ' — ' + n.days + (Number(n.days) === 1 ? ' day' : ' days'),
-    pay_amount: pay, roles: [n.craft], notional_cost: pay
+    pay_amount: pay, roles: [n.craft], notional_cost: pay,
+    /* The logistics move with the acceptance. Retyping a date onto the
+       assignment is how a contractor turns up on the wrong day. */
+    work_date: n.starts_on || null,
+    location: n.location || null,
+    travel_miles: n.travel_miles || null
   }).select('id').single();
   if (a.error) return notify('Could not create the assignment. ' + a.error.message, true);
 

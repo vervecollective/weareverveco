@@ -127,10 +127,16 @@ export default async (req) => {
   );
   if (!billable.length) return json({ error: 'No billable line items on this engagement.' }, 400);
 
-  const totalCents = billable.reduce(
-    (s, l) => s + Math.round((Number(l.unit_price) || 0) * (Number(l.qty) || 1) * 100), 0
-  );
+  const cents = (l) => Math.round((Number(l.unit_price) || 0) * (Number(l.qty) || 1) * 100);
+  const totalCents = billable.reduce((s, l) => s + cents(l), 0);
   if (totalCents <= 0) return json({ error: 'The engagement totals $0.00 \u2014 nothing to invoice.' }, 400);
+
+  /* Hard costs are money that leaves before anything is delivered, and Verve
+     has no reserve to float them from. They are collected in full in the first
+     invoice; only the fee is split across the schedule. Nothing gets booked
+     until that invoice clears. */
+  const expenseCents = billable.filter((l) => l.is_expense).reduce((s, l) => s + cents(l), 0);
+  const feeCents = totalCents - expenseCents;
 
   try {
     /* Build the schedule once, on the first invoice, and never rewrite it. A
@@ -146,17 +152,19 @@ export default async (req) => {
       const plan = SCHEDULES[eng.deposit_structure] || SCHEDULES['5050'];
       let allocated = 0;
       const rows = plan.map((p, i) => {
-        // The last part absorbs rounding so the parts sum to the total exactly.
-        const cents = i === plan.length - 1
-          ? totalCents - allocated
-          : Math.round(totalCents * p.share);
-        allocated += cents;
+        // The last part absorbs rounding so the parts sum to the fee exactly.
+        let part = i === plan.length - 1
+          ? feeCents - allocated
+          : Math.round(feeCents * p.share);
+        allocated += part;
+        // Expenses ride entirely on the first invoice.
+        if (i === 0) part += expenseCents;
         return {
           engagement_id: engagementId,
           seq: p.seq,
-          label: p.label,
+          label: p.label + (i === 0 && expenseCents ? ' + costs at actual' : ''),
           share: p.share,
-          amount: cents / 100,
+          amount: part / 100,
           status: 'unbilled',
         };
       });
@@ -225,25 +233,41 @@ export default async (req) => {
 
     /* Each line is billed at its share of this part rather than collapsing the
        invoice into a single "deposit" line. Section 8.3: never a lump line. */
+    /* Expenses appear at full value on the first invoice and not at all on the
+       rest, so a client never sees half a hotel bill on a balance invoice. */
+    const first = Number(target.seq) === 1;
+    const lines = first ? billable : billable.filter((l) => !l.is_expense);
+    const feeShare = first ? targetCents - expenseCents : targetCents;
+
     let placed = 0;
-    for (let i = 0; i < billable.length; i++) {
-      const li = billable[i];
+    let feePlaced = 0;
+    for (let i = 0; i < lines.length; i++) {
+      const li = lines[i];
       const qty = Number(li.qty) || 1;
       const unit = Number(li.unit_price) || 0;
       const fullCents = Math.round(unit * qty * 100);
-      const isLast = i === billable.length - 1;
-      const cents = isLast
-        ? targetCents - placed
-        : Math.round((fullCents / totalCents) * targetCents);
+      const isLast = i === lines.length - 1;
+
+      let cents;
+      if (li.is_expense) {
+        cents = fullCents;
+      } else if (isLast) {
+        cents = targetCents - placed;
+      } else {
+        cents = feeCents ? Math.round((fullCents / feeCents) * feeShare) : 0;
+        feePlaced += cents;
+      }
       placed += cents;
       if (cents <= 0) continue;
 
       const base = qty > 1
         ? li.description + ' (' + qty + ' x ' + money(unit) + ')'
         : li.description;
-      const label = Number(target.share) === 1
-        ? base
-        : base + ' \u2014 ' + target.label + ' of ' + money(fullCents / 100);
+      const label = li.is_expense
+        ? base + ' \u2014 cost, billed at actual'
+        : (Number(target.share) === 1
+            ? base
+            : base + ' \u2014 ' + target.label + ' of ' + money(fullCents / 100));
 
       const r = await stripe('invoiceitems', key, {
         customer: customer.id,

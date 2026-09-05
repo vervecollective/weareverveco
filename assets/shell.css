@@ -1940,3 +1940,49 @@ body.vc-ms-open .page{ padding-top: calc(var(--vc-ms-h) + 18px) !important; }
 /* Pages whose header runs to the right edge reserve the collapsed width, so the
    chip has a lane of its own rather than sitting on a button. */
 body.vc-shelled .vc-idbar-gutter{ padding-right:var(--vc-idbar-space) !important; }
+
+/* ================= tokens, borrowed from Run Local's approach =================
+   Measured, not invented. Verve currently renders TWENTY distinct font sizes
+   across seven pages — 13px, 12.5px, 13.5px, 11.5px and 12px account for most
+   of them, and the rest are one-off eyeballs. Run Local hit the same wall at
+   973 arbitrary sizes and found they resolved to six values that had simply
+   never been named, so every new component re-derived the scale from whatever
+   was nearby.
+
+   This names them by ROLE, not by size: --text-meta survives a decision to make
+   timestamps 12px, --text-11 does not. Nothing is converted here. Converting
+   every call site in one commit would be untestable in exactly the way a
+   page-at-a-time sweep is not. */
+:root{
+  --text-meta:11.5px;    /* timestamps, badges, kickers */
+  --text-caption:12.5px; /* the secondary line under a title */
+  --text-body:13px;      /* the workhorse */
+  --text-body-lg:14px;   /* emphasis inside body copy */
+  --text-subhead:14.5px; /* card titles, list item names */
+  --text-title:16px;     /* section headings */
+
+  /* 8px, 9px and 10px are each used about two dozen times, which makes the
+     control radius a token nobody named. One value, everywhere. */
+  --radius-control:9px;
+
+  /* Tints derived from the accent rather than hardcoded. #FDF0EB and #EFC5AF
+     were hand-picked siblings of #D9531E; when the brand colour moves they do
+     not, and nothing catches it. */
+  --accent:#D9531E;
+  --accent-wash:color-mix(in srgb, var(--accent) 8%, #ffffff);
+  --accent-edge:color-mix(in srgb, var(--accent) 28%, #ffffff);
+  --accent-ring:color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+/* One focus treatment for the whole product. Run Local applies this globally
+   and it is the cheapest thing that makes an interface feel deliberate. */
+:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+button, a, input, textarea, select{ -webkit-tap-highlight-color:var(--accent-ring); }
+::selection{ background:var(--accent-ring); }
+
+/* A touch target below 44px is a target people miss. Applies on touch only, so
+   dense desktop tables are left alone. */
+@media(hover:none){
+  button:not(.act):not(.tool):not(.ftools button):not(.mini),
+  .vc-navitem, .iconbtn{ min-height:44px; }
+}

@@ -1974,6 +1974,76 @@ try {
   console.error('mfa check failed:', mfaErr);
 }
 
+/* ---------------------------------------------------------------- scope ---
+   Files, Revisions, Expenses and Reporting each asked which engagement you
+   meant, independently, and forgot the answer the moment you left the page.
+   Four tools rather than one system.
+
+   The choice now lives in one place: the URL when there is one, so a link is
+   shareable and the back button works, and sessionStorage otherwise, so it
+   survives navigation but not the week. Pages read it, write it, and listen. */
+window.vcScope = (function () {
+  var KEY = 'vc.scope.engagement';
+
+  function fromUrl() {
+    try { return new URLSearchParams(location.search).get('e') || null; }
+    catch (e) { return null; }
+  }
+  function stored() {
+    try { return sessionStorage.getItem(KEY) || null; } catch (e) { return null; }
+  }
+
+  var current = fromUrl() || stored();
+  /* A URL wins and is remembered, so following someone's link then moving
+     around the app keeps you on the engagement they sent you to. */
+  if (fromUrl()) { try { sessionStorage.setItem(KEY, current); } catch (e) {} }
+
+  return {
+    get: function () { return current; },
+
+    set: function (id, opts) {
+      opts = opts || {};
+      if (!id || id === current) { current = id || null; return; }
+      current = id;
+      try { sessionStorage.setItem(KEY, id); } catch (e) {}
+      if (opts.url !== false) {
+        try {
+          var u = new URL(location.href);
+          u.searchParams.set('e', id);
+          history.replaceState(null, '', u);
+        } catch (e) {}
+      }
+      window.dispatchEvent(new CustomEvent('vc-scope-change', { detail: { id: id } }));
+    },
+
+    clear: function () {
+      current = null;
+      try { sessionStorage.removeItem(KEY); } catch (e) {}
+    },
+
+    /* Point a link at the same engagement without every page hand-rolling it. */
+    href: function (path) {
+      return current ? path + (path.indexOf('?') > -1 ? '&' : '?') + 'e=' + current : path;
+    },
+
+    /* Wire a <select> to the shared choice: preselect if the id is present,
+       and remember whatever is chosen. Returns the id actually applied, so a
+       page can fall back to its own default when the scope is unknown here. */
+    bind: function (select, onChange) {
+      if (!select) return null;
+      var has = current && Array.prototype.some.call(select.options, function (o) {
+        return o.value === current;
+      });
+      if (has) select.value = current;
+      select.addEventListener('change', function () {
+        window.vcScope.set(this.value);
+        if (onChange) onChange(this.value);
+      });
+      return has ? current : (select.value || null);
+    }
+  };
+})();
+
 /* Nothing behind the challenge should load, or a page would render and fetch
    data while the second factor is still outstanding. */
 if (!window.__mfaBlocked) {

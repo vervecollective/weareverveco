@@ -11,7 +11,11 @@
 <style>
   *{box-sizing:border-box;margin:0;padding:0;}
   body{font-family:'Inter',system-ui,sans-serif;color:#1C1F24;line-height:1.55;-webkit-font-smoothing:antialiased;}
-  .wrap{padding:0 !important;max-width:none !important;height:100vh;display:flex;}
+  /* 100vh on iOS Safari is the viewport WITHOUT the browser chrome, so the
+     composer sat under the toolbar on a phone. 100dvh is the visible height and
+     tracks the toolbar as it shows and hides. 100vh stays as the fallback for
+     anything that does not know dvh. */
+  .wrap{padding:0 !important;max-width:none !important;height:100vh;height:100dvh;display:flex;}
 
   /* ---- left: scope and folder tree ---- */
   .side{width:264px;border-right:1px solid #EBECEF;display:flex;flex-direction:column;background:#FCFCFD;}

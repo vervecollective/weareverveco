@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Your account review — Verve Collective</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{ --ink:#111111; --accent:#D9531E; --mute:#6B7280; --line:#E7E9ED; }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',system-ui,sans-serif;color:var(--ink);line-height:1.6;
+    background:#F7F7F5;-webkit-font-smoothing:antialiased;}
+  .w{max-width:760px;margin:0 auto;padding:0 20px;}
+
+  header{background:#111111;color:#fff;padding:40px 0 34px;}
+  header .mark{font-size:11.5px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--accent);margin-bottom:14px;}
+  header h1{font-size:clamp(24px,4.5vw,32px);font-weight:800;letter-spacing:-.03em;line-height:1.15;}
+  header p{margin-top:10px;font-size:14.5px;color:#C9CDD4;max-width:56ch;}
+  .live{display:inline-flex;align-items:center;gap:7px;margin-top:16px;font-size:12px;
+    color:#C9CDD4;background:rgba(255,255,255,.07);padding:6px 12px;border-radius:999px;}
+  .dot{width:7px;height:7px;border-radius:50%;background:#4ADE80;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  .dot{animation:pulse 2s ease-in-out infinite;}
+
+  section{padding:30px 0;}
+  h2{font-size:17px;font-weight:700;letter-spacing:-.02em;margin-bottom:4px;}
+  .sub{font-size:13px;color:var(--mute);margin-bottom:16px;max-width:60ch;}
+
+  .card{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden;}
+  .m{display:flex;align-items:flex-start;gap:14px;padding:14px 18px;border-bottom:1px solid #F3F4F6;}
+  .m:last-child{border-bottom:none;}
+  .pill{width:9px;height:9px;border-radius:50%;flex-shrink:0;margin-top:7px;background:#DDE0E4;}
+  .pill.good{background:#00875A;} .pill.watch{background:#D9531E;} .pill.problem{background:#B91C1C;}
+  .m .b{flex:1;min-width:0;}
+  .m .b b{font-size:14px;font-weight:620;display:block;}
+  .m .b em{display:block;font-size:12.5px;font-style:normal;color:var(--mute);margin-top:2px;}
+  .m .v{font-size:14px;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums;}
+  .m .v.none{color:#C2C7CE;font-weight:500;}
+
+  .f{padding:16px 18px;border-bottom:1px solid #F3F4F6;}
+  .f:last-child{border-bottom:none;}
+  .f .top{display:flex;align-items:center;gap:9px;margin-bottom:6px;}
+  .f .top b{font-size:14px;font-weight:640;flex:1;}
+  .sev{font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+    padding:3px 8px;border-radius:5px;}
+  .sev.high{background:#FEF2F2;color:#991B1B;}
+  .sev.medium{background:#FFFBEB;color:#92400E;}
+  .sev.low{background:#F1F3F6;color:#4B5563;}
+  .f p{font-size:13.5px;color:#374151;margin-top:4px;}
+  .f .rec{margin-top:8px;padding:10px 12px;background:#FDF8F6;border-left:2px solid var(--accent);
+    border-radius:0 7px 7px 0;font-size:13px;color:#5C4034;}
+
+  .prose{background:#fff;border:1px solid var(--line);border-radius:12px;padding:20px;}
+  .prose p{font-size:14px;color:#374151;white-space:pre-line;}
+  .priority{background:#111111;color:#fff;border-radius:12px;padding:22px;}
+  .priority b{display:block;font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--accent);margin-bottom:8px;}
+  .priority p{font-size:15.5px;line-height:1.55;white-space:pre-line;}
+
+  .empty{padding:30px 18px;text-align:center;color:#9AA1AA;font-size:13px;}
+  footer{padding:30px 0 60px;font-size:12px;color:#9AA1AA;text-align:center;}
+  footer a{color:#6B7280;}
+  .err{background:#fff;border:1px solid #FCA5A5;border-radius:12px;padding:24px;margin-top:30px;}
+  .err b{display:block;font-size:15px;margin-bottom:5px;}
+  .err p{font-size:13.5px;color:var(--mute);}
+  @media(prefers-reduced-motion:reduce){ .dot{animation:none;} }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="w">
+    <div class="mark">Verve Collective</div>
+    <h1 id="title">Your account review</h1>
+    <p id="lede">Everything below is what we are looking at together right now.</p>
+    <span class="live" id="live"><span class="dot"></span> Updating live as we go</span>
+  </div>
+</header>
+
+<div class="w" id="out"></div>
+
+<footer class="w">
+  Verve Collective LLC &middot; Columbia, Missouri &middot;
+  <a href="mailto:trae@weareverveco.com">trae@weareverveco.com</a>
+</footer>
+
+<script>
+var token = new URLSearchParams(location.search).get('t') || '';
+var FN = 'https://otqrkxjtojqlpzzvqavp.supabase.co/functions/v1/audit-live';
+var last = '';
+
+function esc(s){ return String(s == null ? '' : s)
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function render(d){
+  var out = '';
+
+  if (d.metrics && d.metrics.length){
+    out += '<section><h2>The six things we check</h2>' +
+      '<p class="sub">The same six on every account, so this is comparable rather than a matter of opinion.</p>' +
+      '<div class="card">' + d.metrics.map(function(m){
+        return '<div class="m"><span class="pill ' + esc(m.verdict || '') + '"></span>' +
+          '<span class="b"><b>' + esc(m.label) + '</b>' +
+          (m.benchmark ? '<em>' + esc(m.benchmark) + '</em>' : '') + '</span>' +
+          '<span class="v' + (m.value ? '' : ' none') + '">' +
+          esc(m.value || 'Checking…') + '</span></div>';
+      }).join('') + '</div></section>';
+  }
+
+  if (d.findings && d.findings.length){
+    out += '<section><h2>What we found</h2>' +
+      '<div class="card">' + d.findings.map(function(f){
+        return '<div class="f"><div class="top"><b>' + esc(f.area) + '</b>' +
+          (f.severity ? '<span class="sev ' + esc(f.severity) + '">' + esc(f.severity) + '</span>' : '') +
+          '</div>' +
+          '<p>' + esc(f.observation) + '</p>' +
+          (f.impact ? '<p style="color:#6B7280">' + esc(f.impact) + '</p>' : '') +
+          (f.recommendation ? '<div class="rec">' + esc(f.recommendation) + '</div>' : '') +
+          '</div>';
+      }).join('') + '</div></section>';
+  }
+
+  var a = d.audit || {};
+  if (a.story || a.strengths || a.gaps || a.recommendations){
+    out += '<section><h2>In plain language</h2><div class="prose">' +
+      [a.story, a.strengths, a.gaps, a.recommendations].filter(Boolean)
+        .map(function(t){ return '<p>' + esc(t) + '</p>'; }).join('') +
+      '</div></section>';
+  }
+
+  if (a.priority_action){
+    out += '<section><div class="priority"><b>Where we would start</b>' +
+      '<p>' + esc(a.priority_action) + '</p></div></section>';
+  }
+
+  if (!out){
+    out = '<section><div class="card"><div class="empty">' +
+      'Nothing to show yet. This page fills in as we work through your account.' +
+      '</div></div></section>';
+  }
+  return out;
+}
+
+async function tick(){
+  if (!token){
+    document.getElementById('out').innerHTML =
+      '<div class="err"><b>This link is missing its code</b>' +
+      '<p>Ask for the review link again — it should end in a long string of letters and numbers.</p></div>';
+    document.getElementById('live').style.display = 'none';
+    return;
+  }
+  try {
+    var res = await fetch(FN, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: token })
+    });
+    var d = await res.json();
+    if (d.error){
+      document.getElementById('out').innerHTML =
+        '<div class="err"><b>' + esc(d.error) + '</b>' +
+        '<p>If this is unexpected, reply to the email that sent you here.</p></div>';
+      document.getElementById('live').style.display = 'none';
+      return;
+    }
+    if (d.business) document.getElementById('title').textContent = d.business + ' — account review';
+
+    /* Only touch the DOM when something actually changed, so a page somebody is
+       reading does not flicker every five seconds. */
+    var next = render(d);
+    if (next !== last){ document.getElementById('out').innerHTML = next; last = next; }
+  } catch (e) {
+    /* A dropped request during a call is not worth an error screen; the next
+       poll will pick it up. */
+  }
+}
+
+tick();
+setInterval(tick, 5000);
+</script>
+</body>
+</html>

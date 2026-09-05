@@ -150,7 +150,27 @@ function wirePeeks(){
   });
 }
 
+/* Anything still saying "Loading…" after the dashboard has finished is a panel
+   that threw. Say that, rather than leaving a spinner that never resolves. */
+function stopLoading(why){
+  document.querySelectorAll('.none').forEach(function(el){
+    if (el.textContent.indexOf('Loading') === 0){
+      el.textContent = why || 'Could not load this.';
+    }
+  });
+  var sub = document.getElementById('sub');
+  if (sub && sub.textContent.indexOf('Loading') === 0) sub.textContent = '';
+}
+
 window.vcInit = async function(){
+  try { await dashboard(); }
+  catch (err){
+    console.error('dashboard', err);
+    stopLoading('Could not load this. Reload, and tell Trae if it keeps happening.');
+  }
+};
+
+async function dashboard(){
   var sb = window.__sb, me = window.__user, role = window.__role;
   var first = ((window.__profile && window.__profile.full_name) || '').split(' ')[0];
   var h = new Date().getHours();
@@ -201,6 +221,14 @@ window.vcInit = async function(){
     .select('*, engagements(clients(business_name))')
     .neq('status','done').neq('status','cancelled');
   var tasks = tq.data || [];
+
+  /* Set the headline as soon as the two things it needs exist. It used to be
+     the last statement in the function, so a failure in any of the panels
+     below left "Loading…" sitting under the greeting indefinitely. */
+  $('sub').textContent = live.length
+    ? live.length + (live.length === 1 ? ' live engagement' : ' live engagements') + ' \u00b7 ' +
+      tasks.length + ' open ' + (tasks.length === 1 ? 'task' : 'tasks')
+    : 'Nothing in delivery yet.';
   var lateTasks_all = tasks.filter(function(t){ var n=days(t.due_date); return n!==null && n<0; });
   var blocked_all = tasks.filter(function(t){ return t.status==='blocked'; });
 
@@ -384,10 +412,6 @@ window.vcInit = async function(){
   }
   $('heroBox').innerHTML = hero ? '<div class="hero">'+hero+'</div>' : '';
 
-  $('sub').textContent = live.length
-    ? live.length + (live.length===1?' live engagement':' live engagements') + ' \u00b7 ' +
-      tasks.length + ' open ' + (tasks.length===1?'task':'tasks')
-    : 'Nothing in delivery yet.';
 };
 </script>
 </body>

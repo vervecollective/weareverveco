@@ -159,18 +159,43 @@ function paint(){
       '<div><button class="btn go" id="add">Add slot</button></div>' +
     '</div></div></div>';
 
-  if (!needs.length){
+  /* A dropped slot is a decision, not a record to delete \u2014 but it is also not
+     work any more, so it leaves the planning list and sits in its own section
+     where it can be put back. Leaving it inline meant the same slot argued for
+     attention forever and the list only ever grew. */
+  var live = needs.filter(function(n){ return n.status !== 'dropped'; });
+  var gone = needs.filter(function(n){ return n.status === 'dropped'; });
+
+  if (!live.length){
     html += '<div class="panel"><div class="empty"><b>No crew planned</b>' +
-      'Add a slot above and candidates appear underneath it.</div></div>';
+      (gone.length ? 'Every slot on this engagement has been dropped. They are below and can be put back.'
+                   : 'Add a slot above and candidates appear underneath it.') +
+      '</div></div>';
   } else {
     html += '<div class="panel"><h2>Slots</h2>' +
       '<p class="sub">Only contractors with signed paperwork can be offered work. Anyone missing it shows as blocked rather than being quietly hidden.</p>' +
-      needs.map(needRow).join('') + '</div>';
+      live.map(needRow).join('') + '</div>';
+  }
+
+  if (gone.length){
+    html += '<div class="panel"><h2>Dropped</h2>' +
+      '<p class="sub">Kept so the plan has a history. Nothing here counts toward the crew a client sees.</p>' +
+      gone.map(function(n){
+        return '<div class="need"><div class="need-h">' +
+          '<b style="color:#6B7280">' + esc(n.craft) + '</b>' +
+          '<em>' + n.days + (Number(n.days) === 1 ? ' day' : ' days') +
+            (n.budget ? ' \u00b7 budget ' + usd(n.budget) : '') + '</em>' +
+          '<button class="mini" data-undrop="' + n.id + '">Put back</button>' +
+          '</div></div>';
+      }).join('') + '</div>';
+  }
+
+  if (live.length) {
 
     /* The same information a client is allowed to see, shown here so nobody has
        to guess what leaves the building. */
     var shape = {};
-    needs.filter(function(n){ return n.status !== 'dropped'; }).forEach(function(n){
+    live.forEach(function(n){
       shape[n.craft] = shape[n.craft] || { slots: 0, days: 0 };
       shape[n.craft].slots++; shape[n.craft].days += Number(n.days);
     });
@@ -339,6 +364,16 @@ window.vcInit = async function(){
     if (y) return accepted(y.dataset.yes);
     var n = e.target.closest && e.target.closest('[data-no]');
     if (n) return declined(n.dataset.no);
+    var ud = e.target.closest && e.target.closest('[data-undrop]');
+    if (ud) return (async function(){
+      var r = await sb.from('crew_needs')
+        .update({ status:'planned', filled_by:null, updated_at:new Date().toISOString() })
+        .eq('id', ud.dataset.undrop);
+      if (r.error) return notify(r.error.message, true);
+      notify('Back in the plan.');
+      await pick(engId);
+    })();
+
     var d = e.target.closest && e.target.closest('[data-drop]');
     if (d) return (async function(){
       var r = await sb.from('crew_needs').update({ status:'dropped' }).eq('id', d.dataset.drop);

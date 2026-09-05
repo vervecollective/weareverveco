@@ -290,7 +290,9 @@ async function loadEngagements(){
     var label = (e.clients && e.clients.business_name) || e.title || 'Untitled';
     return '<option value="'+e.id+'">'+esc(label)+'</option>';
   }).join('');
-  await pickEngagement(engagements[0].id);
+  /* Whatever engagement you were looking at on another page. */
+  var scoped = window.vcScope ? window.vcScope.bind($('eng')) : null;
+  await pickEngagement(scoped || engagements[0].id);
 }
 
 async function pickEngagement(id){
@@ -550,7 +552,13 @@ window.vcInit = async function(){
   sb = window.__sb;
   me = window.__profile || { id: window.__uid };
 
-  $('eng').addEventListener('change', function(){ pickEngagement(this.value); });
+  $('eng').addEventListener('change', function(){
+    if (window.vcScope) window.vcScope.set(this.value);
+    pickEngagement(this.value);
+  });
+  window.addEventListener('vc-scope-change', function(e){
+    if (e.detail.id !== engId){ $('eng').value = e.detail.id; pickEngagement(e.detail.id); }
+  });
   $('find').addEventListener('input', paintBody);
   $('upBtn').addEventListener('click', function(){ $('up').click(); });
   $('newFolder').addEventListener('click', newFolder);

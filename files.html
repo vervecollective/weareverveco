@@ -34,6 +34,12 @@
   .fold em{font-size:11.5px;font-style:normal;color:#6B7280;font-variant-numeric:tabular-nums;}
   .fold.child{margin-left:18px;}
   .who{display:block;font-size:11px;color:#6B7280;padding:0 10px 8px 35px;margin-top:-4px;}
+  .ftools{display:flex;gap:1px;opacity:0;transition:opacity .12s;}
+  .fold:hover .ftools{opacity:1;}
+  .ftools button{border:none;background:none;cursor:pointer;color:#8A9099;
+    font-size:13px;line-height:1;padding:3px 5px;border-radius:5px;}
+  .ftools button:hover{background:#EAECEF;color:#111111;}
+  .ftools button:focus-visible{outline:2px solid #D9531E;outline-offset:1px;}
 
   /* ---- right: contents ---- */
   .main{flex:1;display:flex;flex-direction:column;min-width:0;background:#fff;}
@@ -175,7 +181,7 @@
 
 <script>
 var sb, me, engagements = [], engId = null, clientId = null;
-var folders = [], files = [], folderId = null, loading = false, noteTimer = null;
+var folders = [], files = [], trashed = [], folderId = null, loading = false, noteTimer = null;
 
 function $(id){ return document.getElementById(id); }
 function esc(s){ return String(s == null ? '' : s)
@@ -307,14 +313,19 @@ async function refresh(){
   loading = true;
   paintBody();
   var fr = await sb.from('folders').select('*').eq('engagement_id', engId).order('sort_order');
+  /* Trashed rows come back in the same pull. The read policy shows them to
+     staff only, so a client never sees something that was removed. */
   var xr = await sb.from('files').select('*').eq('engagement_id', engId)
-    .is('trashed_at', null).order('created_at', { ascending:false });
+    .order('created_at', { ascending:false });
   loading = false;
   if (fr.error) return notify('Could not load folders. ' + fr.error.message, true);
   if (xr.error) return notify('Could not load files. ' + xr.error.message, true);
   folders = fr.data || [];
-  files = xr.data || [];
-  if (folderId && !folders.filter(function(f){ return f.id === folderId; }).length) folderId = null;
+  var all = xr.data || [];
+  files   = all.filter(function(x){ return !x.trashed_at; });
+  trashed = all.filter(function(x){ return !!x.trashed_at; });
+  if (folderId && folderId !== 'trash' &&
+      !folders.filter(function(f){ return f.id === folderId; }).length) folderId = null;
   paintTree();
   paintBody();
 }
@@ -329,13 +340,27 @@ function paintTree(){
     folders.filter(function(k){ return k.parent_id === f.id; })
       .forEach(function(k){ html += foldRow(k, true); });
   });
+  html += '<div class="fold' + (folderId === 'trash' ? ' on' : '') + '" data-f="trash" ' +
+    'style="margin-top:10px;border-top:1px solid #EBECEF;border-radius:0 0 9px 9px">' +
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" ' +
+    'stroke-linecap="round" stroke-linejoin="round">' +
+    '<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>' +
+    '<span>Trash</span>' + (trashed.length ? '<em>' + trashed.length + '</em>' : '') + '</div>';
+
   $('tree').innerHTML = html || '<p class="who" style="padding:16px">No folders on this engagement.</p>';
 }
 
 function foldRow(f, child){
   var n = files.filter(function(x){ return x.folder_id === f.id; }).length;
+  /* Seeded folders can be renamed but not removed \u2014 they are the structure the
+     engagement was created with. */
+  var tools = '<span class="ftools">' +
+    '<button data-fren="'+f.id+'" title="Rename folder" aria-label="Rename folder">\u270E</button>' +
+    (f.system_key ? '' :
+      '<button data-fdel="'+f.id+'" title="Delete folder" aria-label="Delete folder">\u00D7</button>') +
+    '</span>';
   return '<div class="fold'+(child?' child':'')+(folderId===f.id?' on':'')+'" data-f="'+f.id+'">'+
-    FOLD_SVG + '<span>'+esc(f.name)+'</span>' + (n ? '<em>'+n+'</em>' : '') + '</div>' +
+    FOLD_SVG + '<span>'+esc(f.name)+'</span>' + (n ? '<em>'+n+'</em>' : '') + tools + '</div>' +
     (!child && f.who_uploads && folderId===f.id
       ? '<span class="who">'+esc(WHO[f.who_uploads] || '')+'</span>' : '');
 }
@@ -352,7 +377,33 @@ function visible(){
   return list;
 }
 
+function paintTrash(){
+  $('crumbName').textContent = 'Trash';
+  $('crumbWho').textContent = 'Removed files. Nothing here has been destroyed.';
+  if (!trashed.length){
+    $('body').innerHTML = '<div class="empty">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" ' +
+      'stroke-linecap="round" stroke-linejoin="round">' +
+      '<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>' +
+      '<b>Trash is empty</b><span>Files you remove land here and can be put back.</span></div>';
+    return;
+  }
+  $('body').innerHTML = '<div class="grid">' + trashed.map(function(x){
+    var from = folders.filter(function(f){ return f.id === x.folder_id; })[0];
+    return '<div class="f" data-id="'+x.id+'">' +
+      '<div class="thumb">' + DOC_SVG + '</div>' +
+      '<div class="meta"><b title="'+esc(x.name)+'">'+esc(x.name)+'</b>' +
+        '<em>'+size(x.size_bytes)+' \u00b7 removed '+ago(x.trashed_at)+
+        (from ? ' \u00b7 from '+esc(from.name) : '')+'</em></div>' +
+      '<div class="row">' +
+        '<button data-restore="'+x.id+'">Put back</button>' +
+        '<button class="danger" data-purge="'+x.id+'">Delete forever</button>' +
+      '</div></div>';
+  }).join('') + '</div>';
+}
+
 function paintBody(){
+  if (folderId === 'trash') return paintTrash();
   var cur = folders.filter(function(f){ return f.id === folderId; })[0];
   $('crumbName').textContent = cur ? cur.name : (engId ? 'All files' : 'Files');
   $('crumbWho').textContent = cur ? (cur.purpose || '') : '';
@@ -527,6 +578,68 @@ async function trash(id){
   await refresh();
 }
 
+async function restore(id){
+  var x = trashed.filter(function(f){ return f.id === id; })[0];
+  if (!x) return;
+  var r = await sb.from('files').update({ trashed_at: null, updated_at: new Date().toISOString() }).eq('id', id);
+  if (r.error) return notify('Could not put that back. ' + r.error.message, true);
+  notify('Restored.');
+  await refresh();
+}
+
+/* Permanent means permanent: the storage object goes first, then the row. Done
+   the other way round, a failure would leave bytes in the bucket with nothing
+   pointing at them and no way to find them again. */
+async function purge(id){
+  var x = trashed.filter(function(f){ return f.id === id; })[0];
+  if (!x) return;
+  var yes = await ask({
+    title: 'Delete forever?',
+    body: '\u201C' + x.name + '\u201D will be destroyed. This cannot be undone.',
+    confirm: 'Delete forever', danger: true
+  });
+  if (!yes) return;
+  if (x.storage_path){
+    var rm = await sb.storage.from('files').remove([x.storage_path]);
+    if (rm.error) return notify('Could not remove the file itself. ' + rm.error.message, true);
+  }
+  var r = await sb.from('files').delete().eq('id', id);
+  if (r.error) return notify('File removed but the record remains. ' + r.error.message, true);
+  notify('Deleted.');
+  await refresh();
+}
+
+async function renameFolder(id){
+  var f = folders.filter(function(x){ return x.id === id; })[0];
+  if (!f) return;
+  var name = await ask({
+    title: 'Rename folder',
+    body: f.system_key ? 'This folder is part of the engagement structure. Renaming it is fine \u2014 it stays linked.' : '',
+    confirm: 'Rename',
+    field: { label: 'Folder name', value: f.name }
+  });
+  if (!name || name === f.name) return;
+  var r = await sb.from('folders').update({ name: name, updated_at: new Date().toISOString() }).eq('id', id);
+  if (r.error) return notify('Could not rename that. ' + r.error.message, true);
+  await refresh();
+}
+
+async function deleteFolder(id){
+  var f = folders.filter(function(x){ return x.id === id; })[0];
+  if (!f) return;
+  var yes = await ask({
+    title: 'Delete folder?',
+    body: '\u201C' + f.name + '\u201D will be removed. It has to be empty first.',
+    confirm: 'Delete folder', danger: true
+  });
+  if (!yes) return;
+  var r = await sb.from('folders').delete().eq('id', id);
+  if (r.error) return notify(r.error.message, true);
+  if (folderId === id) folderId = null;
+  notify('Folder deleted.');
+  await refresh();
+}
+
 async function newFolder(){
   if (!engId) return notify('Pick an engagement first.', true);
   var parent = folders.filter(function(f){ return f.id === folderId; })[0];
@@ -576,6 +689,13 @@ window.vcInit = async function(){
   /* Delegated: the tree and grid are rebuilt on every refresh, so a listener
      bound to a card would not survive. */
   document.addEventListener('click', function(e){
+    /* These sit inside the folder row, so they have to be checked before the
+       row itself or selecting the folder swallows the click. */
+    var fr0 = e.target.closest && e.target.closest('[data-fren]');
+    if (fr0){ e.stopPropagation(); renameFolder(fr0.dataset.fren); return; }
+    var fd0 = e.target.closest && e.target.closest('[data-fdel]');
+    if (fd0){ e.stopPropagation(); deleteFolder(fd0.dataset.fdel); return; }
+
     var f = e.target.closest && e.target.closest('[data-f]');
     if (f){ folderId = f.dataset.f; $('main').classList.add('open'); paintTree(); paintBody(); return; }
     var t = e.target.closest && e.target.closest('[data-open]');
@@ -588,6 +708,11 @@ window.vcInit = async function(){
     if (d){ trash(d.dataset.trash); return; }
     var u = e.target.closest && e.target.closest('[data-up]');
     if (u){ $('up').click(); return; }
+    var rs = e.target.closest && e.target.closest('[data-restore]');
+    if (rs){ restore(rs.dataset.restore); return; }
+    var pg = e.target.closest && e.target.closest('[data-purge]');
+    if (pg){ purge(pg.dataset.purge); return; }
+
   });
 
   document.addEventListener('keydown', function(e){

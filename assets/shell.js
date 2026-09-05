@@ -77,6 +77,7 @@ const NAV = [
     { href: '/settings', label: 'Settings', icon: 'gear', roles: ['owner','account_owner','contractor','client'] },
     { href: '/resources', label: 'Resources', icon: 'book', roles: ['owner','account_owner','contractor'] },
     { href: '/notifications', label: 'Notifications', icon: 'bell', roles: ['owner','account_owner','contractor','client'] },
+    { href: '/tour',     label: 'How it works', icon: 'book', roles: ['owner','account_owner'] },
     { href: '/help',     label: 'Help',     icon: 'help', roles: ['owner','account_owner','contractor','client'] },
   ]},
 ];

@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Revisions — Verve Collective</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/shell.css">
+<script type="module" src="/assets/shell.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',system-ui,sans-serif;color:#1C1F24;line-height:1.55;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:960px;padding:28px var(--vc-idbar-space,58px) 90px 32px !important;}
+  h1{font-size:21px;font-weight:680;letter-spacing:-.02em;color:#111111;}
+  .lede{color:#6B7280;font-size:13.5px;margin-top:2px;max-width:62ch;}
+  .bar{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0 6px;}
+  .bar select{padding:8px 11px;font:500 13px/1.3 'Inter',sans-serif;min-width:250px;}
+
+  .el{border:1px solid #E7E9ED;border-radius:12px;margin-top:16px;background:#fff;overflow:hidden;}
+  .el-h{display:flex;align-items:center;gap:12px;padding:15px 18px;border-bottom:1px solid #F0F1F3;}
+  .el-h b{font-size:14.5px;font-weight:640;color:#111111;flex:1;min-width:0;}
+  .kind{font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+    padding:3px 8px;border-radius:5px;background:#F1F3F6;color:#4B5563;}
+  .left{font-size:12.5px;font-weight:600;color:#046C4E;white-space:nowrap;}
+  .left.none{color:#B45309;}
+  .el-b{padding:6px 18px 16px;}
+
+  .rr{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid #F5F6F7;}
+  .rr:last-child{border-bottom:none;}
+  .rr .n{width:22px;height:22px;border-radius:6px;background:#F1F3F6;color:#4B5563;
+    display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;}
+  .rr .m{flex:1;min-width:0;}
+  .rr .m p{font-size:13.5px;color:#26292F;}
+  .rr .m em{display:block;font-size:11.5px;font-style:normal;color:#6B7280;margin-top:3px;}
+  .st{font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+    padding:3px 8px;border-radius:5px;white-space:nowrap;}
+  .st.requested{background:#F1F3F6;color:#4B5563;}
+  .st.quoted{background:#FEF3C7;color:#92400E;}
+  .st.accepted,.st.in_progress{background:#EFF4FE;color:#1D4ED8;}
+  .st.paid,.st.delivered{background:#ECFDF3;color:#046C4E;}
+  .st.declined,.st.expired,.st.cancelled{background:#FEF2F2;color:#991B1B;}
+  .acts{display:flex;gap:6px;margin-top:9px;}
+  .mini{border:1px solid #DDE0E4;background:#fff;border-radius:7px;padding:5px 10px;
+    font:600 11.5px/1 'Inter',sans-serif;color:#111111;cursor:pointer;}
+  .mini:hover{border-color:#B8BCC4;}
+  .mini.go{background:#111111;color:#fff;border-color:#111111;}
+  .mini.go:hover{background:#D9531E;border-color:#D9531E;}
+
+  .ask{display:flex;gap:8px;margin-top:12px;}
+  .ask input{flex:1;padding:9px 12px;font:400 13px/1.3 'Inter',sans-serif;}
+  .free{font-size:12px;color:#6B7280;margin-top:10px;}
+  .free b{color:#111111;}
+  .chargeable{background:#FFFBEB;border:1px solid #FDE68A;color:#92400E;
+    border-radius:8px;padding:9px 12px;font-size:12.5px;margin-top:10px;}
+
+  .empty{padding:52px 20px;text-align:center;border:1px solid #E7E9ED;border-radius:12px;margin-top:18px;}
+  .empty svg{width:28px;height:28px;color:#C9CDD4;margin-bottom:12px;}
+  .empty b{display:block;font-size:15px;font-weight:620;color:#111111;margin-bottom:5px;}
+  .empty span{display:block;font-size:13px;line-height:1.6;color:#6B7280;max-width:420px;margin:0 auto;}
+  .skel{height:66px;border-radius:12px;margin-top:16px;
+    background:linear-gradient(90deg,#F1F2F4 25%,#E7E9ED 37%,#F1F2F4 63%);
+    background-size:400% 100%;animation:sk 1.3s ease infinite;}
+  @keyframes sk{0%{background-position:100% 50%;}100%{background-position:0 50%;}}
+
+  .note{position:fixed;left:50%;bottom:26px;transform:translate(-50%,12px);z-index:120;display:none;
+    align-items:center;max-width:min(460px,92vw);padding:11px 15px;border-radius:10px;background:#111111;
+    color:#fff;font:500 13px/1.45 'Inter',sans-serif;box-shadow:0 10px 30px rgba(16,24,40,.24);
+    opacity:0;transition:opacity .18s,transform .18s;}
+  .note.on{display:flex;opacity:1;transform:translate(-50%,0);}
+  .note.bad{background:#7F1D1D;}
+  @media(prefers-reduced-motion:reduce){ .skel{animation:none;} .note{transition:none;} }
+  @media(max-width:860px){ .wrap{padding:20px 16px 90px !important;} .bar select{width:100%;min-width:0;} }
+</style>
+</head>
+<body>
+<div class="note" id="note" role="status" aria-live="polite"></div>
+<div class="wrap">
+  <h1>Revisions</h1>
+  <p class="lede">Editing rounds are counted per creative element, not per engagement. Included rounds are free; anything beyond them is quoted and approved in writing before work starts.</p>
+
+  <div class="bar"><select id="eng" aria-label="Engagement"></select></div>
+  <div id="out"></div>
+</div>
+
+<script>
+var sb, me, staff = false, engagements = [], allowance = [], requests = [], engId = null, noteTimer = null;
+
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s == null ? '' : s)
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function notify(msg, bad){
+  var el = $('note');
+  el.className = 'note on' + (bad ? ' bad' : '');
+  el.textContent = msg;
+  clearTimeout(noteTimer);
+  noteTimer = setTimeout(function(){ el.className = 'note'; }, bad ? 6500 : 3400);
+}
+var usd = function(n){ return '$' + Number(n||0).toFixed(2); };
+function when(ts){
+  return new Date(ts).toLocaleDateString('en-US',{ month:'short', day:'numeric', year:'numeric' });
+}
+var LABEL = { video:'Video', photo:'Photo set', social:'Social asset', aerial:'Aerial' };
+
+/* ------------------------------------------------------------------- load */
+
+async function loadEngagements(){
+  var r = await sb.from('engagements')
+    .select('id, title, parent_engagement_id, clients(business_name)')
+    .order('updated_at', { ascending:false });
+  if (r.error) return notify('Could not load engagements. ' + r.error.message, true);
+  engagements = r.data || [];
+  if (!engagements.length){
+    $('out').innerHTML = empty('Nothing to revise yet',
+      'Revisions appear once an engagement contains a creative deliverable.');
+    return;
+  }
+  $('eng').innerHTML = engagements.map(function(e){
+    var name = (e.clients && e.clients.business_name) || 'Client';
+    /* A creative ordered from inside a retainer is shown as belonging to it,
+       rather than as an unrelated account with the same client name. */
+    var label = name + ' — ' + (e.title || 'Untitled') +
+      (e.parent_engagement_id ? ' (within a retainer)' : '');
+    return '<option value="'+e.id+'">'+esc(label)+'</option>';
+  }).join('');
+  await pick(engagements[0].id);
+}
+
+async function pick(id){
+  engId = id;
+  $('out').innerHTML = '<div class="skel"></div><div class="skel"></div>';
+  var a = await sb.from('revision_allowance').select('*').eq('engagement_id', id);
+  var b = await sb.from('revision_requests').select('*').eq('engagement_id', id).order('created_at');
+  if (a.error) return notify('Could not load the allowance. ' + a.error.message, true);
+  if (b.error) return notify('Could not load requests. ' + b.error.message, true);
+  allowance = a.data || [];
+  requests = b.data || [];
+  paint();
+}
+
+function empty(title, body){
+  return '<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+    'stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">' +
+    '<path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>' +
+    '<b>' + esc(title) + '</b><span>' + esc(body) + '</span></div>';
+}
+
+/* ------------------------------------------------------------------ paint */
+
+function paint(){
+  if (!allowance.length){
+    $('out').innerHTML = empty('No creative on this engagement',
+      'Revision rounds attach to creative elements. This engagement is paid media or product marketing only, so there is nothing to revise.');
+    return;
+  }
+
+  $('out').innerHTML = allowance.map(function(el){
+    var mine = requests.filter(function(r){ return r.line_item_id === el.line_item_id; });
+    var left = Number(el.rounds_left);
+    var used = Number(el.rounds_used);
+    var inc = Number(el.revisions_included);
+
+    var rows = mine.map(function(r, i){
+      /* The round number is what the client counts, so it is shown even when
+         the request has been declined and given back. */
+      return '<div class="rr"><span class="n">' + (i + 1) + '</span><div class="m">' +
+        '<p>' + esc(r.what_changes || 'No description given') + '</p>' +
+        '<em>' + when(r.created_at) +
+          (r.fee != null ? ' · quoted ' + usd(r.fee) : '') +
+          (i < inc ? ' · included' : ' · beyond the included rounds') + '</em>' +
+        actions(r) +
+      '</div><span class="st ' + r.status + '">' + r.status.replace('_',' ') + '</span></div>';
+    }).join('');
+
+    return '<div class="el">' +
+      '<div class="el-h"><span class="kind">' + esc(LABEL[el.creative_kind] || el.creative_kind) + '</span>' +
+        '<b>' + esc(el.description) + '</b>' +
+        '<span class="left' + (left ? '' : ' none') + '">' +
+          (left ? left + ' of ' + inc + ' rounds left' : 'Included rounds used') + '</span></div>' +
+      '<div class="el-b">' + rows +
+        (left
+          ? '<p class="free"><b>' + left + '</b> included round' + (left === 1 ? '' : 's') +
+            ' remaining on this element. A round is one editing session, not a reshoot.</p>'
+          : '<div class="chargeable">All ' + inc + ' included rounds are used. ' +
+            'A further round is quoted at the standard hourly rate and needs written approval before work starts.</div>') +
+        '<div class="ask">' +
+          '<input type="text" data-li="' + el.line_item_id + '" placeholder="What needs to change?">' +
+          '<button class="mini go" data-raise="' + el.line_item_id + '">Raise a request</button>' +
+        '</div>' +
+      '</div></div>';
+  }).join('');
+}
+
+/* Only staff see the buttons that move money or commit work. */
+function actions(r){
+  if (!staff) return '';
+  var b = [];
+  if (r.status === 'requested') b.push('<button class="mini go" data-quote="'+r.id+'">Quote it</button>');
+  if (r.status === 'quoted') b.push('<button class="mini go" data-accept="'+r.id+'">Mark accepted</button>');
+  if (r.status === 'accepted' || r.status === 'paid') b.push('<button class="mini" data-start="'+r.id+'">Start work</button>');
+  if (r.status === 'in_progress') b.push('<button class="mini go" data-deliver="'+r.id+'">Mark delivered</button>');
+  if (['requested','quoted'].indexOf(r.status) > -1)
+    b.push('<button class="mini" data-decline="'+r.id+'">Decline</button>');
+  return b.length ? '<div class="acts">' + b.join('') + '</div>' : '';
+}
+
+/* ---------------------------------------------------------------- actions */
+
+async function raise(lineItemId, input){
+  var what = (input.value || '').trim();
+  if (!what) { input.focus(); return notify('Say what needs to change first.', true); }
+  var r = await sb.from('revision_requests').insert({
+    engagement_id: engId, line_item_id: lineItemId,
+    what_changes: what, status: 'requested', requested_by: me.id
+  });
+  if (r.error) return notify('Could not raise that. ' + r.error.message, true);
+  input.value = '';
+  notify('Request raised.');
+  await pick(engId);
+}
+
+async function move(id, patch, msg){
+  var r = await sb.from('revision_requests').update(patch).eq('id', id);
+  if (r.error) return notify('Could not update that. ' + r.error.message, true);
+  notify(msg);
+  await pick(engId);
+}
+
+window.vcInit = async function(){
+  sb = window.__sb;
+  me = window.__profile || {};
+  staff = window.__role === 'owner' || window.__role === 'account_owner';
+
+  $('eng').addEventListener('change', function(){ pick(this.value); });
+
+  document.addEventListener('click', async function(e){
+    var t = e.target;
+    var r = t.closest && t.closest('[data-raise]');
+    if (r){
+      var input = document.querySelector('input[data-li="' + r.dataset.raise + '"]');
+      return raise(r.dataset.raise, input);
+    }
+    var q = t.closest && t.closest('[data-quote]');
+    if (q){
+      var fee = prompt('Quote for this round, in dollars');
+      if (fee === null) return;
+      var n = Number(String(fee).replace(/[^0-9.]/g,''));
+      if (!n) return notify('Enter an amount.', true);
+      return move(q.dataset.quote,
+        { status:'quoted', fee:n, quoted_at:new Date().toISOString() },
+        'Quoted ' + usd(n) + '.');
+    }
+    var a = t.closest && t.closest('[data-accept]');
+    if (a) return move(a.dataset.accept,
+      { status:'accepted', accepted_at:new Date().toISOString() }, 'Marked accepted.');
+    var s = t.closest && t.closest('[data-start]');
+    if (s) return move(s.dataset.start, { status:'in_progress' }, 'Work started.');
+    var d = t.closest && t.closest('[data-deliver]');
+    if (d) return move(d.dataset.deliver, { status:'delivered' }, 'Marked delivered.');
+    var x = t.closest && t.closest('[data-decline]');
+    if (x) return move(x.dataset.decline, { status:'declined' },
+      'Declined. The round goes back to the allowance.');
+  });
+
+  document.addEventListener('keydown', function(e){
+    if (e.key !== 'Enter') return;
+    var i = e.target.closest && e.target.closest('input[data-li]');
+    if (i){ e.preventDefault(); raise(i.dataset.li, i); }
+  });
+
+  await loadEngagements();
+};
+</script>
+</body>
+</html>

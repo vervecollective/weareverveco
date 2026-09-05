@@ -71,6 +71,7 @@ const NAV = [
     { href: '/documents',label: 'Documents',    icon: 'doc',    roles: ['owner','account_owner'] },
   ]},
   { group: 'Crew', items: [
+    { href: '/crew',     label: 'Crew',         icon: 'people', roles: ['owner','account_owner'] },
     { href: '/jobs', label: 'Jobs',   icon: 'camera', roles: ['owner','account_owner','contractor'] },
     { href: '/pay',  label: 'Pay',    icon: 'cash',   roles: ['owner','account_owner','contractor'] },
     { href: '/team', label: 'People', icon: 'users',  roles: ['owner','account_owner'] },

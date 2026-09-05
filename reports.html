@@ -162,7 +162,8 @@ async function loadEngagements(){
   $('eng').innerHTML = engagements.map(function(e){
     return '<option value="'+e.id+'">'+esc(e.label)+'</option>';
   }).join('');
-  await pick(engagements[0].id);
+  var scoped = window.vcScope ? window.vcScope.bind($('eng')) : null;
+  await pick(scoped || engagements[0].id);
 }
 
 async function pick(id){
@@ -352,7 +353,10 @@ function campaignPanel(){
 window.vcInit = async function(){
   sb = window.__sb;
 
-  $('eng').addEventListener('change', function(){ pick(this.value); });
+  $('eng').addEventListener('change', function(){
+    if (window.vcScope) window.vcScope.set(this.value);
+    pick(this.value);
+  });
 
   document.querySelectorAll('.seg button').forEach(function(b){
     b.addEventListener('click', function(){

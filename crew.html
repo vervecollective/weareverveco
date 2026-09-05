@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Crew — Verve Collective</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/shell.css">
+<script type="module" src="/assets/shell.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',system-ui,sans-serif;color:#1C1F24;line-height:1.55;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1000px;padding:28px var(--vc-idbar-space,58px) 90px 32px !important;}
+  h1{font-size:21px;font-weight:680;letter-spacing:-.02em;color:#111111;}
+  .lede{color:#6B7280;font-size:13.5px;margin-top:2px;max-width:64ch;}
+  .bar{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0 4px;}
+  .bar select{padding:8px 11px;font:500 13px/1.3 'Inter',sans-serif;min-width:250px;}
+
+  .panel{border:1px solid #E7E9ED;border-radius:12px;margin-top:16px;background:#fff;}
+  .panel h2{font-size:14px;font-weight:640;padding:15px 18px 0;}
+  .panel .sub{font-size:12px;color:#6B7280;padding:2px 18px 12px;max-width:62ch;}
+  .panel .in{padding:0 18px 16px;}
+
+  .form{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;align-items:end;}
+  .form label{display:block;font-size:11px;font-weight:600;color:#4B5563;margin-bottom:4px;
+    text-transform:uppercase;letter-spacing:.04em;}
+  .form input,.form select{width:100%;padding:9px 11px;font:400 13px/1.3 'Inter',sans-serif;}
+  .btn{border:1px solid #DDE0E4;background:#fff;border-radius:8px;padding:9px 15px;
+    font:600 12.5px/1 'Inter',sans-serif;color:#111111;cursor:pointer;white-space:nowrap;}
+  .btn:hover{border-color:#B8BCC4;}
+  .btn.go{background:#111111;color:#fff;border-color:#111111;}
+  .btn.go:hover{background:#D9531E;border-color:#D9531E;}
+  .btn:disabled{opacity:.45;cursor:default;}
+  .btn:focus-visible{outline:2px solid #D9531E;outline-offset:2px;}
+
+  .need{border-top:1px solid #F0F1F3;padding:14px 18px;}
+  .need-h{display:flex;align-items:center;gap:10px;}
+  .need-h b{font-size:14.5px;font-weight:640;color:#111111;}
+  .need-h em{font-size:12.5px;font-style:normal;color:#6B7280;flex:1;}
+  .st{font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+    padding:3px 8px;border-radius:5px;white-space:nowrap;}
+  .st.planned{background:#F1F3F6;color:#4B5563;}
+  .st.asked{background:#FEF3C7;color:#92400E;}
+  .st.accepted,.st.filled{background:#ECFDF3;color:#046C4E;}
+  .st.declined,.st.dropped{background:#FEF2F2;color:#991B1B;}
+
+  .cand{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid #F5F6F7;}
+  .cand:last-child{border-bottom:none;}
+  .cand .w{flex:1;min-width:0;}
+  .cand .w b{font-size:13px;font-weight:600;}
+  .cand .w em{display:block;font-size:11.5px;font-style:normal;color:#6B7280;margin-top:1px;}
+  .cand .n{font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .fit{font-size:11.5px;font-weight:600;white-space:nowrap;}
+  .fit.ok{color:#046C4E;} .fit.tight{color:#B45309;} .fit.over{color:#991B1B;}
+  .blocked{font-size:11px;color:#991B1B;background:#FEF2F2;border-radius:5px;padding:2px 7px;}
+  .mini{border:1px solid #DDE0E4;background:#fff;border-radius:7px;padding:5px 10px;
+    font:600 11.5px/1 'Inter',sans-serif;color:#111111;cursor:pointer;white-space:nowrap;}
+  .mini:hover{border-color:#B8BCC4;}
+  .mini.go{background:#111111;color:#fff;border-color:#111111;}
+  .mini.go:hover{background:#D9531E;border-color:#D9531E;}
+  .mini:disabled{opacity:.4;cursor:default;}
+
+  .shape{display:flex;flex-wrap:wrap;gap:8px;}
+  .chip{border:1px solid #E7E9ED;border-radius:8px;padding:8px 12px;font-size:12.5px;background:#FAFAFB;}
+  .chip b{font-weight:640;}
+
+  .empty{padding:40px 18px;text-align:center;color:#6B7280;font-size:13px;}
+  .empty b{display:block;font-size:14.5px;font-weight:620;color:#111111;margin-bottom:4px;}
+  .note{position:fixed;left:50%;bottom:26px;transform:translate(-50%,12px);z-index:120;display:none;
+    align-items:center;max-width:min(460px,92vw);padding:11px 15px;border-radius:10px;background:#111111;
+    color:#fff;font:500 13px/1.45 'Inter',sans-serif;box-shadow:0 10px 30px rgba(16,24,40,.24);
+    opacity:0;transition:opacity .18s,transform .18s;}
+  .note.on{display:flex;opacity:1;transform:translate(-50%,0);}
+  .note.bad{background:#7F1D1D;}
+  @media(prefers-reduced-motion:reduce){ .note{transition:none;} }
+  @media(max-width:860px){ .wrap{padding:20px 16px 90px !important;} .bar select{width:100%;min-width:0;} }
+</style>
+</head>
+<body>
+<div class="note" id="note" role="status" aria-live="polite"></div>
+<div class="wrap">
+  <h1>Crew</h1>
+  <p class="lede">Plan what the work needs by craft, see who can take it and what the margin survives, then ask. A client sees the shape of the crew — never who is on it.</p>
+
+  <div class="bar"><select id="eng" aria-label="Engagement"></select></div>
+  <div id="out"></div>
+</div>
+
+<script>
+var sb, me, engagements = [], needs = [], cands = [], engId = null, lineItems = [], noteTimer = null;
+
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s == null ? '' : s)
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function notify(msg, bad){
+  var el = $('note');
+  el.className = 'note on' + (bad ? ' bad' : '');
+  el.textContent = msg;
+  clearTimeout(noteTimer);
+  noteTimer = setTimeout(function(){ el.className = 'note'; }, bad ? 6500 : 3400);
+}
+var usd = function(n){ return '$' + Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); };
+var CRAFTS = ['Videographer','Photographer','Drone pilot','Editor','Motion designer',
+              'Copywriter','Designer','Paid media specialist','Producer'];
+
+/* ------------------------------------------------------------------- load */
+
+async function loadEngagements(){
+  var r = await sb.from('engagements')
+    .select('id, title, parent_engagement_id, clients(business_name)')
+    .order('updated_at', { ascending:false });
+  if (r.error) return notify('Could not load engagements. ' + r.error.message, true);
+  engagements = r.data || [];
+  if (!engagements.length){
+    $('out').innerHTML = '<div class="panel"><div class="empty"><b>No engagements</b>' +
+      'Crew is planned against an engagement.</div></div>';
+    return;
+  }
+  $('eng').innerHTML = engagements.map(function(e){
+    var n = (e.clients && e.clients.business_name) || 'Client';
+    return '<option value="'+e.id+'">' +
+      esc(n + ' — ' + (e.title || 'Untitled') + (e.parent_engagement_id ? ' (within a retainer)' : '')) +
+      '</option>';
+  }).join('');
+  var scoped = window.vcScope ? window.vcScope.bind($('eng')) : null;
+  await pick(scoped || engagements[0].id);
+}
+
+async function pick(id){
+  engId = id;
+  var n = await sb.from('crew_needs').select('*, profiles:filled_by(full_name, email)')
+    .eq('engagement_id', id).order('created_at');
+  var c = await sb.from('crew_candidates').select('*').eq('engagement_id', id);
+  var l = await sb.from('line_items').select('id, description, contractor_cost, creative_kind')
+    .eq('engagement_id', id).order('sort_order');
+  if (n.error) return notify('Could not load crew needs. ' + n.error.message, true);
+  needs = n.data || [];
+  cands = c.data || [];
+  lineItems = l.data || [];
+  paint();
+}
+
+/* ------------------------------------------------------------------ paint */
+
+function paint(){
+  var html =
+    '<div class="panel"><h2>Add a slot</h2>' +
+    '<p class="sub">One slot per person per craft. Budget is what Verve is willing to pay for it — link it to a line item and it fills itself in.</p>' +
+    '<div class="in"><div class="form">' +
+      '<div><label for="craft">Craft</label><select id="craft">' +
+        CRAFTS.map(function(k){ return '<option>'+k+'</option>'; }).join('') + '</select></div>' +
+      '<div><label for="days">Days</label><input type="number" id="days" step="0.5" min="0.5" value="1"></div>' +
+      '<div><label for="li">From line item</label><select id="li"><option value="">Set budget by hand</option>' +
+        lineItems.map(function(l){
+          return '<option value="'+l.id+'" data-c="'+(l.contractor_cost||0)+'">'+esc(l.description)+'</option>';
+        }).join('') + '</select></div>' +
+      '<div><label for="budget">Budget</label><input type="number" id="budget" step="1" min="0" placeholder="0"></div>' +
+      '<div><button class="btn go" id="add">Add slot</button></div>' +
+    '</div></div></div>';
+
+  if (!needs.length){
+    html += '<div class="panel"><div class="empty"><b>No crew planned</b>' +
+      'Add a slot above and candidates appear underneath it.</div></div>';
+  } else {
+    html += '<div class="panel"><h2>Slots</h2>' +
+      '<p class="sub">Only contractors with signed paperwork can be offered work. Anyone missing it shows as blocked rather than being quietly hidden.</p>' +
+      needs.map(needRow).join('') + '</div>';
+
+    /* The same information a client is allowed to see, shown here so nobody has
+       to guess what leaves the building. */
+    var shape = {};
+    needs.filter(function(n){ return n.status !== 'dropped'; }).forEach(function(n){
+      shape[n.craft] = shape[n.craft] || { slots: 0, days: 0 };
+      shape[n.craft].slots++; shape[n.craft].days += Number(n.days);
+    });
+    var keys = Object.keys(shape);
+    if (keys.length){
+      html += '<div class="panel"><h2>What the client sees</h2>' +
+        '<p class="sub">Crafts, headcount and days. No names and no rates — a client can never route around Verve to someone on this list.</p>' +
+        '<div class="in"><div class="shape">' + keys.map(function(k){
+          return '<span class="chip"><b>' + shape[k].slots + ' × ' + esc(k) + '</b> · ' +
+            shape[k].days + (shape[k].days === 1 ? ' day' : ' days') + '</span>';
+        }).join('') + '</div></div></div>';
+    }
+  }
+
+  $('out').innerHTML = html;
+  $('add').addEventListener('click', addNeed);
+  $('li').addEventListener('change', function(){
+    var o = this.options[this.selectedIndex];
+    var c = o && o.dataset ? Number(o.dataset.c || 0) : 0;
+    if (c) $('budget').value = c;
+  });
+}
+
+function needRow(n){
+  var who = n.profiles ? (n.profiles.full_name || n.profiles.email) : null;
+  var list = cands.filter(function(c){ return c.need_id === n.id; })
+    .sort(function(a,b){ return (b.bookable - a.bookable) || (a.cost - b.cost); });
+
+  var body = '';
+  if (n.status === 'filled' || n.status === 'accepted'){
+    body = '<p style="font-size:13px;color:#046C4E;margin-top:8px">' +
+      esc(who || 'Someone') + ' has this slot at ' + usd(n.budget) + '.</p>';
+  } else if (!list.length){
+    body = '<p style="font-size:12.5px;color:#6B7280;margin-top:8px">' +
+      'Nobody on file lists ' + esc(n.craft) + ' as a craft. Add a contractor, or change the craft.</p>';
+  } else {
+    body = list.map(function(c){
+      /* Margin, not preference. A rate that eats the slot budget is a real
+         answer to "can we take this on", which is the point of the screen. */
+      var left = c.margin_left;
+      var cls = left === null ? '' : (left < 0 ? 'over' : (left < Number(n.budget) * 0.15 ? 'tight' : 'ok'));
+      var fit = left === null ? '<span class="fit">No budget set</span>'
+        : '<span class="fit ' + cls + '">' +
+          (left < 0 ? usd(Math.abs(left)) + ' over' : usd(left) + ' left') + '</span>';
+      return '<div class="cand"><div class="w"><b>' + esc(c.who) + '</b><em>' +
+        (c.day_rate ? usd(c.day_rate) + '/day' : 'No day rate on file') +
+        (c.home_city ? ' · ' + esc(c.home_city) : '') +
+        (c.part_107 ? ' · Part 107' : '') + '</em></div>' +
+        '<span class="n">' + usd(c.cost) + '</span>' + fit +
+        (c.bookable
+          ? '<button class="mini go" data-ask="' + n.id + '" data-p="' + c.profile_id +
+            '" data-cost="' + c.cost + '">Ask</button>'
+          : '<span class="blocked">Paperwork incomplete</span>') +
+        '</div>';
+    }).join('');
+  }
+
+  var acts = '';
+  if (n.status === 'asked')
+    acts = '<button class="mini go" data-yes="'+n.id+'">They accepted</button>' +
+           '<button class="mini" data-no="'+n.id+'">They declined</button>';
+  if (n.status === 'planned')
+    acts = '<button class="mini" data-drop="'+n.id+'">Drop slot</button>';
+
+  return '<div class="need"><div class="need-h">' +
+    '<b>' + esc(n.craft) + '</b>' +
+    '<em>' + n.days + (Number(n.days) === 1 ? ' day' : ' days') +
+      (n.budget ? ' · budget ' + usd(n.budget) : ' · no budget set') +
+      (who && n.status === 'asked' ? ' · asked ' + esc(who) : '') + '</em>' +
+    '<span class="st ' + n.status + '">' + n.status + '</span>' +
+    '</div>' + body +
+    (acts ? '<div style="display:flex;gap:6px;margin-top:10px">' + acts + '</div>' : '') +
+    '</div>';
+}
+
+/* ---------------------------------------------------------------- actions */
+
+async function addNeed(){
+  var craft = $('craft').value;
+  var days = Number($('days').value);
+  var budget = Number($('budget').value) || null;
+  var li = $('li').value || null;
+  if (!days || days <= 0) return notify('Days has to be more than zero.', true);
+  var r = await sb.from('crew_needs').insert({
+    engagement_id: engId, craft: craft, days: days, budget: budget, line_item_id: li
+  });
+  if (r.error) return notify('Could not add that slot. ' + r.error.message, true);
+  await pick(engId);
+}
+
+async function ask(needId, profileId, cost){
+  var n = needs.filter(function(x){ return x.id === needId; })[0];
+  var r = await sb.from('crew_needs').update({
+    status:'asked', filled_by: profileId, asked_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  }).eq('id', needId);
+  if (r.error) return notify('Could not send that. ' + r.error.message, true);
+
+  /* Availability first, commitment second. Nothing is booked and no assignment
+     exists until they say yes. */
+  await sb.from('notifications').insert({
+    profile_id: profileId, kind: 'crew_ask',
+    title: 'Are you free?',
+    body: 'Verve has a ' + n.craft.toLowerCase() + ' slot, ' + n.days +
+      (Number(n.days) === 1 ? ' day' : ' days') + ', at ' + usd(cost) +
+      '. Nothing is booked yet — let Trae know either way.',
+    url: 'https://weareverveco.com/mywork', actor_id: me.id, engagement_id: engId
+  });
+  notify('Asked. They have been notified.');
+  await pick(engId);
+}
+
+async function accepted(needId){
+  var n = needs.filter(function(x){ return x.id === needId; })[0];
+  if (!n || !n.filled_by) return;
+  var c = cands.filter(function(x){ return x.need_id === needId && x.profile_id === n.filled_by; })[0];
+  var pay = c ? c.cost : Number(n.budget || 0);
+
+  var a = await sb.from('assignments').insert({
+    engagement_id: engId, contractor_id: n.filled_by,
+    role_on_job: n.craft,
+    scope: n.craft + ' — ' + n.days + (Number(n.days) === 1 ? ' day' : ' days'),
+    pay_amount: pay, roles: [n.craft], notional_cost: pay
+  }).select('id').single();
+  if (a.error) return notify('Could not create the assignment. ' + a.error.message, true);
+
+  await sb.from('assignment_roles').insert({
+    assignment_id: a.data.id, craft: n.craft, contractor_id: n.filled_by,
+    pay_amount: pay, is_primary: true
+  });
+
+  var r = await sb.from('crew_needs').update({
+    status:'filled', assignment_id: a.data.id,
+    responded_at: new Date().toISOString(), updated_at: new Date().toISOString()
+  }).eq('id', needId);
+  if (r.error) return notify('Assignment created but the slot did not update. ' + r.error.message, true);
+
+  notify('Assignment created and the slot is filled.');
+  await pick(engId);
+}
+
+async function declined(needId){
+  /* Back to planned so the slot is offerable again, but keep who said no. */
+  var r = await sb.from('crew_needs').update({
+    status:'planned', filled_by: null,
+    responded_at: new Date().toISOString(), updated_at: new Date().toISOString()
+  }).eq('id', needId);
+  if (r.error) return notify('Could not update that. ' + r.error.message, true);
+  notify('Slot is open again.');
+  await pick(engId);
+}
+
+window.vcInit = async function(){
+  sb = window.__sb;
+  me = window.__profile || {};
+
+  $('eng').addEventListener('change', function(){
+    if (window.vcScope) window.vcScope.set(this.value);
+    pick(this.value);
+  });
+
+  document.addEventListener('click', function(e){
+    var a = e.target.closest && e.target.closest('[data-ask]');
+    if (a) return ask(a.dataset.ask, a.dataset.p, Number(a.dataset.cost));
+    var y = e.target.closest && e.target.closest('[data-yes]');
+    if (y) return accepted(y.dataset.yes);
+    var n = e.target.closest && e.target.closest('[data-no]');
+    if (n) return declined(n.dataset.no);
+    var d = e.target.closest && e.target.closest('[data-drop]');
+    if (d) return (async function(){
+      var r = await sb.from('crew_needs').update({ status:'dropped' }).eq('id', d.dataset.drop);
+      if (r.error) return notify(r.error.message, true);
+      await pick(engId);
+    })();
+  });
+
+  await loadEngagements();
+};
+</script>
+</body>
+</html>

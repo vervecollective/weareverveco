@@ -123,7 +123,8 @@ async function loadEngagements(){
       (e.parent_engagement_id ? ' (within a retainer)' : '');
     return '<option value="'+e.id+'">'+esc(label)+'</option>';
   }).join('');
-  await pick(engagements[0].id);
+  var scoped = window.vcScope ? window.vcScope.bind($('eng')) : null;
+  await pick(scoped || engagements[0].id);
 }
 
 async function pick(id){
@@ -231,7 +232,10 @@ window.vcInit = async function(){
   me = window.__profile || {};
   staff = window.__role === 'owner' || window.__role === 'account_owner';
 
-  $('eng').addEventListener('change', function(){ pick(this.value); });
+  $('eng').addEventListener('change', function(){
+    if (window.vcScope) window.vcScope.set(this.value);
+    pick(this.value);
+  });
 
   document.addEventListener('click', async function(e){
     var t = e.target;

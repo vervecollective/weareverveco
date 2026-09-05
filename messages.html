@@ -12,7 +12,11 @@
 <style>
   *{box-sizing:border-box;margin:0;padding:0;}
   body{font-family:'Inter',system-ui,sans-serif;color:#111827;line-height:1.55;-webkit-font-smoothing:antialiased;}
-  .wrap{padding:0 !important;max-width:none !important;height:100vh;display:flex;}
+  /* 100vh on iOS Safari is the viewport WITHOUT the browser chrome, so the
+     composer sat under the toolbar on a phone. 100dvh is the visible height and
+     tracks the toolbar as it shows and hides. 100vh stays as the fallback for
+     anything that does not know dvh. */
+  .wrap{padding:0 !important;max-width:none !important;height:100vh;height:100dvh;display:flex;}
   .list{width:272px;border-right:1px solid #EBECEF;display:flex;flex-direction:column;background:#FCFCFD;}
   .list-h{padding:16px 16px 12px;border-bottom:1px solid #EBECEF;}
   .iconbtn{background:none;border:none;color:#5C6470;cursor:pointer;padding:6px;
@@ -286,7 +290,11 @@
     font-size:12px;cursor:pointer;font-family:inherit;line-height:1.8;color:#5C6470;
     font-variant-numeric:tabular-nums;transition:all .12s;}
   .rx button:hover{border-color:#D8DAE0;background:#F4F5F7;}
-  .rx button.mine{background:#FDF0EB;border-color:#EFC5AF;color:#9A3412;font-weight:600;}
+  /* Derived from the accent, so moving the brand colour moves these too.
+     Run Local's reaction chips work the same way and it is why their accent
+     reads as one decision rather than four similar oranges. */
+  .rx button.mine{background:var(--accent-wash,#FDF0EB);border-color:var(--accent-edge,#EFC5AF);
+    color:#9A3412;font-weight:600;}
 
   .qbar{position:absolute;top:-14px;right:76px;background:#fff;border:1px solid #E7E9ED;
     border-radius:999px;padding:3px 6px;display:none;gap:2px;box-shadow:0 4px 14px rgba(16,24,40,.14);z-index:5;}
@@ -307,7 +315,7 @@
     padding:14px 28px 18px;border-top:1px solid #EEF0F2;background:#fff;position:relative;}
   .cbox{width:100%;border:1px solid #DDE0E4;border-radius:12px;background:#fff;
     transition:border-color .14s,box-shadow .14s;}
-  .cbox:focus-within{border-color:#111111;box-shadow:0 0 0 3px rgba(17,17,17,.06);}
+  .cbox:focus-within{border-color:#111111;box-shadow:0 0 0 3px var(--accent-ring,rgba(217,83,30,.18));}
   /* shell.css sets border, radius and background on every textarea with
      !important. The field lives inside .cbox, which draws the box, so those have
      to be undone here or the composer renders as a box inside a box. */

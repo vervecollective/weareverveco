@@ -179,6 +179,10 @@ async function loadEngagements(){
       var n = (e.clients && e.clients.business_name) || 'Client';
       return '<option value="'+e.id+'">'+esc(n + ' — ' + (e.title || ''))+'</option>';
     }).join('');
+
+  /* A claim raised while you were looking at an engagement almost always
+     belongs to it. Preselect, do not assume — overhead stays selectable. */
+  if (window.vcScope) window.vcScope.bind($('eng'));
 }
 
 /* ------------------------------------------------------------------ paint */

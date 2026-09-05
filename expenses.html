@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Expenses — Verve Collective</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/shell.css">
+<script type="module" src="/assets/shell.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',system-ui,sans-serif;color:#1C1F24;line-height:1.55;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1000px;padding:28px var(--vc-idbar-space,58px) 90px 32px !important;}
+  h1{font-size:21px;font-weight:680;letter-spacing:-.02em;color:#111111;}
+  .lede{color:#6B7280;font-size:13.5px;margin-top:2px;max-width:64ch;}
+
+  .money{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:20px 0 6px;}
+  .money div{border:1px solid #E7E9ED;border-radius:11px;padding:14px 15px;}
+  .money b{display:block;font-size:19px;font-weight:680;font-variant-numeric:tabular-nums;color:#111111;}
+  .money span{display:block;font-size:11.5px;color:#6B7280;margin-top:2px;}
+  .money em{display:block;font-size:11px;font-style:normal;color:#9AA1AA;margin-top:1px;}
+  .money .short b{color:#B91C1C;}
+  .stale{color:#B45309 !important;}
+
+  .seg{display:inline-flex;gap:2px;background:#F1F3F6;border-radius:9px;padding:2px;margin:18px 0 4px;}
+  .seg button{border:none;background:none;padding:6px 13px;border-radius:7px;
+    font:600 12.5px/1 'Inter',sans-serif;color:#6B7280;cursor:pointer;}
+  .seg button.on{background:#fff;color:#111111;box-shadow:0 1px 2px rgba(16,24,40,.08);}
+
+  .new{border:1px solid #E7E9ED;border-radius:12px;padding:16px 18px;margin-top:16px;background:#FCFCFD;}
+  .new h2{font-size:13.5px;font-weight:640;margin-bottom:12px;}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;}
+  .f label{display:block;font-size:11px;font-weight:600;color:#4B5563;margin-bottom:4px;}
+  .f input,.f select{width:100%;padding:8px 10px;font:400 13px/1.3 'Inter',sans-serif;}
+  .row2{display:flex;align-items:center;gap:12px;margin-top:12px;flex-wrap:wrap;}
+  .row2 label{font-size:12.5px;color:#4B5563;display:flex;align-items:center;gap:6px;}
+  .btn{border:1px solid #DDE0E4;background:#fff;border-radius:8px;padding:9px 15px;
+    font:600 12.5px/1 'Inter',sans-serif;color:#111111;cursor:pointer;}
+  .btn:hover{border-color:#B8BCC4;}
+  .btn.go{background:#111111;color:#fff;border-color:#111111;}
+  .btn.go:hover{background:#D9531E;border-color:#D9531E;}
+  .btn.danger{color:#B91C1C;}
+  .btn:disabled{opacity:.45;cursor:default;}
+
+  table{width:100%;border-collapse:collapse;margin-top:14px;}
+  th{text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;
+    color:#6B7280;padding:9px 10px;border-bottom:1px solid #EAECEF;}
+  th.n,td.n{text-align:right;font-variant-numeric:tabular-nums;}
+  td{padding:12px 10px;border-bottom:1px solid #F3F4F6;font-size:13px;vertical-align:top;}
+  tr:last-child td{border-bottom:none;}
+  td b{font-weight:600;color:#111111;display:block;}
+  td em{font-style:normal;font-size:11.5px;color:#6B7280;display:block;margin-top:2px;}
+  .st{font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+    padding:3px 8px;border-radius:5px;white-space:nowrap;}
+  .st.draft{background:#F1F3F6;color:#4B5563;}
+  .st.submitted{background:#FEF3C7;color:#92400E;}
+  .st.approved,.st.scheduled{background:#EFF4FE;color:#1D4ED8;}
+  .st.paid{background:#ECFDF3;color:#046C4E;}
+  .st.rejected,.st.expired{background:#FEF2F2;color:#991B1B;}
+  .clock{font-size:11.5px;font-weight:600;}
+  .clock.soon{color:#B45309;}
+  .clock.gone{color:#B91C1C;}
+  .acts{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px;}
+  .mini{border:1px solid #DDE0E4;background:#fff;border-radius:7px;padding:5px 10px;
+    font:600 11.5px/1 'Inter',sans-serif;color:#111111;cursor:pointer;}
+  .mini.go{background:#111111;color:#fff;border-color:#111111;}
+  .mini.go:hover{background:#D9531E;border-color:#D9531E;}
+  .mini.danger{color:#B91C1C;}
+
+  .empty{padding:48px 20px;text-align:center;border:1px solid #E7E9ED;border-radius:12px;margin-top:16px;}
+  .empty b{display:block;font-size:15px;font-weight:620;color:#111111;margin-bottom:5px;}
+  .empty span{display:block;font-size:13px;color:#6B7280;max-width:420px;margin:0 auto;}
+  .note{position:fixed;left:50%;bottom:26px;transform:translate(-50%,12px);z-index:120;display:none;
+    align-items:center;max-width:min(480px,92vw);padding:11px 15px;border-radius:10px;background:#111111;
+    color:#fff;font:500 13px/1.45 'Inter',sans-serif;box-shadow:0 10px 30px rgba(16,24,40,.24);
+    opacity:0;transition:opacity .18s,transform .18s;}
+  .note.on{display:flex;opacity:1;transform:translate(-50%,0);}
+  .note.bad{background:#7F1D1D;}
+  @media(max-width:860px){ .wrap{padding:20px 16px 90px !important;} }
+</style>
+</head>
+<body>
+<div class="note" id="note" role="status" aria-live="polite"></div>
+<div class="wrap">
+  <h1>Expenses</h1>
+  <p class="lede">Out-of-pocket costs are reimbursed at actual on receipt, independent of the approval schedule for work. <b>Five days from the date the cost was incurred to submit it</b> — after that the claim closes and cannot be paid.</p>
+
+  <div class="money" id="money"></div>
+
+  <div class="seg" id="tabs" role="group" aria-label="Filter">
+    <button data-t="mine" class="on">Mine</button>
+    <button data-t="review" id="tabReview" style="display:none">To review</button>
+    <button data-t="all" id="tabAll" style="display:none">Everything</button>
+  </div>
+
+  <div class="new">
+    <h2>New claim</h2>
+    <div class="grid">
+      <div class="f"><label for="cat">Category</label>
+        <select id="cat">
+          <option value="mileage">Mileage</option>
+          <option value="lodging">Lodging</option>
+          <option value="meals">Meals</option>
+          <option value="parking">Parking</option>
+          <option value="tolls">Tolls</option>
+          <option value="permit">Permit</option>
+          <option value="rental">Rental</option>
+          <option value="equipment">Equipment</option>
+          <option value="software">Software</option>
+          <option value="other">Other</option>
+        </select></div>
+      <div class="f"><label for="on">Date incurred</label><input type="date" id="on"></div>
+      <div class="f" id="amtWrap"><label for="amt">Amount</label><input type="number" id="amt" step="0.01" min="0" placeholder="0.00"></div>
+      <div class="f" id="milesWrap" style="display:none"><label for="miles">Miles</label><input type="number" id="miles" step="0.1" min="0"></div>
+      <div class="f" id="rateWrap" style="display:none"><label for="rate">Rate per mile</label><input type="number" id="rate" step="0.001" min="0" value="0.700"></div>
+      <div class="f"><label for="eng">Engagement</label><select id="eng"></select></div>
+    </div>
+    <div class="grid" style="margin-top:10px">
+      <div class="f" style="grid-column:1/-1"><label for="desc">What was it for</label>
+        <input type="text" id="desc" placeholder="Two nights, Springfield shoot"></div>
+    </div>
+    <div class="row2">
+      <label><input type="checkbox" id="billable" checked> Bill through to the client</label>
+      <input type="file" id="receipt" accept="image/*,application/pdf" style="font-size:12px">
+      <button class="btn go" id="save">Submit claim</button>
+    </div>
+    <p style="font-size:11.5px;color:#6B7280;margin-top:9px">Mileage is calculated, so no receipt is needed. Everything else needs one. Anything over $150 must be approved in writing before it is incurred.</p>
+  </div>
+
+  <div id="out"></div>
+</div>
+
+<script>
+var sb, me, money = false, claims = [], accounts = [], engagements = [], people = {},
+    tab = 'mine', noteTimer = null;
+
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s == null ? '' : s)
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function notify(msg, bad){
+  var el = $('note');
+  el.className = 'note on' + (bad ? ' bad' : '');
+  el.textContent = msg;
+  clearTimeout(noteTimer);
+  noteTimer = setTimeout(function(){ el.className = 'note'; }, bad ? 8000 : 3400);
+}
+var usd = function(n){ return '$' + Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); };
+function day(d){ return new Date(d + 'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
+function daysLeft(by){
+  return Math.ceil((new Date(by + 'T23:59:59') - new Date()) / 86400000);
+}
+
+/* ------------------------------------------------------------------- load */
+
+async function load(){
+  var q = sb.from('expense_claims').select('*').order('created_at', { ascending:false });
+  var r = await q;
+  if (r.error) return notify('Could not load claims. ' + r.error.message, true);
+  claims = r.data || [];
+
+  var ppl = await sb.from('profiles').select('id, full_name, email');
+  (ppl.data || []).forEach(function(p){ people[p.id] = p; });
+
+  if (money){
+    var a = await sb.from('payment_accounts').select('*').eq('active', true).order('is_default', { ascending:false });
+    accounts = a.data || [];
+  }
+  paintMoney();
+  paint();
+}
+
+async function loadEngagements(){
+  var r = await sb.from('engagements').select('id, title, clients(business_name)')
+    .order('updated_at', { ascending:false });
+  engagements = r.data || [];
+  $('eng').innerHTML = '<option value="">Not tied to an engagement (overhead)</option>' +
+    engagements.map(function(e){
+      var n = (e.clients && e.clients.business_name) || 'Client';
+      return '<option value="'+e.id+'">'+esc(n + ' — ' + (e.title || ''))+'</option>';
+    }).join('');
+}
+
+/* ------------------------------------------------------------------ paint */
+
+function paintMoney(){
+  var waiting = claims.filter(function(c){ return c.status === 'submitted'; });
+  var owed = claims.filter(function(c){ return c.status === 'approved' || c.status === 'scheduled'; });
+  var owedSum = owed.reduce(function(s,c){ return s + Number(c.amount||0); }, 0);
+
+  var html =
+    '<div><b>' + usd(waiting.reduce(function(s,c){ return s + Number(c.amount||0); }, 0)) + '</b>' +
+      '<span>Waiting on approval</span><em>' + waiting.length + ' claim' + (waiting.length===1?'':'s') + '</em></div>' +
+    '<div><b>' + usd(owedSum) + '</b><span>Approved, not yet paid</span>' +
+      '<em>' + owed.length + ' claim' + (owed.length===1?'':'s') + '</em></div>';
+
+  if (money && accounts.length){
+    var acct = accounts[0];
+    var bal = Number(acct.balance || 0);
+    /* A balance nobody has updated is worse than no balance, so the age of the
+       figure is shown as prominently as the figure. */
+    var ageDays = acct.balance_as_of
+      ? Math.floor((Date.now() - new Date(acct.balance_as_of)) / 86400000) : null;
+    var stale = ageDays === null || ageDays > 7;
+    var short = bal < owedSum;
+    html += '<div class="' + (short ? 'short' : '') + '"><b>' + (acct.balance == null ? '—' : usd(bal)) + '</b>' +
+      '<span>' + esc(acct.name) + (acct.last4 ? ' ····' + esc(acct.last4) : '') + '</span>' +
+      '<em class="' + (stale ? 'stale' : '') + '">' +
+      (acct.balance_as_of
+        ? 'as of ' + new Date(acct.balance_as_of).toLocaleDateString('en-US',{month:'short',day:'numeric'}) +
+          (stale ? ' — update this' : '')
+        : 'no balance recorded') + '</em></div>';
+    html += '<div class="' + (short ? 'short' : '') + '"><b>' +
+      (acct.balance == null ? '—' : usd(bal - owedSum)) + '</b>' +
+      '<span>' + (short ? 'Short of what is owed' : 'Left after paying everything owed') + '</span>' +
+      '<em>' + (short ? 'Do not schedule payment yet' : 'Enough to cover approved claims') + '</em></div>';
+  }
+  $('money').innerHTML = html;
+}
+
+function visible(){
+  if (tab === 'mine') return claims.filter(function(c){ return c.claimant_id === me.id; });
+  if (tab === 'review') return claims.filter(function(c){
+    return c.status === 'submitted' || c.status === 'approved' || c.status === 'scheduled'; });
+  return claims;
+}
+
+function paint(){
+  var list = visible();
+  if (!list.length){
+    $('out').innerHTML = '<div class="empty"><b>Nothing here</b>' +
+      '<span>' + (tab === 'mine'
+        ? 'Claims you submit appear here with the days you have left to file them.'
+        : 'No claims are waiting.') + '</span></div>';
+    return;
+  }
+
+  $('out').innerHTML = '<table><thead><tr><th>What</th><th>Who</th><th>Incurred</th>' +
+    '<th class="n">Amount</th><th>Status</th></tr></thead><tbody>' +
+    list.map(function(c){
+      var who = people[c.claimant_id] || {};
+      var left = daysLeft(c.submit_by);
+      var clock = '';
+      if (c.status === 'draft'){
+        clock = left < 0
+          ? '<span class="clock gone">window closed</span>'
+          : '<span class="clock' + (left <= 2 ? ' soon' : '') + '">' + left + ' day' +
+            (left === 1 ? '' : 's') + ' left to submit</span>';
+      }
+      return '<tr><td><b>' + esc(c.description) + '</b>' +
+        '<em>' + esc(c.category) + (c.miles ? ' · ' + c.miles + ' mi' : '') +
+        (c.billable ? ' · billed to client' : ' · overhead') + '</em>' +
+        actions(c) + '</td>' +
+        '<td>' + esc(who.full_name || who.email || '—') + '</td>' +
+        '<td>' + day(c.incurred_on) + '<em>by ' + day(c.submit_by) + '</em></td>' +
+        '<td class="n">' + usd(c.amount) + '</td>' +
+        '<td><span class="st ' + c.status + '">' + c.status + '</span>' +
+        (clock ? '<em>' + clock + '</em>' : '') +
+        (c.status === 'paid' && c.paid_from_account
+          ? '<em>from ' + esc((accounts.filter(function(a){ return a.id === c.paid_from_account; })[0] || {}).name || 'account') + '</em>'
+          : '') +
+        (c.status === 'rejected' && c.rejected_reason ? '<em>' + esc(c.rejected_reason) + '</em>' : '') +
+        '</td></tr>';
+    }).join('') + '</tbody></table>';
+}
+
+/* Approve and pay are deliberately two actions. Approving says the cost is
+   legitimate; paying says the money has actually gone. */
+function actions(c){
+  var b = [];
+  if (c.claimant_id === me.id && c.status === 'draft' && daysLeft(c.submit_by) >= 0)
+    b.push('<button class="mini go" data-submit="'+c.id+'">Submit</button>');
+  if (money && c.claimant_id !== me.id){
+    if (c.status === 'submitted'){
+      b.push('<button class="mini go" data-approve="'+c.id+'">Approve</button>');
+      b.push('<button class="mini danger" data-reject="'+c.id+'">Reject</button>');
+    }
+    if (c.status === 'approved' || c.status === 'scheduled')
+      b.push('<button class="mini go" data-pay="'+c.id+'">Mark paid</button>');
+  }
+  return b.length ? '<div class="acts">' + b.join('') + '</div>' : '';
+}
+
+/* ---------------------------------------------------------------- actions */
+
+async function submitClaim(){
+  var cat = $('cat').value;
+  var on = $('on').value;
+  var desc = $('desc').value.trim();
+  if (!on) return notify('Give the date the cost was incurred.', true);
+  if (!desc) return notify('Say what it was for.', true);
+
+  var amount = Number($('amt').value || 0);
+  var miles = null, rate = null;
+  if (cat === 'mileage'){
+    miles = Number($('miles').value || 0);
+    rate = Number($('rate').value || 0);
+    if (!miles || !rate) return notify('Enter the miles and the rate.', true);
+    amount = Math.round(miles * rate * 100) / 100;
+  }
+  if (!amount) return notify('Enter an amount.', true);
+
+  var by = new Date(on + 'T12:00:00'); by.setDate(by.getDate() + 5);
+  if (new Date() > new Date(by.toISOString().slice(0,10) + 'T23:59:59')){
+    return notify('That cost is more than five days old, so it can no longer be claimed.', true);
+  }
+
+  var engId = $('eng').value || null;
+  var fileId = null;
+  var f = $('receipt').files && $('receipt').files[0];
+
+  if (cat !== 'mileage' && !f) return notify('Attach the receipt.', true);
+
+  if (f){
+    if (!engId) return notify('Pick an engagement so the receipt has somewhere to file.', true);
+    var id = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
+    var path = engId + '/' + id + '-' + f.name.replace(/[^\w.\- ]+/g,'_');
+    var up = await sb.storage.from('files').upload(path, f, { contentType: f.type || 'application/octet-stream' });
+    if (up.error) return notify('The receipt did not upload. ' + up.error.message, true);
+    var fr = await sb.from('folders').select('id, client_id')
+      .eq('engagement_id', engId).eq('system_key','access').maybeSingle();
+    var rec = await sb.from('files').insert({
+      folder_id: fr.data ? fr.data.id : null, engagement_id: engId,
+      client_id: fr.data ? fr.data.client_id : null,
+      name: f.name, mime: f.type || null, size_bytes: f.size,
+      storage_path: path, created_by: me.id
+    }).select('id').single();
+    if (!rec.error) fileId = rec.data.id;
+  }
+
+  var ins = await sb.from('expense_claims').insert({
+    claimant_id: me.id, engagement_id: engId, incurred_on: on,
+    category: cat, description: desc, amount: amount,
+    miles: miles, mileage_rate: rate,
+    billable: $('billable').checked, receipt_file_id: fileId, status: 'draft'
+  }).select('id').single();
+  if (ins.error) return notify('Could not save that. ' + ins.error.message, true);
+
+  /* Saved then submitted, so the deadline check in the database runs on a real
+     row rather than being trusted from the browser. */
+  var sub = await sb.from('expense_claims').update({ status: 'submitted' }).eq('id', ins.data.id);
+  if (sub.error) return notify(sub.error.message, true);
+
+  $('desc').value = ''; $('amt').value = ''; $('miles').value = '';
+  $('receipt').value = '';
+  notify('Claim submitted.');
+  await load();
+}
+
+async function move(id, patch, msg){
+  var r = await sb.from('expense_claims').update(patch).eq('id', id);
+  if (r.error) return notify(r.error.message, true);
+  notify(msg);
+  await load();
+}
+
+window.vcInit = async function(){
+  sb = window.__sb;
+  me = window.__profile || {};
+  money = ['owner','account_owner','finance'].indexOf(window.__role) > -1;
+  if (money){ $('tabReview').style.display = ''; $('tabAll').style.display = ''; }
+
+  $('on').value = new Date().toISOString().slice(0,10);
+  $('on').max = new Date().toISOString().slice(0,10);
+
+  $('cat').addEventListener('change', function(){
+    var m = this.value === 'mileage';
+    $('milesWrap').style.display = m ? '' : 'none';
+    $('rateWrap').style.display = m ? '' : 'none';
+    $('amtWrap').style.display = m ? 'none' : '';
+  });
+
+  $('save').addEventListener('click', submitClaim);
+
+  document.querySelectorAll('#tabs button').forEach(function(b){
+    b.addEventListener('click', function(){
+      document.querySelectorAll('#tabs button').forEach(function(x){ x.classList.remove('on'); });
+      b.classList.add('on'); tab = b.dataset.t; paint();
+    });
+  });
+
+  document.addEventListener('click', async function(e){
+    var s = e.target.closest && e.target.closest('[data-submit]');
+    if (s) return move(s.dataset.submit, { status:'submitted' }, 'Submitted.');
+
+    var a = e.target.closest && e.target.closest('[data-approve]');
+    if (a) return move(a.dataset.approve, { status:'approved' }, 'Approved. They have been notified.');
+
+    var j = e.target.closest && e.target.closest('[data-reject]');
+    if (j){
+      var why = prompt('Why is this not approved?');
+      if (why === null) return;
+      return move(j.dataset.reject, { status:'rejected', rejected_reason: why.trim() || 'No reason given.' },
+        'Rejected.');
+    }
+
+    var p = e.target.closest && e.target.closest('[data-pay]');
+    if (p){
+      if (!accounts.length) return notify('Add a payment account under Settings before recording a payment.', true);
+      var acct = accounts[0];
+      var ref = prompt('Payment reference (transfer id, check number, or leave blank)\n\nPaying from: ' + acct.name);
+      if (ref === null) return;
+      return move(p.dataset.pay,
+        { status:'paid', paid_from_account: acct.id, payment_reference: ref.trim() || null },
+        'Marked paid from ' + acct.name + '. They have been notified.');
+    }
+  });
+
+  await loadEngagements();
+  await load();
+};
+</script>
+</body>
+</html>

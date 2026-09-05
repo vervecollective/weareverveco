@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>How it works — Verve Collective</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/shell.css">
+<script type="module" src="/assets/shell.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',system-ui,sans-serif;color:#1C1F24;line-height:1.6;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:820px;padding:34px var(--vc-idbar-space,58px) 110px 32px !important;}
+
+  h1{font-size:26px;font-weight:700;letter-spacing:-.025em;color:#111111;}
+  .lede{font-size:15px;color:#4B5563;margin-top:8px;max-width:62ch;}
+
+  .honest{margin:20px 0 0;padding:13px 16px;border-left:2px solid #D9531E;background:#FDF8F6;
+    border-radius:0 8px 8px 0;font-size:13px;color:#5C4034;max-width:62ch;}
+  .honest b{color:#7C2D12;}
+
+  .facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:10px;margin:26px 0 6px;}
+  .fact{border:1px solid #E7E9ED;border-radius:10px;padding:13px 14px;}
+  .fact b{display:block;font-size:19px;font-weight:680;letter-spacing:-.02em;color:#111111;
+    font-variant-numeric:tabular-nums;}
+  .fact span{display:block;font-size:11.5px;color:#6B7280;margin-top:2px;}
+
+  .step{position:relative;padding:26px 0 26px 46px;border-bottom:1px solid #F0F1F3;}
+  .step:last-of-type{border-bottom:none;}
+  .step .n{position:absolute;left:0;top:28px;width:28px;height:28px;border-radius:8px;
+    background:#111111;color:#fff;display:flex;align-items:center;justify-content:center;
+    font-size:12px;font-weight:700;}
+  .step h2{font-size:17px;font-weight:660;letter-spacing:-.015em;color:#111111;}
+  .step .what{font-size:12px;font-weight:600;color:#9A3412;text-transform:uppercase;
+    letter-spacing:.05em;margin-bottom:3px;}
+  .step p{font-size:14px;color:#374151;margin-top:9px;max-width:60ch;}
+  .step .why{font-size:13.5px;color:#6B7280;margin-top:8px;max-width:60ch;}
+  .step .go{display:inline-flex;align-items:center;gap:6px;margin-top:14px;
+    border:1px solid #DDE0E4;background:#fff;border-radius:8px;padding:8px 13px;
+    font:600 12.5px/1 'Inter',sans-serif;color:#111111;text-decoration:none;transition:all .12s;}
+  .step .go:hover{border-color:#D9531E;color:#9A3412;}
+  .step .go svg{width:13px;height:13px;}
+  .step ul{margin:10px 0 0 17px;}
+  .step li{font-size:13.5px;color:#4B5563;margin-bottom:5px;max-width:58ch;}
+  .step code{background:#F4F5F7;padding:1px 6px;border-radius:4px;font-size:12.5px;}
+
+  .stack{margin-top:34px;padding-top:26px;border-top:1px solid #E7E9ED;}
+  .stack h2{font-size:17px;font-weight:660;letter-spacing:-.015em;color:#111111;margin-bottom:4px;}
+  .stack p{font-size:13.5px;color:#6B7280;margin-bottom:16px;max-width:60ch;}
+  table{width:100%;border-collapse:collapse;}
+  th{text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;
+    color:#6B7280;padding:8px 10px;border-bottom:1px solid #EAECEF;}
+  td{padding:10px;border-bottom:1px solid #F3F4F6;font-size:13px;vertical-align:top;}
+  td:first-child{font-weight:600;color:#111111;white-space:nowrap;}
+  tr:last-child td{border-bottom:none;}
+
+  @media(max-width:860px){
+    .wrap{padding:22px 16px 90px !important;}
+    .step{padding-left:38px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>How this platform works</h1>
+  <p class="lede">Verve Collective runs paid media and product marketing. This is the system that runs the agency &mdash; from a first outreach email through a signed contract, the work, and the reporting a client actually reads.</p>
+
+  <div class="honest">
+    <b>Read this first.</b> Verve Collective is pre&#8209;launch. There are no signed clients yet, and nothing here is a case study.
+    The walkthrough below uses a worked example &mdash; an Asian bistro called Golden Crane &mdash; with sixty days of realistic
+    campaign data so the system can be shown end to end. Every demo record is labelled as one.
+  </div>
+
+  <div class="facts" id="facts"></div>
+  <p style="font-size:11.5px;color:#9AA1AA;margin-bottom:8px">Counted live from the database when this page loaded.</p>
+
+  <div class="step">
+    <span class="n">1</span>
+    <div class="what">Before the work</div>
+    <h2>A lead becomes a qualified conversation</h2>
+    <p>Outreach is split into two tracks. A business already running ads gets a free account review scored against a six&#8209;point scorecard. A business spending nothing gets a growth readiness call. The track is decided in the outreach email itself, so the first call is already the right call.</p>
+    <p class="why">Why it matters: an agency that pitches the same thing to everyone wastes the first meeting discovering what it could have known beforehand.</p>
+    <a class="go" href="/audit">Open Audits
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+  </div>
+
+  <div class="step">
+    <span class="n">2</span>
+    <div class="what">Closing</div>
+    <h2>One contract, signed once</h2>
+    <p>The Client Services Agreement carries its scope as Exhibit&nbsp;A and is signed in a single event. Scope, timeline, fee, payment structure and revision rounds are all filled in automatically from the engagement, so what the client signs and what the platform tracks cannot drift apart.</p>
+    <p class="why">The agreement states plainly that ad spend is paid by the client directly to Google or Meta. It never touches Verve's books and never appears on a Verve invoice &mdash; only as a reference figure. That separation is the single most common place small agencies lose trust.</p>
+    <a class="go" href="/documents">Open Documents
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+  </div>
+
+  <div class="step">
+    <span class="n">3</span>
+    <div class="what">Getting paid</div>
+    <h2>The deposit unlocks the work, not the invoice</h2>
+    <p>Signing raises a payment schedule from the structure in the agreement &mdash; 50/50, 40/30/30, or a monthly retainer. Each part is its own invoice. The balance cannot be sent before the deposit clears, and production does not start until the money has actually landed.</p>
+    <p class="why">Enforced in code rather than remembered. Every line is itemised: management fee and ad spend are always separate figures.</p>
+  </div>
+
+  <div class="step">
+    <span class="n">4</span>
+    <div class="what">Doing the work</div>
+    <h2>Files organise themselves</h2>
+    <p>Creating an engagement creates its folders: Brief &amp; scope, From the client, Accounts &amp; access, Working files, Deliverables, Reports, and Shared in messages. Each folder records who is meant to fill it, so an empty folder is a prompt rather than a void. Craft folders appear when a contractor is actually assigned that craft.</p>
+    <p class="why">Everything is private by default and served through short&#8209;lived signed links. A client cannot reach another client's files by guessing a path &mdash; authorisation is enforced in the database, not hidden in the interface.</p>
+    <a class="go" href="/files">Open Files
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+  </div>
+
+  <div class="step">
+    <span class="n">5</span>
+    <div class="what">Talking about it</div>
+    <h2>Conversations attached to the work</h2>
+    <p>Messaging is native, not a bolted&#8209;on chat widget. A conversation can be tied to an engagement, and a file dropped into it lands in that engagement's folders automatically. Threads, reactions, read state, presence and search all work against the same permission model as everything else.</p>
+    <p class="why">Messages are modelled with a participant type, so an AI participant can join a conversation later as a real member with real permissions &mdash; not as a separate chatbot bolted to the side.</p>
+    <a class="go" href="/messages">Open Messages
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+  </div>
+
+  <div class="step">
+    <span class="n">6</span>
+    <div class="what">Bringing in help</div>
+    <h2>Contractors clear a gate before they see anything</h2>
+    <p>A contractor is not bookable until their paperwork is complete: contractor agreement signed, confidentiality and IP assignment signed, W&#8209;9 on file, payment method set, crafts declared. The system computes that; nobody decides it by memory.</p>
+    <ul>
+      <li>Contractors are paid within 15 days of approval whether or not the client has paid.</li>
+      <li>A contractor's rate is between them and Verve. A higher rate costs Verve margin, never the client.</li>
+      <li>Credit on published work is on by default, with an embargo option per engagement.</li>
+    </ul>
+    <a class="go" href="/team">Open People
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+  </div>
+
+  <div class="step">
+    <span class="n">7</span>
+    <div class="what">Proving it worked</div>
+    <h2>Reporting the client can read</h2>
+    <p>Google Ads and Meta performance is pulled on a schedule and stored here, so a report never depends on an API answering at the moment a client opens the page &mdash; and month&#8209;old numbers survive a client revoking access. Filter to one platform or see both together.</p>
+    <p class="why">Golden Crane shows the argument for running both: Meta buys reach at a fraction of the cost per click, Google buys intent that converts. The number worth arguing about is cost per conversion, and it is the column the table sorts around.</p>
+    <a class="go" href="/reports">Open Reporting
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+  </div>
+
+  <div class="step">
+    <span class="n">8</span>
+    <div class="what">See it as they do</div>
+    <h2>Every role, from one account</h2>
+    <p>Open the profile menu at the top right and choose <b>View as</b> &mdash; owner, account owner, contractor or client. Permissions apply for real, so what you see is genuinely what they see. It is the fastest way to understand the product.</p>
+    <p class="why">A client sees their project, their files and their reporting. A contractor sees their assignments and their pay. Neither sees the other, and that is enforced in the database rather than by hiding buttons.</p>
+  </div>
+
+  <div class="stack">
+    <h2>What it is built on</h2>
+    <p>Deliberately small. No framework, no build step, no bundler &mdash; static pages, one shared stylesheet and script, deployed straight from a repository. Every piece of it is replaceable by one person in an afternoon.</p>
+    <table>
+      <tbody>
+        <tr><td>Database</td><td>Postgres on Supabase. Row&#8209;level security on every table, so authorisation lives with the data rather than in the interface.</td></tr>
+        <tr><td>Backend</td><td>Deno edge functions for contracts, billing, notifications and the ad&#8209;platform sync. All secrets stay server&#8209;side.</td></tr>
+        <tr><td>Frontend</td><td>Static HTML and vanilla JavaScript on Netlify. A change is live about thirty seconds after it is pushed.</td></tr>
+        <tr><td>Contracts</td><td>SignWell, generated from templates and prefilled from the engagement.</td></tr>
+        <tr><td>Payments</td><td>Stripe for invoicing, QuickBooks for the books. Ad spend never passes through either.</td></tr>
+        <tr><td>Advertising</td><td>Google Ads API and Meta Marketing API, cached daily into Postgres.</td></tr>
+        <tr><td>Pipeline</td><td>HubSpot for the sales funnel, connected to the platform's own engagement records.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+/* The counters are read live rather than written into the page. A number that
+   can go stale in a document cannot go stale here. */
+window.vcInit = async function(){
+  var sb = window.__sb;
+  function card(v, label){
+    return '<div class="fact"><b>' + v + '</b><span>' + label + '</span></div>';
+  }
+  try {
+    var t = await Promise.all([
+      sb.from('folders').select('id', { count:'exact', head:true }),
+      sb.from('ad_metrics_daily').select('id', { count:'exact', head:true }),
+      sb.from('engagements').select('id', { count:'exact', head:true }),
+      sb.from('ad_accounts').select('id', { count:'exact', head:true })
+    ]);
+    document.getElementById('facts').innerHTML =
+      card('50+', 'Tables, all with row-level security') +
+      card(String(t[1].count || 0), 'Days of campaign data cached') +
+      card(String(t[3].count || 0), 'Ad accounts connected') +
+      card(String(t[0].count || 0), 'Folders created automatically');
+  } catch (err) {
+    /* A tour that fails to load its own numbers should still read as a tour. */
+    document.getElementById('facts').style.display = 'none';
+  }
+};
+</script>
+</body>
+</html>

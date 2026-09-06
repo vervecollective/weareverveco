@@ -12,30 +12,30 @@
   *{box-sizing:border-box;margin:0;padding:0;}
   body{font-family:'Inter',system-ui,sans-serif;color:#1C1F24;line-height:1.55;-webkit-font-smoothing:antialiased;}
   .wrap{max-width:1000px;padding:28px var(--vc-idbar-space,58px) 90px 32px !important;}
-  h1{font-size:21px;font-weight:680;letter-spacing:-.02em;color:#111111;}
-  .lede{color:#6B7280;font-size:13.5px;margin-top:2px;max-width:64ch;}
+  h1{font-size:var(--text-display);font-weight:680;letter-spacing:-.02em;color:#111111;}
+  .lede{color:#6B7280;font-size:var(--text-body);margin-top:2px;max-width:64ch;}
 
   .money{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:20px 0 6px;}
   .money div{border:1px solid #E7E9ED;border-radius:11px;padding:14px 15px;}
-  .money b{display:block;font-size:19px;font-weight:680;font-variant-numeric:tabular-nums;color:#111111;}
-  .money span{display:block;font-size:11.5px;color:#6B7280;margin-top:2px;}
-  .money em{display:block;font-size:11px;font-style:normal;color:#9AA1AA;margin-top:1px;}
+  .money b{display:block;font-size:var(--text-display);font-weight:680;font-variant-numeric:tabular-nums;color:#111111;}
+  .money span{display:block;font-size:var(--text-meta);color:#6B7280;margin-top:2px;}
+  .money em{display:block;font-size:var(--text-meta);font-style:normal;color:#9AA1AA;margin-top:1px;}
   .money .short b{color:#B91C1C;}
   .stale{color:#B45309 !important;}
 
-  .seg{display:inline-flex;gap:2px;background:#F1F3F6;border-radius:9px;padding:2px;margin:18px 0 4px;}
-  .seg button{border:none;background:none;padding:6px 13px;border-radius:7px;
+  .seg{display:inline-flex;gap:2px;background:#F1F3F6;border-radius:var(--radius-control);padding:2px;margin:18px 0 4px;}
+  .seg button{border:none;background:none;padding:6px 13px;border-radius:var(--radius-control);
     font:600 12.5px/1 'Inter',sans-serif;color:#6B7280;cursor:pointer;}
   .seg button.on{background:#fff;color:#111111;box-shadow:0 1px 2px rgba(16,24,40,.08);}
 
   .new{border:1px solid #E7E9ED;border-radius:12px;padding:16px 18px;margin-top:16px;background:#FCFCFD;}
-  .new h2{font-size:13.5px;font-weight:640;margin-bottom:12px;}
+  .new h2{font-size:var(--text-body);font-weight:640;margin-bottom:12px;}
   .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;}
-  .f label{display:block;font-size:11px;font-weight:600;color:#4B5563;margin-bottom:4px;}
+  .f label{display:block;font-size:var(--text-meta);font-weight:600;color:#4B5563;margin-bottom:4px;}
   .f input,.f select{width:100%;padding:8px 10px;font:400 13px/1.3 'Inter',sans-serif;}
   .row2{display:flex;align-items:center;gap:12px;margin-top:12px;flex-wrap:wrap;}
-  .row2 label{font-size:12.5px;color:#4B5563;display:flex;align-items:center;gap:6px;}
-  .btn{border:1px solid #DDE0E4;background:#fff;border-radius:8px;padding:9px 15px;
+  .row2 label{font-size:var(--text-caption);color:#4B5563;display:flex;align-items:center;gap:6px;}
+  .btn{border:1px solid #DDE0E4;background:#fff;border-radius:var(--radius-control);padding:9px 15px;
     font:600 12.5px/1 'Inter',sans-serif;color:#111111;cursor:pointer;}
   .btn:hover{border-color:#B8BCC4;}
   .btn.go{background:#111111;color:#fff;border-color:#111111;}
@@ -44,33 +44,33 @@
   .btn:disabled{opacity:.45;cursor:default;}
 
   table{width:100%;border-collapse:collapse;margin-top:14px;}
-  th{text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;
+  th{text-align:left;font-size:var(--text-meta);font-weight:600;text-transform:uppercase;letter-spacing:.05em;
     color:#6B7280;padding:9px 10px;border-bottom:1px solid #EAECEF;}
   th.n,td.n{text-align:right;font-variant-numeric:tabular-nums;}
-  td{padding:12px 10px;border-bottom:1px solid #F3F4F6;font-size:13px;vertical-align:top;}
+  td{padding:12px 10px;border-bottom:1px solid #F3F4F6;font-size:var(--text-body);vertical-align:top;}
   tr:last-child td{border-bottom:none;}
   td b{font-weight:600;color:#111111;display:block;}
-  td em{font-style:normal;font-size:11.5px;color:#6B7280;display:block;margin-top:2px;}
-  .st{font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+  td em{font-style:normal;font-size:var(--text-meta);color:#6B7280;display:block;margin-top:2px;}
+  .st{font-size:var(--text-micro);font-weight:700;letter-spacing:.04em;text-transform:uppercase;
     padding:3px 8px;border-radius:5px;white-space:nowrap;}
   .st.draft{background:#F1F3F6;color:#4B5563;}
   .st.submitted{background:#FEF3C7;color:#92400E;}
   .st.approved,.st.scheduled{background:#EFF4FE;color:#1D4ED8;}
   .st.paid{background:#ECFDF3;color:#046C4E;}
   .st.rejected,.st.expired{background:#FEF2F2;color:#991B1B;}
-  .clock{font-size:11.5px;font-weight:600;}
+  .clock{font-size:var(--text-meta);font-weight:600;}
   .clock.soon{color:#B45309;}
   .clock.gone{color:#B91C1C;}
   .acts{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px;}
-  .mini{border:1px solid #DDE0E4;background:#fff;border-radius:7px;padding:5px 10px;
+  .mini{border:1px solid #DDE0E4;background:#fff;border-radius:var(--radius-control);padding:5px 10px;
     font:600 11.5px/1 'Inter',sans-serif;color:#111111;cursor:pointer;}
   .mini.go{background:#111111;color:#fff;border-color:#111111;}
   .mini.go:hover{background:#D9531E;border-color:#D9531E;}
   .mini.danger{color:#B91C1C;}
 
   .empty{padding:48px 20px;text-align:center;border:1px solid #E7E9ED;border-radius:12px;margin-top:16px;}
-  .empty b{display:block;font-size:15px;font-weight:620;color:#111111;margin-bottom:5px;}
-  .empty span{display:block;font-size:13px;color:#6B7280;max-width:420px;margin:0 auto;}
+  .empty b{display:block;font-size:var(--text-subhead);font-weight:620;color:#111111;margin-bottom:5px;}
+  .empty span{display:block;font-size:var(--text-body);color:#6B7280;max-width:420px;margin:0 auto;}
   .note{position:fixed;left:50%;bottom:26px;transform:translate(-50%,12px);z-index:120;display:none;
     align-items:center;max-width:min(480px,92vw);padding:11px 15px;border-radius:10px;background:#111111;
     color:#fff;font:500 13px/1.45 'Inter',sans-serif;box-shadow:0 10px 30px rgba(16,24,40,.24);
@@ -122,10 +122,10 @@
     </div>
     <div class="row2">
       <label><input type="checkbox" id="billable" checked> Bill through to the client</label>
-      <input type="file" id="receipt" accept="image/*,application/pdf" style="font-size:12px">
+      <input type="file" id="receipt" accept="image/*,application/pdf" style="font-size:var(--text-caption)">
       <button class="btn go" id="save">Submit claim</button>
     </div>
-    <p style="font-size:11.5px;color:#6B7280;margin-top:9px">Mileage is calculated, so no receipt is needed. Everything else needs one. Anything over $150 must be approved in writing before it is incurred.</p>
+    <p style="font-size:var(--text-meta);color:#6B7280;margin-top:9px">Mileage is calculated, so no receipt is needed. Everything else needs one. Anything over $150 must be approved in writing before it is incurred.</p>
   </div>
 
   <div id="out"></div>

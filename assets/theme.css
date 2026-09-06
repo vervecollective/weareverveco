@@ -2,17 +2,112 @@
    Verve Collective — visual layer
    ----------------------------------------------------------------------------
    Everything in the visual overhaul lives in this one file. Nothing here is
-   structural: no layout that a page depends on, no rule any JavaScript reads.
-   It loads after shell.css and after each page's own <style>, so it wins on
-   source order without needing !important to do it.
+   structural: no layout a page depends on, no rule any JavaScript reads. It
+   loads after shell.css and after each page's own <style>, so it wins on source
+   order without needing !important.
 
-   TO REVERT EVERYTHING: empty this file and push. One commit, no untangling,
-   and the application is exactly as it was.
-
-   TO PREVIEW WITHOUT REVERTING: add ?theme=off to any URL. That is per-person
-   and per-tab, so you can compare the old and new look side by side in two
-   windows before deciding.
+   TO REVERT EVERYTHING: empty this file and push.
+   TO COMPARE WITHOUT REVERTING: add ?theme=off to any URL.
    ========================================================================== */
 
-/* Nothing yet. The scaffolding lands before the paint does, so there is never a
-   point where the overhaul is live and the way back is not. */
+/* Kept as an @import rather than a <link> so the whole layer stays one file.
+   Two weights only — a display face used at two weights reads as a decision;
+   used at six it reads as a font menu. */
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@600;700&display=swap');
+
+/* ---------------------------------------------------------------- 1. voice --
+   Inter everywhere is the single strongest "generated interface" tell. It is a
+   superb UI face and stays for anything a person reads at length or at small
+   sizes — but a product with one typeface has no voice, only legibility.
+
+   Archivo carries the headings. It is a grotesque like Inter, so this is a
+   change of character rather than of genre: sturdier, squarer, more American,
+   with none of the softness that reads as a template. Deliberately not a
+   fashionable serif — that is the other way to look generated, just newer. */
+:root{
+  --font-display:'Archivo','Inter',system-ui,sans-serif;
+}
+
+h1,
+.list-h b,
+.crumb b,
+.pane-h b{
+  font-family:var(--font-display);
+  font-weight:700;
+  /* Archivo runs a little wide and sets tighter than Inter without falling
+     apart, which is most of where the confidence comes from. */
+  letter-spacing:-.028em;
+}
+
+h2,
+.panel h2,
+.el-h b,
+.need-h b{
+  font-family:var(--font-display);
+  font-weight:600;
+  letter-spacing:-.018em;
+}
+
+/* Numbers are the product. A metric set in the display face at 700 stops
+   looking like a paragraph that happens to contain a figure. */
+.k b,
+.c b,
+.fact b,
+.stat b,
+.kpi b,
+.split b{
+  font-family:var(--font-display);
+  font-weight:700;
+  letter-spacing:-.03em;
+  font-variant-numeric:tabular-nums;
+}
+
+/* --------------------------------------------------------------- 2. rhythm --
+   Headings sat the same distance from what follows them as from what precedes
+   them, so nothing grouped. Space above a heading is what tells you a new thing
+   started; space below is what ties it to its content. They should not match. */
+.panel h2{ margin-top:2px; }
+section > .w > h2{ margin-bottom:2px; }
+
+/* ------------------------------------------------------------- 3. restraint --
+   Three shadows were doing overlapping jobs at different intensities. One
+   elevation for a resting card, one for a lifted one. A shadow with no light
+   source is the other thing that reads as generated. */
+.panel,
+.f,
+.el,
+.screen,
+.card{
+  box-shadow:0 1px 2px rgba(16,24,40,.04);
+}
+.f:hover{
+  box-shadow:0 6px 16px rgba(16,24,40,.09);
+}
+
+/* ------------------------------------------------------------ 4. edge tone --
+   #E7E9ED against #FFFFFF is a line you notice. A border should describe an
+   edge, not draw attention to itself. */
+.panel,
+.el,
+.f,
+.c,
+.k,
+.kpi div,
+.screen,
+.chip{
+  border-color:#EBEDEF;
+}
+
+/* --------------------------------------------------------------- 5. motion --
+   Motion earns its place by saying "this changed". Nothing here moves on
+   arrival; things move only in response to a person. */
+.btn,
+.mini,
+.iconbtn,
+.tool,
+.send{
+  transition:background-color .14s ease, border-color .14s ease, color .14s ease;
+}
+@media(prefers-reduced-motion:reduce){
+  .btn,.mini,.iconbtn,.tool,.send{ transition:none; }
+}

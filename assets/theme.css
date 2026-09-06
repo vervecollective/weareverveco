@@ -1,0 +1,18 @@
+/* ============================================================================
+   Verve Collective — visual layer
+   ----------------------------------------------------------------------------
+   Everything in the visual overhaul lives in this one file. Nothing here is
+   structural: no layout that a page depends on, no rule any JavaScript reads.
+   It loads after shell.css and after each page's own <style>, so it wins on
+   source order without needing !important to do it.
+
+   TO REVERT EVERYTHING: empty this file and push. One commit, no untangling,
+   and the application is exactly as it was.
+
+   TO PREVIEW WITHOUT REVERTING: add ?theme=off to any URL. That is per-person
+   and per-tab, so you can compare the old and new look side by side in two
+   windows before deciding.
+   ========================================================================== */
+
+/* Nothing yet. The scaffolding lands before the paint does, so there is never a
+   point where the overhaul is live and the way back is not. */

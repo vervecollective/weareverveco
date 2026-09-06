@@ -1,113 +1,96 @@
 /* ============================================================================
    Verve Collective — visual layer
    ----------------------------------------------------------------------------
-   Everything in the visual overhaul lives in this one file. Nothing here is
-   structural: no layout a page depends on, no rule any JavaScript reads. It
-   loads after shell.css and after each page's own <style>, so it wins on source
-   order without needing !important.
-
    TO REVERT EVERYTHING: empty this file and push.
    TO COMPARE WITHOUT REVERTING: add ?theme=off to any URL.
+
+   Note on !important. It is normally a smell, and here it is unavoidable:
+   shell.css already sets heading type with !important on `body.vc-shelled h1`
+   and friends. A later rule at lower specificity loses to that no matter what
+   order it loads in, which is exactly why the first version of this file
+   changed almost nothing on the pages that matter. Matching the weapon already
+   in use is the only way in short of rewriting shell.css, which would take the
+   revert switch with it.
    ========================================================================== */
 
-/* Kept as an @import rather than a <link> so the whole layer stays one file.
-   Two weights only — a display face used at two weights reads as a decision;
-   used at six it reads as a font menu. */
-@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&display=swap');
 
-/* ---------------------------------------------------------------- 1. voice --
-   Inter everywhere is the single strongest "generated interface" tell. It is a
-   superb UI face and stays for anything a person reads at length or at small
-   sizes — but a product with one typeface has no voice, only legibility.
-
-   Archivo carries the headings. It is a grotesque like Inter, so this is a
-   change of character rather than of genre: sturdier, squarer, more American,
-   with none of the softness that reads as a template. Deliberately not a
-   fashionable serif — that is the other way to look generated, just newer. */
 :root{
   --font-display:'Archivo','Inter',system-ui,sans-serif;
 }
 
-h1,
+/* ---------------------------------------------------------------- 1. voice --
+   Inter everywhere is the strongest generated-interface tell. It stays for
+   anything read at length or at small sizes. Archivo carries the headings and
+   the numbers: squarer, sturdier, more American, none of the softness that
+   reads as a template. A change of character, not of genre. */
+body.vc-shelled h1,
+body.vc-shelled .card h2,
+body.vc-shelled .sec-hd h2,
+h1, h2,
+.panel h2,
 .list-h b,
 .crumb b,
-.pane-h b{
-  font-family:var(--font-display);
-  font-weight:700;
-  /* Archivo runs a little wide and sets tighter than Inter without falling
-     apart, which is most of where the confidence comes from. */
-  letter-spacing:-.028em;
-}
-
-h2,
-.panel h2,
+.pane-h b,
 .el-h b,
 .need-h b{
-  font-family:var(--font-display);
-  font-weight:600;
-  letter-spacing:-.018em;
+  font-family:var(--font-display) !important;
 }
 
-/* Numbers are the product. A metric set in the display face at 700 stops
-   looking like a paragraph that happens to contain a figure. */
-.k b,
-.c b,
-.fact b,
-.stat b,
-.kpi b,
-.split b{
-  font-family:var(--font-display);
-  font-weight:700;
-  letter-spacing:-.03em;
+body.vc-shelled h1,
+h1{
+  font-weight:700 !important;
+  /* Archivo runs wider than Inter and sets tighter without falling apart.
+     Most of where the confidence comes from. */
+  letter-spacing:-.03em !important;
+}
+
+/* --------------------------------------------------------------- 2. figures --
+   The numbers are the product. Set in body text a metric looks like a sentence
+   that happens to contain a figure; set in the display face it looks like the
+   answer to a question. */
+.num,
+body.vc-shelled .tile .n,
+.k b, .c b, .fact b, .stat b, .kpi b, .split b, .m .v,
+.row .amt, .cand .n{
+  font-family:var(--font-display) !important;
+  font-weight:700 !important;
+  letter-spacing:-.03em !important;
   font-variant-numeric:tabular-nums;
 }
 
-/* --------------------------------------------------------------- 2. rhythm --
-   Headings sat the same distance from what follows them as from what precedes
-   them, so nothing grouped. Space above a heading is what tells you a new thing
-   started; space below is what ties it to its content. They should not match. */
+/* ---------------------------------------------------------------- 3. rhythm --
+   Space above a heading says a new thing started; space below ties it to its
+   content. They were identical, so nothing grouped. */
 .panel h2{ margin-top:2px; }
 section > .w > h2{ margin-bottom:2px; }
 
-/* ------------------------------------------------------------- 3. restraint --
-   Three shadows were doing overlapping jobs at different intensities. One
-   elevation for a resting card, one for a lifted one. A shadow with no light
-   source is the other thing that reads as generated. */
-.panel,
-.f,
-.el,
-.screen,
-.card{
+/* ------------------------------------------------------------- 4. restraint --
+   One elevation for a resting card, one for a lifted one. A shadow with no
+   consistent light source is the other thing that reads as generated. */
+.panel, .f, .el, .screen, .card{
   box-shadow:0 1px 2px rgba(16,24,40,.04);
 }
-.f:hover{
-  box-shadow:0 6px 16px rgba(16,24,40,.09);
-}
+.f:hover{ box-shadow:0 6px 16px rgba(16,24,40,.09); }
 
-/* ------------------------------------------------------------ 4. edge tone --
-   #E7E9ED against #FFFFFF is a line you notice. A border should describe an
-   edge, not draw attention to itself. */
-.panel,
-.el,
-.f,
-.c,
-.k,
-.kpi div,
-.screen,
-.chip{
-  border-color:#EBEDEF;
-}
+/* ------------------------------------------------------------- 5. edge tone --
+   A border should describe an edge, not announce itself. */
+.panel, .el, .f, .c, .k, .kpi div, .screen, .chip{ border-color:#EBEDEF; }
 
-/* --------------------------------------------------------------- 5. motion --
-   Motion earns its place by saying "this changed". Nothing here moves on
-   arrival; things move only in response to a person. */
-.btn,
-.mini,
-.iconbtn,
-.tool,
-.send{
+/* --------------------------------------------------------------- 6. motion --
+   Motion earns its place by saying "this changed". Nothing moves on arrival. */
+.btn, .mini, .iconbtn, .tool, .send{
   transition:background-color .14s ease, border-color .14s ease, color .14s ease;
 }
 @media(prefers-reduced-motion:reduce){
   .btn,.mini,.iconbtn,.tool,.send{ transition:none; }
+}
+
+/* ------------------------------------------------------------ 7. is it on? --
+   A visible, harmless confirmation that this file loaded at all. The brand mark
+   in the sidebar picks up the display face; if "Verve Collective" top-left is
+   not set in Archivo, the layer is not loading and nothing else here is either. */
+.vc-brand span{
+  font-family:var(--font-display) !important;
+  letter-spacing:-.02em;
 }

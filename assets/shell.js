@@ -1983,6 +1983,32 @@ try {
    The choice now lives in one place: the URL when there is one, so a link is
    shareable and the back button works, and sessionStorage otherwise, so it
    survives navigation but not the week. Pages read it, write it, and listen. */
+/* ---------------------------------------------------------------- theme ---
+   The visual layer is injected here rather than linked in 26 pages, so it can
+   be turned off from one place and cannot fall out of sync between pages.
+
+   Appended to <head> at the end, which puts it after shell.css and after each
+   page's own <style> block \u2014 so it wins on source order and does not have to
+   fight with !important.
+
+   ?theme=off suppresses it for this tab and remembers the choice, so the old
+   look can be compared against the new one in two windows. ?theme=on restores. */
+(function () {
+  try {
+    var q = new URLSearchParams(location.search).get('theme');
+    if (q === 'off') localStorage.setItem('vc.theme', 'off');
+    if (q === 'on') localStorage.removeItem('vc.theme');
+    if (localStorage.getItem('vc.theme') === 'off') return;
+  } catch (e) { /* private mode: fall through and load it */ }
+
+  var l = document.createElement('link');
+  l.rel = 'stylesheet';
+  /* Bumped when the layer changes, so a browser holding an old copy does not
+     show half of an overhaul. */
+  l.href = '/assets/theme.css?v=1';
+  document.head.appendChild(l);
+})();
+
 window.vcScope = (function () {
   var KEY = 'vc.scope.engagement';
 

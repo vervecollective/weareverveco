@@ -1960,6 +1960,11 @@ body.vc-shelled .vc-idbar-gutter{ padding-right:var(--vc-idbar-space) !important
   --text-body-lg:14px;   /* emphasis inside body copy */
   --text-subhead:14.5px; /* card titles, list item names */
   --text-title:16px;     /* section headings */
+  --text-display:21px;   /* page titles */
+
+  /* Two sizes below body, because a badge and a timestamp are not the same
+     thing and collapsing them was losing a distinction that reads. */
+  --text-micro:10.5px;   /* uppercase badges and status pills */
 
   /* 8px, 9px and 10px are each used about two dozen times, which makes the
      control radius a token nobody named. One value, everywhere. */
